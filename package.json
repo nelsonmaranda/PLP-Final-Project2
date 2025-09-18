@@ -1,0 +1,60 @@
+{
+  "name": "smart-matatu-system",
+  "version": "1.0.0",
+  "description": "Responsive web-based matatu reliability and safety mapping system for Nairobi",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "start": "npm run start:backend",
+    "start:backend": "cd backend && npm start",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && npm test",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint",
+    "deploy": "npm run build && firebase deploy",
+    "deploy:hosting": "npm run build:frontend && firebase deploy --only hosting",
+    "deploy:functions": "npm run build:backend && firebase deploy --only functions"
+  },
+  "keywords": [
+    "matatu",
+    "transport",
+    "nairobi",
+    "safety",
+    "reliability",
+    "crowdsourcing",
+    "responsive",
+    "pwa",
+    "react",
+    "nodejs",
+    "mongodb"
+  ],
+  "author": "Nelson Maranda <nelsonmaranda@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nelsonmaranda/PLP-Final-Project2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nelsonmaranda/PLP-Final-Project2/issues"
+  },
+  "homepage": "https://github.com/nelsonmaranda/PLP-Final-Project2#readme",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "firebase-tools": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ]
+}
