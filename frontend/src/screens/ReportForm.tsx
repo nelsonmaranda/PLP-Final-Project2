@@ -1,64 +1,69 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, AlertTriangle, Camera, Send } from 'lucide-react'
+import { MapPin, AlertTriangle, Send, Loader2 } from 'lucide-react'
+import apiService from '../services/api'
+import { Route, CreateReportData } from '../types'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function ReportForm() {
   const navigate = useNavigate()
+  const [routes, setRoutes] = useState<Route[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  const [formData, setFormData] = useState<CreateReportData>({
     routeId: '',
-    fare: '',
-    waitTime: '',
-    crowding: 'low',
-    incidentType: '',
+    reportType: 'delay',
     description: '',
-    location: null as { lat: number; lng: number } | null,
+    location: {
+      type: 'Point',
+      coordinates: [36.8219, -1.2921] // [longitude, latitude]
+    },
+    severity: 'medium',
+    isAnonymous: false
   })
 
-  const routes = [
-    { id: '1', name: 'Route 42 - Thika Road' },
-    { id: '2', name: 'Route 17 - Waiyaki Way' },
-    { id: '3', name: 'Route 8 - Jogoo Road' },
-    { id: '4', name: 'Route 23 - Ngong Road' },
-  ]
+  useEffect(() => {
+    loadRoutes()
+  }, [])
 
-  const crowdingLevels = [
-    { value: 'low', label: 'Low - Plenty of space', color: 'text-green-600' },
-    { value: 'medium', label: 'Medium - Some standing', color: 'text-yellow-600' },
-    { value: 'high', label: 'High - Crowded', color: 'text-orange-600' },
-    { value: 'full', label: 'Full - Standing room only', color: 'text-red-600' },
-  ]
+  const loadRoutes = async () => {
+    try {
+      setIsLoading(true)
+      const response = await apiService.getRoutes({
+        page: 1,
+        limit: 100,
+        sort: 'name',
+        order: 'asc'
+      })
 
-  const incidentTypes = [
-    'Overcrowding',
-    'Reckless driving',
-    'Overcharging',
-    'Rude conductor',
-    'Vehicle breakdown',
-    'Long delays',
-    'Other',
-  ]
+      if (response.success && response.data) {
+        setRoutes(response.data.routes)
+      }
+    } catch (err) {
+      console.error('Error loading routes:', err)
+      setError('Failed to load routes. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
-  const handleCrowdingChange = (level: string) => {
-    setFormData(prev => ({
-      ...prev,
-      crowding: level
-    }))
-  }
-
-  const handleIncidentToggle = (type: string) => {
-    setFormData(prev => ({
-      ...prev,
-      incidentType: prev.incidentType === type ? '' : type
-    }))
+    const { name, value, type } = e.target
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }))
+    }
   }
 
   const getCurrentLocation = () => {
@@ -68,36 +73,72 @@ export default function ReportForm() {
           setFormData(prev => ({
             ...prev,
             location: {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
+              type: 'Point',
+              coordinates: [position.coords.longitude, position.coords.latitude]
             }
           }))
         },
         (error) => {
           console.error('Error getting location:', error)
+          setError('Failed to get current location')
         }
       )
+    } else {
+      setError('Geolocation is not supported by this browser')
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
+    
+    if (!formData.routeId) {
+      setError('Please select a route')
+      return
+    }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      setIsSubmitting(true)
+      setError(null)
       
-      // In a real app, this would submit to your API
-      console.log('Report submitted:', formData)
+      const response = await apiService.createReport(formData)
       
-      // Redirect to map with success message
-      navigate('/map?success=report-submitted')
-    } catch (error) {
-      console.error('Error submitting report:', error)
+      if (response.success) {
+        setSuccess(true)
+        // Reset form
+        setFormData({
+          routeId: '',
+          reportType: 'delay',
+          description: '',
+          location: {
+            type: 'Point',
+            coordinates: [36.8219, -1.2921]
+          },
+          severity: 'medium',
+          isAnonymous: false
+        })
+        
+        // Redirect to map after 2 seconds
+        setTimeout(() => {
+          navigate('/map?success=report-submitted')
+        }, 2000)
+      }
+    } catch (err) {
+      console.error('Error submitting report:', err)
+      setError('Failed to submit report. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner />
+          <p className="text-gray-600 mt-4">Loading routes...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -112,112 +153,123 @@ export default function ReportForm() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="card-content space-y-6">
+            {success && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg" role="alert" aria-live="polite">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-green-800">
+                      Report submitted successfully! Redirecting to map...
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg" role="alert" aria-live="polite">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <AlertTriangle className="h-5 w-5 text-red-400" aria-hidden="true" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-red-800">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="card-content space-y-6" aria-labelledby="report-form-heading">
               {/* Route Selection */}
               <div className="form-group">
-                <label className="form-label">Route *</label>
+                <label htmlFor="routeId" className="form-label">Route *</label>
                 <select
+                  id="routeId"
                   name="routeId"
                   value={formData.routeId}
                   onChange={handleInputChange}
                   className="form-select"
                   required
+                  aria-describedby="route-help"
                 >
                   <option value="">Select a route</option>
                   {routes.map(route => (
-                    <option key={route.id} value={route.id}>
-                      {route.name}
+                    <option key={route._id} value={route._id}>
+                      {route.name} - {route.operator}
                     </option>
                   ))}
                 </select>
+                <p id="route-help" className="text-sm text-gray-500 mt-1">Choose the route you want to report on</p>
               </div>
 
-              {/* Fare and Wait Time */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="form-group">
-                  <label className="form-label">Fare Paid (KES) *</label>
-                  <input
-                    type="number"
-                    name="fare"
-                    value={formData.fare}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="50"
-                    min="0"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Wait Time (minutes) *</label>
-                  <input
-                    type="number"
-                    name="waitTime"
-                    value={formData.waitTime}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="5"
-                    min="0"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Crowding Level */}
-              <div className="form-group">
-                <label className="form-label">Crowding Level *</label>
+              {/* Report Type */}
+              <fieldset className="form-group">
+                <legend className="form-label">Issue Type *</legend>
                 <div className="grid grid-cols-2 gap-3">
-                  {crowdingLevels.map(level => (
-                    <button
-                      key={level.value}
-                      type="button"
-                      onClick={() => handleCrowdingChange(level.value)}
-                      className={`p-3 rounded-lg border text-left transition-colors ${
-                        formData.crowding === level.value
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      <div className={`font-medium ${level.color}`}>
-                        {level.label}
-                      </div>
-                    </button>
+                  {[
+                    { value: 'delay', label: 'Delay', icon: '⏰' },
+                    { value: 'safety', label: 'Safety', icon: '⚠️' },
+                    { value: 'crowding', label: 'Crowding', icon: '👥' },
+                    { value: 'breakdown', label: 'Breakdown', icon: '🔧' },
+                    { value: 'other', label: 'Other', icon: '📝' }
+                  ].map((type) => (
+                    <label key={type.value} className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="reportType"
+                        value={type.value}
+                        checked={formData.reportType === type.value}
+                        onChange={handleInputChange}
+                        className="mr-3"
+                        required
+                      />
+                      <span className="text-2xl mr-2" aria-hidden="true">{type.icon}</span>
+                      <span className="font-medium">{type.label}</span>
+                    </label>
                   ))}
                 </div>
-              </div>
-
-              {/* Safety Issues */}
-              <div className="form-group">
-                <label className="form-label">Safety Issues (Optional)</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {incidentTypes.map(type => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => handleIncidentToggle(type)}
-                      className={`p-2 rounded-lg border text-sm transition-colors ${
-                        formData.incidentType === type
-                          ? 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      <AlertTriangle className="w-4 h-4 inline mr-2" />
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              </fieldset>
 
               {/* Description */}
               <div className="form-group">
-                <label className="form-label">Additional Details (Optional)</label>
+                <label htmlFor="description" className="form-label">Description</label>
                 <textarea
+                  id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
                   className="form-textarea"
-                  placeholder="Any additional information about your trip..."
-                  rows={3}
+                  placeholder="Describe the issue in detail..."
+                  rows={4}
+                  maxLength={500}
+                  aria-describedby="description-help"
                 />
+                <p id="description-help" className="mt-1 text-sm text-gray-500">
+                  {formData.description?.length || 0}/500 characters
+                </p>
+              </div>
+
+              {/* Severity */}
+              <div className="form-group">
+                <label htmlFor="severity" className="form-label">Severity Level</label>
+                <select
+                  id="severity"
+                  name="severity"
+                  value={formData.severity}
+                  onChange={handleInputChange}
+                  className="form-select"
+                  aria-describedby="severity-help"
+                >
+                  <option value="low">Low - Minor inconvenience</option>
+                  <option value="medium">Medium - Moderate impact</option>
+                  <option value="high">High - Significant impact</option>
+                  <option value="critical">Critical - Safety concern</option>
+                </select>
+                <p id="severity-help" className="text-sm text-gray-500 mt-1">Choose the severity level of the issue</p>
               </div>
 
               {/* Location */}
@@ -228,37 +280,32 @@ export default function ReportForm() {
                     type="button"
                     onClick={getCurrentLocation}
                     className="btn btn-outline btn-sm"
+                    aria-label="Use your current location for the report"
                   >
-                    <MapPin className="w-4 h-4 mr-2" />
+                    <MapPin className="w-4 h-4 mr-2" aria-hidden="true" />
                     Use Current Location
                   </button>
-                  {formData.location && (
-                    <span className="text-sm text-gray-600">
-                      Location captured: {formData.location.lat.toFixed(4)}, {formData.location.lng.toFixed(4)}
-                    </span>
-                  )}
+                  <span className="text-sm text-gray-600" aria-label={`Current coordinates: ${formData.location?.coordinates[1].toFixed(4)}, ${formData.location?.coordinates[0].toFixed(4)}`}>
+                    {formData.location?.coordinates[1].toFixed(4)}, {formData.location?.coordinates[0].toFixed(4)}
+                  </span>
                 </div>
               </div>
 
-              {/* Photo Upload */}
-              <div className="form-group">
-                <label className="form-label">Photo (Optional)</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 mb-2">Upload a photo of the matatu or incident</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    id="photo-upload"
-                  />
-                  <label
-                    htmlFor="photo-upload"
-                    className="btn btn-outline btn-sm cursor-pointer"
-                  >
-                    Choose Photo
-                  </label>
-                </div>
+              {/* Anonymous Report */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isAnonymous"
+                  name="isAnonymous"
+                  checked={formData.isAnonymous}
+                  onChange={handleInputChange}
+                  className="rounded border-gray-300"
+                  aria-describedby="anonymous-help"
+                />
+                <label htmlFor="isAnonymous" className="ml-2 text-sm text-gray-700">
+                  Submit anonymously
+                </label>
+                <p id="anonymous-help" className="sr-only">Check this box to submit your report without revealing your identity</p>
               </div>
 
               {/* Submit Button */}
@@ -267,6 +314,8 @@ export default function ReportForm() {
                   type="button"
                   onClick={() => navigate('/map')}
                   className="btn btn-outline"
+                  disabled={isSubmitting}
+                  aria-label="Cancel and return to map"
                 >
                   Cancel
                 </button>
@@ -274,15 +323,16 @@ export default function ReportForm() {
                   type="submit"
                   disabled={isSubmitting}
                   className="btn btn-primary"
+                  aria-label={isSubmitting ? "Submitting report" : "Submit your report"}
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="loading-spinner mr-2"></div>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />
                       Submitting...
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4 mr-2" />
+                      <Send className="w-4 h-4 mr-2" aria-hidden="true" />
                       Submit Report
                     </>
                   )}

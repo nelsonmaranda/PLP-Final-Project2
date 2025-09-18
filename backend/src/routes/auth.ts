@@ -77,16 +77,17 @@ router.post('/login', authLimiter, validate(userLoginSchema), async (req, res): 
 
     // Check if user is active
     if (!user.isActive) {
-      res.status($1).json({
+      res.status(401).json({
         success: false,
         message: 'Account is deactivated'
       })
+      return
     }
 
     // Compare password
     const isMatch = await user.comparePassword(password)
     if (!isMatch) {
-      res.status($1).json({
+      res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       })
@@ -157,7 +158,7 @@ router.put('/profile', authenticateToken, async (req: AuthRequest, res): Promise
     )
 
     if (!user) {
-      res.status($1).json({
+      res.status(401).json({
         success: false,
         message: 'User not found'
       })

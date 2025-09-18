@@ -19,20 +19,33 @@ export interface Route {
   _id: string
   name: string
   description: string
-  path: GeoJSON.LineString
-  stops: GeoJSON.Point[]
-  sacco: string
+  operator: string
+  routeNumber: string
+  path: number[][]
+  stops: Array<{
+    name: string
+    coordinates: number[]
+  }>
+  fare: number
+  operatingHours: {
+    start: string
+    end: string
+  }
+  isActive: boolean
   createdAt: string
   updatedAt: string
 }
 
 export interface RouteWithScores extends Route {
-  reliabilityScore: number
-  safetyScore: number
-  averageFare: number
-  averageWaitTime: number
-  totalReports: number
-  lastUpdated: string
+  score?: {
+    reliability: number
+    safety: number
+    punctuality: number
+    comfort: number
+    overall: number
+    totalReports: number
+    lastCalculated: string
+  }
 }
 
 // Report Types
@@ -40,37 +53,44 @@ export interface Report {
   _id: string
   userId: string
   routeId: string
-  fare: number
-  waitTime: number
-  crowding: 'low' | 'medium' | 'high' | 'full'
-  incidentType?: string
+  reportType: string
   description?: string
-  location: GeoJSON.Point
-  timestamp: string
+  location: {
+    type: string
+    coordinates: number[]
+  }
+  severity: string
+  status: string
+  isAnonymous: boolean
   createdAt: string
+  updatedAt: string
 }
 
 export interface CreateReportData {
   routeId: string
-  fare: number
-  waitTime: number
-  crowding: 'low' | 'medium' | 'high' | 'full'
-  incidentType?: string
+  reportType: string
   description?: string
   location?: {
-    lat: number
-    lng: number
+    type: string
+    coordinates: number[]
   }
+  severity: string
+  isAnonymous: boolean
 }
 
 // Score Types
 export interface Score {
   _id: string
   routeId: string
-  timeBucket: 'morning' | 'afternoon' | 'evening'
-  reliabilityScore: number
-  safetyScore: number
-  lastUpdated: string
+  reliability: number
+  safety: number
+  punctuality: number
+  comfort: number
+  overall: number
+  totalReports: number
+  lastCalculated: string
+  createdAt: string
+  updatedAt: string
 }
 
 // API Response Types
@@ -108,15 +128,12 @@ export interface MapMarker {
 export interface LoginFormData {
   email: string
   password: string
-  rememberMe: boolean
 }
 
 export interface SignupFormData {
   displayName: string
   email: string
   password: string
-  confirmPassword: string
-  agreeToTerms: boolean
 }
 
 // UI State Types

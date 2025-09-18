@@ -1,0 +1,320 @@
+// Enhanced error handling utilities
+
+export interface ErrorInfo {
+  code: string
+  message: string
+  details?: any
+  timestamp: string
+  userId?: string
+  sessionId?: string
+  url?: string
+  userAgent?: string
+  stack?: string
+}
+
+export interface ErrorBoundaryState {
+  hasError: boolean
+  error: Error | null
+  errorInfo: any
+}
+
+export class ErrorLogger {
+  private static instance: ErrorLogger
+  private errors: ErrorInfo[] = []
+  private maxErrors = 100
+
+  static getInstance(): ErrorLogger {
+    if (!ErrorLogger.instance) {
+      ErrorLogger.instance = new ErrorLogger()
+    }
+    return ErrorLogger.instance
+  }
+
+  logError(error: Error, errorInfo?: any, context?: any): void {
+    const errorData: ErrorInfo = {
+      code: this.generateErrorCode(error),
+      message: error.message,
+      details: {
+        ...context,
+        stack: error.stack,
+        errorInfo
+      },
+      timestamp: new Date().toISOString(),
+      userId: this.getCurrentUserId(),
+      sessionId: this.getSessionId(),
+      url: window.location.href,
+      userAgent: navigator.userAgent
+    }
+
+    this.errors.push(errorData)
+    
+    // Keep only the most recent errors
+    if (this.errors.length > this.maxErrors) {
+      this.errors = this.errors.slice(-this.maxErrors)
+    }
+
+    // Log to console in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error logged:', errorData)
+    }
+
+    // Send to error reporting service in production
+    if (process.env.NODE_ENV === 'production') {
+      this.sendToErrorService(errorData)
+    }
+  }
+
+  getErrors(): ErrorInfo[] {
+    return [...this.errors]
+  }
+
+  clearErrors(): void {
+    this.errors = []
+  }
+
+  private generateErrorCode(error: Error): string {
+    const errorType = error.constructor.name
+    const messageHash = this.hashString(error.message)
+    return `${errorType}-${messageHash}`
+  }
+
+  private hashString(str: string): string {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36)
+  }
+
+  private getCurrentUserId(): string | undefined {
+    try {
+      const user = localStorage.getItem('user')
+      return user ? JSON.parse(user)._id : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  private getSessionId(): string {
+    let sessionId = sessionStorage.getItem('sessionId')
+    if (!sessionId) {
+      sessionId = this.generateSessionId()
+      sessionStorage.setItem('sessionId', sessionId)
+    }
+    return sessionId
+  }
+
+  private generateSessionId(): string {
+    return Math.random().toString(36).substr(2, 9) + Date.now().toString(36)
+  }
+
+  private async sendToErrorService(errorData: ErrorInfo): Promise<void> {
+    try {
+      // In a real app, you'd send this to your error reporting service
+      // like Sentry, LogRocket, or Bugsnag
+      console.log('Sending error to service:', errorData)
+    } catch (error) {
+      console.error('Failed to send error to service:', error)
+    }
+  }
+}
+
+// Error types and messages
+export const ERROR_TYPES = {
+  NETWORK: 'NETWORK_ERROR',
+  VALIDATION: 'VALIDATION_ERROR',
+  AUTHENTICATION: 'AUTHENTICATION_ERROR',
+  AUTHORIZATION: 'AUTHORIZATION_ERROR',
+  NOT_FOUND: 'NOT_FOUND_ERROR',
+  SERVER: 'SERVER_ERROR',
+  CLIENT: 'CLIENT_ERROR',
+  UNKNOWN: 'UNKNOWN_ERROR'
+} as const
+
+export const ERROR_MESSAGES = {
+  [ERROR_TYPES.NETWORK]: 'Network connection failed. Please check your internet connection.',
+  [ERROR_TYPES.VALIDATION]: 'Please check your input and try again.',
+  [ERROR_TYPES.AUTHENTICATION]: 'Please log in to continue.',
+  [ERROR_TYPES.AUTHORIZATION]: 'You do not have permission to perform this action.',
+  [ERROR_TYPES.NOT_FOUND]: 'The requested resource was not found.',
+  [ERROR_TYPES.SERVER]: 'Server error occurred. Please try again later.',
+  [ERROR_TYPES.CLIENT]: 'An error occurred. Please refresh the page.',
+  [ERROR_TYPES.UNKNOWN]: 'An unexpected error occurred. Please try again.'
+} as const
+
+// Error classification utility
+export function classifyError(error: any): string {
+  if (error?.response?.status) {
+    const status = error.response.status
+    
+    if (status >= 500) return ERROR_TYPES.SERVER
+    if (status === 404) return ERROR_TYPES.NOT_FOUND
+    if (status === 401) return ERROR_TYPES.AUTHENTICATION
+    if (status === 403) return ERROR_TYPES.AUTHORIZATION
+    if (status >= 400) return ERROR_TYPES.CLIENT
+  }
+  
+  if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network Error')) {
+    return ERROR_TYPES.NETWORK
+  }
+  
+  if (error?.name === 'ValidationError' || error?.message?.includes('validation')) {
+    return ERROR_TYPES.VALIDATION
+  }
+  
+  return ERROR_TYPES.UNKNOWN
+}
+
+// User-friendly error message generator
+export function getUserFriendlyMessage(error: any): string {
+  const errorType = classifyError(error)
+  return ERROR_MESSAGES[errorType] || ERROR_MESSAGES[ERROR_TYPES.UNKNOWN]
+}
+
+// Retry utility
+export class RetryManager {
+  private static instance: RetryManager
+  private retryAttempts = new Map<string, number>()
+
+  static getInstance(): RetryManager {
+    if (!RetryManager.instance) {
+      RetryManager.instance = new RetryManager()
+    }
+    return RetryManager.instance
+  }
+
+  async retry<T>(
+    operation: () => Promise<T>,
+    maxAttempts: number = 3,
+    delay: number = 1000,
+    operationId?: string
+  ): Promise<T> {
+    const id = operationId || 'default'
+    const attempts = this.retryAttempts.get(id) || 0
+
+    try {
+      const result = await operation()
+      this.retryAttempts.delete(id)
+      return result
+    } catch (error) {
+      if (attempts < maxAttempts - 1) {
+        this.retryAttempts.set(id, attempts + 1)
+        await this.delay(delay * Math.pow(2, attempts)) // Exponential backoff
+        return this.retry(operation, maxAttempts, delay, id)
+      } else {
+        this.retryAttempts.delete(id)
+        throw error
+      }
+    }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+}
+
+// Error boundary hook
+export function useErrorHandler() {
+  const logger = ErrorLogger.getInstance()
+
+  const handleError = (error: Error, errorInfo?: any, context?: any) => {
+    logger.logError(error, errorInfo, context)
+  }
+
+  const handleAsyncError = (error: Error, context?: any) => {
+    logger.logError(error, null, context)
+  }
+
+  const getErrorCount = () => {
+    return logger.getErrors().length
+  }
+
+  const clearErrors = () => {
+    logger.clearErrors()
+  }
+
+  return {
+    handleError,
+    handleAsyncError,
+    getErrorCount,
+    clearErrors
+  }
+}
+
+// Global error handler
+export function setupGlobalErrorHandling() {
+  const logger = ErrorLogger.getInstance()
+
+  // Handle unhandled promise rejections
+  window.addEventListener('unhandledrejection', (event) => {
+    logger.logError(
+      new Error(event.reason),
+      null,
+      { type: 'unhandledrejection', reason: event.reason }
+    )
+  })
+
+  // Handle uncaught errors
+  window.addEventListener('error', (event) => {
+    logger.logError(
+      event.error || new Error(event.message),
+      null,
+      { 
+        type: 'uncaught',
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
+      }
+    )
+  })
+}
+
+// Error recovery strategies
+export class ErrorRecovery {
+  static async recoverFromNetworkError(operation: () => Promise<any>): Promise<any> {
+    const retryManager = RetryManager.getInstance()
+    return retryManager.retry(operation, 3, 1000, 'network')
+  }
+
+  static async recoverFromServerError(operation: () => Promise<any>): Promise<any> {
+    const retryManager = RetryManager.getInstance()
+    return retryManager.retry(operation, 2, 2000, 'server')
+  }
+
+  static recoverFromValidationError(error: any): string[] {
+    if (error?.response?.data?.errors) {
+      return error.response.data.errors.map((err: any) => err.message)
+    }
+    return [getUserFriendlyMessage(error)]
+  }
+
+  static recoverFromAuthError(): void {
+    // Clear user session and redirect to login
+    localStorage.removeItem('user')
+    localStorage.removeItem('token')
+    window.location.href = '/login'
+  }
+}
+
+// Error reporting component props
+export interface ErrorReportProps {
+  error: Error
+  errorInfo?: any
+  onRetry?: () => void
+  onDismiss?: () => void
+  showDetails?: boolean
+}
+
+export default {
+  ErrorLogger,
+  ERROR_TYPES,
+  ERROR_MESSAGES,
+  classifyError,
+  getUserFriendlyMessage,
+  RetryManager,
+  useErrorHandler,
+  setupGlobalErrorHandling,
+  ErrorRecovery
+}

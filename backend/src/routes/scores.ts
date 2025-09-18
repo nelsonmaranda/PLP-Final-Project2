@@ -55,10 +55,11 @@ router.get('/route/:routeId', apiLimiter, async (req, res): Promise<void> => {
       .populate('routeId', 'name operator fare')
 
     if (!score) {
-      res.status($1).json({
+      res.status(404).json({
         success: false,
         message: 'Score not found for this route'
       })
+      return
     }
 
     res.json({
@@ -152,10 +153,11 @@ router.post('/recalculate/:routeId', authenticateToken, requireRole(['admin', 'm
 
     const route = await Route.findById(routeId)
     if (!route) {
-      res.status($1).json({
+      res.status(404).json({
         success: false,
         message: 'Route not found'
       })
+      return
     }
 
     const score = await calculateRouteScore(routeId)

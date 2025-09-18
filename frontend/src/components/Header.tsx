@@ -21,13 +21,17 @@ export default function Header({ language, setLanguage }: HeaderProps) {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-white shadow-sm border-b border-gray-200" role="banner">
       <div className="container">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
+          <Link 
+            to="/" 
+            className="flex items-center space-x-2"
+            aria-label="Smart Matatu - Home"
+          >
             <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-white" />
+              <MapPin className="w-5 h-5 text-white" aria-hidden="true" />
             </div>
             <span className="text-xl font-bold text-gray-900">
               Smart Matatu
@@ -35,7 +39,7 @@ export default function Header({ language, setLanguage }: HeaderProps) {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-8" role="navigation" aria-label="Main navigation">
             {navigation.map((item) => {
               const Icon = item.icon
               return (
@@ -45,8 +49,9 @@ export default function Header({ language, setLanguage }: HeaderProps) {
                   className={`nav-link flex items-center space-x-1 ${
                     isActive(item.href) ? 'nav-link-active' : ''
                   }`}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" aria-hidden="true" />
                   <span>{item.name}</span>
                 </Link>
               )
@@ -59,6 +64,7 @@ export default function Header({ language, setLanguage }: HeaderProps) {
             <button
               onClick={() => setLanguage(language === 'en' ? 'sw' : 'en')}
               className="btn btn-ghost btn-sm"
+              aria-label={`Switch to ${language === 'en' ? 'Swahili' : 'English'}`}
             >
               {language === 'en' ? 'SW' : 'EN'}
             </button>
@@ -67,11 +73,14 @@ export default function Header({ language, setLanguage }: HeaderProps) {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden btn btn-ghost btn-sm"
+              aria-expanded={isMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {isMenuOpen ? (
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               ) : (
-                <Menu className="w-5 h-5" />
+                <Menu className="w-5 h-5" aria-hidden="true" />
               )}
             </button>
           </div>
@@ -79,7 +88,12 @@ export default function Header({ language, setLanguage }: HeaderProps) {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200">
+          <div 
+            id="mobile-menu"
+            className="md:hidden border-t border-gray-200"
+            role="navigation"
+            aria-label="Mobile navigation"
+          >
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigation.map((item) => {
                 const Icon = item.icon
@@ -91,8 +105,9 @@ export default function Header({ language, setLanguage }: HeaderProps) {
                       isActive(item.href) ? 'nav-link-active' : ''
                     }`}
                     onClick={() => setIsMenuOpen(false)}
+                    aria-current={isActive(item.href) ? 'page' : undefined}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-4 h-4" aria-hidden="true" />
                     <span>{item.name}</span>
                   </Link>
                 )

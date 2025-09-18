@@ -99,9 +99,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
       }
     
     case 'UPDATE_SETTINGS':
+      const newSettings = { ...state.settings, ...action.payload }
       return { 
         ...state, 
-        settings: { ...state.settings, ...action.payload }
+        settings: newSettings,
+        language: newSettings.language || state.language
       }
     
     case 'LOGOUT':
