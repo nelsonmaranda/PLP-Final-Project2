@@ -218,61 +218,102 @@
 
 ## 🗓️ 8-Week Development Roadmap
 
-### Week 1: Planning & Setup ✅
-- [x] Project documentation
-- [x] SDG alignment analysis
-- [x] User personas and market research
+### Week 1: GitHub Setup & Project Initiation ✅
+**SDLC Focus**: Planning & Requirements Gathering
+**Tools & Technologies**: GitHub, Trello/Jira, Google Docs
+**Monetization Routes**: Ad revenue, in-app purchases, crowdfunding, donations
+
+- [x] Set up GitHub repository
+- [x] Define project scope and SDG alignment
+- [x] Write problem statement and market analysis
+- [x] Create user personas and journey maps
 - [x] Technical architecture design
 - [x] Responsive design strategy
 
-### Week 2: Foundation & Prototyping
+### Week 2: Problem Discovery & Early Prototyping
+**SDLC Focus**: Design & Development
+**Tools & Technologies**: HTML5, CSS, JS, Bootstrap/Tailwind, VSCode
+**Monetization Routes**: Ad revenue (Google AdSense), donations
+
+- [ ] Build wireframes & initial user interface
+- [ ] Start basic backend (APIs, databases)
+- [ ] Explore AI models for initial integration
 - [ ] Development environment setup
 - [ ] Basic React app with routing
 - [ ] Responsive layout components
-- [ ] Mapbox integration
-- [ ] Backend API foundation
 
-### Week 3: Core Features
+### Week 3: Concept Note & Front-End Development
+**SDLC Focus**: Design & Development
+**Tools & Technologies**: React, Node.js, MERN stack, VSCode
+**Monetization Routes**: Subscription-based access, freemium model, job postings
+
+- [ ] Complete concept note (problem, AI solution, monetization)
+- [ ] Develop responsive front-end with HTML, CSS, and JS
+- [ ] Mapbox integration
 - [ ] User authentication system
 - [ ] Report submission interface
 - [ ] Map visualization
-- [ ] Data models and API endpoints
-- [ ] Mobile optimization
 
-### Week 4: Data & Scoring
+### Week 4: AI Integration & Core Logic Development
+**SDLC Focus**: Development
+**Tools & Technologies**: TensorFlow/PyTorch, Flask/Django, MongoDB, Node.js/Express
+**Monetization Routes**: Freemium model, SaaS (monthly/yearly subscriptions)
+
+- [ ] Integrate AI/ML models for route optimization
+- [ ] Focus on core functionality and logic
+- [ ] Database connections and data models
 - [ ] Report processing pipeline
 - [ ] Reliability scoring algorithm
 - [ ] Safety scoring system
-- [ ] Real-time updates
-- [ ] Data validation
 
-### Week 5: Advanced Features
-- [ ] Route management
+### Week 5: Backend Development & Database Setup
+**SDLC Focus**: Backend Development
+**Tools & Technologies**: Django/Python, Node.js, MongoDB, Firebase
+**Monetization Routes**: SaaS (subscription for advanced features or data access)
+
+- [ ] Develop full-backend logic
+- [ ] User authentication and CRUD operations
+- [ ] Set up databases and data collection methods
+- [ ] Route management system
 - [ ] User profiles and preferences
-- [ ] Notification system
 - [ ] Admin dashboard
-- [ ] Analytics and reporting
 
-### Week 6: Testing & Optimization
+### Week 6: Refine AI Models & MVP Preparation
+**SDLC Focus**: Testing & Prototype
+**Tools & Technologies**: TensorFlow, Keras, Flask/Django, Heroku
+**Monetization Routes**: In-app purchases, premium service subscriptions
+
+- [ ] Refine AI models to improve accuracy
+- [ ] Begin preparing Minimum Viable Product (MVP)
+- [ ] All key features working
 - [ ] Cross-browser testing
 - [ ] Performance optimization
 - [ ] Security audit
-- [ ] User acceptance testing
-- [ ] Bug fixes and improvements
 
-### Week 7: Deployment & Launch
-- [ ] Production deployment
+### Week 7: Deploy MVP & Initial User Testing
+**SDLC Focus**: Deployment & User Testing
+**Tools & Technologies**: Heroku, Firebase, Vercel, Postman
+**Monetization Routes**: Ad revenue, subscriptions for additional features
+
+- [ ] Deploy MVP on platforms (Heroku, Firebase, Vercel)
+- [ ] Conduct initial user testing with at least 5 users
+- [ ] Gather feedback for improvements
 - [ ] Domain setup and SSL
 - [ ] Monitoring and logging
 - [ ] User onboarding
-- [ ] Pilot launch
 
-### Week 8: Monitoring & Iteration
-- [ ] User feedback collection
-- [ ] Performance monitoring
-- [ ] Feature iterations
-- [ ] Documentation updates
-- [ ] Future roadmap planning
+### Week 8: Testing & Refinement
+**SDLC Focus**: Testing & Refinement
+**Tools & Technologies**: Selenium, Jest, Mocha, Google Analytics, VSCode
+**Monetization Routes**: Finalize monetization strategy, subscription models, advertisements
+
+- [ ] Address feedback from user testing
+- [ ] Refine AI models integrated into the system
+- [ ] Improve UX and UI
+- [ ] Finalize overall monetization strategy
+- [ ] User acceptance testing
+- [ ] Bug fixes and improvements
+- [ ] Final project demo preparation
 
 ## 🎯 Week 1 Deliverables
 
