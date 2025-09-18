@@ -39,7 +39,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nelsonmaranda/PLP-Final-Project2.git"
+    "url": "git+https://github.com/nelsonmaranda/PLP-Final-Project2.git"
   },
   "bugs": {
     "url": "https://github.com/nelsonmaranda/PLP-Final-Project2/issues"
@@ -56,5 +56,9 @@
   "workspaces": [
     "frontend",
     "backend"
-  ]
+  ],
+  "directories": {
+    "doc": "docs"
+  },
+  "type": "commonjs"
 }
