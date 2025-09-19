@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Check, AlertCircle, Loader2 } from 'lucide-react'
 import apiService from '../services/api'
 import { SignupFormData } from '../types'
 
 export default function Signup() {
-  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -69,8 +68,10 @@ export default function Signup() {
       const response = await apiService.signup(formData)
       
       if (response.success) {
-        // Redirect to map on success
-        navigate('/map?welcome=true')
+        // Show success message instead of auto-redirecting
+        setError(null)
+        console.log('Signup successful!')
+        // User can manually navigate using the navigation menu
       }
     } catch (err) {
       console.error('Signup error:', err)

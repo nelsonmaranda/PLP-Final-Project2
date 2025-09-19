@@ -117,10 +117,9 @@ export default function ReportForm() {
           isAnonymous: false
         })
         
-        // Redirect to map after 2 seconds
-        setTimeout(() => {
-          navigate('/map?success=report-submitted')
-        }, 2000)
+        // Show success message without redirecting
+        console.log('Report submitted successfully!')
+        // User can manually navigate using the navigation menu
       }
     } catch (err) {
       console.error('Error submitting report:', err)

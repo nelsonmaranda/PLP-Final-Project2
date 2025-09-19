@@ -43,8 +43,10 @@
 4. Select **"Node.js"** as the driver
 5. **Copy the connection string** - it will look like:
    ```
-   mongodb+srv://your-username:your-password@your-cluster.mongodb.net/smart-matatu-ke?retryWrites=true&w=majority
+   mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER_NAME>.<RANDOM_ID>.mongodb.net/smart-matatu-ke?retryWrites=true&w=majority
    ```
+   
+   ⚠️ **SECURITY NOTE**: Replace `<DB_USERNAME>`, `<DB_PASSWORD>`, `<CLUSTER_NAME>`, and `<RANDOM_ID>` with your actual MongoDB Atlas credentials. Never commit real credentials to version control.
 
 ### **Step 5: Configure Firebase Functions**
 
@@ -52,7 +54,7 @@
 
 1. **Set the MongoDB URI in Firebase:**
    ```bash
-   firebase functions:config:set mongodb.uri="mongodb+srv://your-username:your-password@your-cluster.mongodb.net/smart-matatu-ke?retryWrites=true&w=majority"
+   firebase functions:config:set mongodb.uri="mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER_NAME>.<RANDOM_ID>.mongodb.net/smart-matatu-ke?retryWrites=true&w=majority"
    ```
 
 2. **Deploy the updated functions:**
@@ -64,7 +66,7 @@
 
 1. **Update the production.env file** with your actual connection string:
    ```env
-   MONGODB_URI=mongodb+srv://smart-matwana-user:YOUR_PASSWORD@smart-matwana-cluster.xxxxx.mongodb.net/smart-matwana-ke?retryWrites=true&w=majority
+   MONGODB_URI=mongodb+srv://<DB_USERNAME>:<DB_PASSWORD>@<CLUSTER_NAME>.<RANDOM_ID>.mongodb.net/smart-matatu-ke?retryWrites=true&w=majority
    ```
 
 2. **Deploy the functions:**

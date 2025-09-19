@@ -25,7 +25,7 @@ export default function Footer() {
                 <Globe className="w-5 h-5" aria-hidden="true" />
               </a>
               <a 
-                href="mailto:hello@smart-matatu.ke" 
+                href="mailto:contact@smart-matatu.ke" 
                 className="text-gray-400 hover:text-white transition-colors"
                 aria-label="Send us an email"
               >
@@ -67,25 +67,25 @@ export default function Footer() {
               <ul className="space-y-2">
                 <li className="flex items-center space-x-2">
                   <MapPin className="w-4 h-4 text-gray-400" aria-hidden="true" />
-                  <span className="text-gray-400">Nairobi, Kenya</span>
+                  <span className="text-gray-400">Western Heights, Muthithi Rd, Westlands</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Mail className="w-4 h-4 text-gray-400" aria-hidden="true" />
-                  <a 
-                    href="mailto:hello@smart-matatu.ke" 
-                    className="text-gray-400 hover:text-white transition-colors"
+                  <button 
+                    onClick={() => window.open(`mailto:contact@smart-matatu.ke`, '_blank')}
+                    className="text-gray-400 hover:text-white transition-colors text-left"
                   >
-                    hello@smart-matatu.ke
-                  </a>
+                    contact@smart-matatu.ke
+                  </button>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Phone className="w-4 h-4 text-gray-400" aria-hidden="true" />
-                  <a 
-                    href="tel:+254700000000" 
-                    className="text-gray-400 hover:text-white transition-colors"
+                  <button 
+                    onClick={() => window.open(`tel:+254763612953`, '_blank')}
+                    className="text-gray-400 hover:text-white transition-colors text-left"
                   >
-                    +254 700 000 000
-                  </a>
+                    +254 763 612 953
+                  </button>
                 </li>
               </ul>
             </address>
@@ -100,7 +100,6 @@ export default function Footer() {
             <nav className="flex space-x-6 mt-4 md:mt-0" aria-label="Legal links">
               <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">Privacy Policy</a>
               <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">Terms of Service</a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">SDG 11</a>
             </nav>
           </div>
         </div>

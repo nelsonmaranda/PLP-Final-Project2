@@ -6,7 +6,6 @@ import apiService from '../services/api'
 import { RouteWithScores } from '../types'
 import LoadingSpinner from '../components/LoadingSpinner'
 import useOptimizedApi from '../hooks/useOptimizedApi'
-import { debounce } from '../utils/memoryOptimization'
 
 // Fix for default markers in react-leaflet
 import L from 'leaflet'
@@ -27,6 +26,8 @@ if (typeof L !== 'undefined' && L.Marker) {
 
 export default function MapView() {
   const [selectedRoute, setSelectedRoute] = useState<RouteWithScores | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
+  const [showListView, setShowListView] = useState(false)
   const [filters, setFilters] = useState({
     highReliability: true,
     safeRoutes: true,
@@ -135,15 +136,19 @@ export default function MapView() {
                   <h2 className="card-title">Nairobi Matatu Routes</h2>
                   <div className="flex space-x-2">
                     <button 
-                      className="btn btn-outline btn-sm"
-                      aria-label="Filter routes"
+                      className={`btn btn-sm ${showFilters ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setShowFilters(!showFilters)}
+                      aria-label="Toggle filter panel"
+                      aria-pressed={showFilters}
                     >
                       <Filter className="w-4 h-4 mr-2" aria-hidden="true" />
                       Filter
                     </button>
                     <button 
-                      className="btn btn-outline btn-sm"
-                      aria-label="View route list"
+                      className={`btn btn-sm ${showListView ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setShowListView(!showListView)}
+                      aria-label="Toggle list view"
+                      aria-pressed={showListView}
                     >
                       <List className="w-4 h-4 mr-2" aria-hidden="true" />
                       List
@@ -152,12 +157,102 @@ export default function MapView() {
                 </div>
               </div>
               <div className="card-content p-0">
-                <div className="map-container h-96" role="img" aria-label="Interactive map showing Nairobi matatu routes">
-                  <MapContainer
-                    center={nairobiCenter}
-                    zoom={11}
-                    style={{ height: '100%', width: '100%' }}
-                  >
+                {/* Collapsible Filters */}
+                {showFilters && (
+                  <div className="p-4 bg-gray-50 border-b">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Filter className="h-4 w-4 text-gray-500" aria-hidden="true" />
+                        <span className="text-sm font-medium text-gray-700">Quick Filters</span>
+                      </div>
+                      
+                      <fieldset className="flex flex-wrap gap-4">
+                        <legend className="sr-only">Route filters</legend>
+                        <label className="flex items-center">
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300" 
+                            checked={filters.highReliability}
+                            onChange={(e) => setFilters(prev => ({ ...prev, highReliability: e.target.checked }))}
+                          />
+                          <span className="ml-2 text-sm text-gray-600">High Reliability (4+ stars)</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300" 
+                            checked={filters.safeRoutes}
+                            onChange={(e) => setFilters(prev => ({ ...prev, safeRoutes: e.target.checked }))}
+                          />
+                          <span className="ml-2 text-sm text-gray-600">Safe Routes (4+ stars)</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300" 
+                            checked={filters.lowFare}
+                            onChange={(e) => setFilters(prev => ({ ...prev, lowFare: e.target.checked }))}
+                          />
+                          <span className="ml-2 text-sm text-gray-600">Low Fare (Under 50 KES)</span>
+                        </label>
+                      </fieldset>
+                    </div>
+                  </div>
+                )}
+
+                {/* Map or List View */}
+                {showListView ? (
+                  <div className="p-4">
+                    <div className="space-y-4">
+                      <div className="text-sm text-gray-600 mb-4">
+                        {filteredRoutes.length} of {routes?.length || 0} routes
+                      </div>
+                      {filteredRoutes.map((route) => (
+                        <div 
+                          key={route._id}
+                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                            selectedRoute?._id === route._id 
+                              ? 'border-primary-500 bg-primary-50' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setSelectedRoute(route)}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{route.name}</h4>
+                              <p className="text-sm text-gray-600">{route.operator} - Route {route.routeNumber}</p>
+                              <div className="flex items-center mt-2 space-x-4 text-xs text-gray-500">
+                                <div className="flex items-center">
+                                  <Star className="w-3 h-3 text-yellow-500 mr-1" />
+                                  <span>{route.score?.overall?.toFixed(1) || 'N/A'}</span>
+                                </div>
+                                <div className="flex items-center">
+                                  <Clock className="w-3 h-3 text-blue-500 mr-1" />
+                                  <span>{route.operatingHours.start} - {route.operatingHours.end}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-semibold text-gray-900">
+                                KES {route.fare}
+                              </div>
+                              <div 
+                                className="w-4 h-4 rounded-full mt-1 ml-auto" 
+                                style={{ backgroundColor: getRouteColor(route) }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="map-container h-96" role="img" aria-label="Interactive map showing Nairobi matatu routes">
+                    <MapContainer
+                      center={nairobiCenter}
+                      zoom={11}
+                      style={{ height: '100%', width: '100%' }}
+                    >
                     <TileLayer
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -205,8 +300,9 @@ export default function MapView() {
                         ))}
                       </div>
                     ))}
-                  </MapContainer>
-                </div>
+                    </MapContainer>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -236,7 +332,7 @@ export default function MapView() {
                         type="checkbox" 
                         className="rounded border-gray-300" 
                         checked={filters.highReliability}
-                        onChange={debounce((e) => setFilters(prev => ({ ...prev, highReliability: e.target.checked })), 300)}
+                        onChange={(e) => setFilters(prev => ({ ...prev, highReliability: e.target.checked }))}
                         aria-describedby="high-reliability-desc"
                       />
                       <span className="ml-2 text-sm text-gray-600">High Reliability (4+ stars)</span>
@@ -246,7 +342,7 @@ export default function MapView() {
                         type="checkbox" 
                         className="rounded border-gray-300" 
                         checked={filters.safeRoutes}
-                        onChange={debounce((e) => setFilters(prev => ({ ...prev, safeRoutes: e.target.checked })), 300)}
+                        onChange={(e) => setFilters(prev => ({ ...prev, safeRoutes: e.target.checked }))}
                         aria-describedby="safe-routes-desc"
                       />
                       <span className="ml-2 text-sm text-gray-600">Safe Routes (4+ stars)</span>
@@ -256,7 +352,7 @@ export default function MapView() {
                         type="checkbox" 
                         className="rounded border-gray-300" 
                         checked={filters.lowFare}
-                        onChange={debounce((e) => setFilters(prev => ({ ...prev, lowFare: e.target.checked })), 300)}
+                        onChange={(e) => setFilters(prev => ({ ...prev, lowFare: e.target.checked }))}
                         aria-describedby="low-fare-desc"
                       />
                       <span className="ml-2 text-sm text-gray-600">Low Fare (Under 50 KES)</span>

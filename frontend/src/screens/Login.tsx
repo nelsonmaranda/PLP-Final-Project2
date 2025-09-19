@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react'
 import apiService from '../services/api'
 import { LoginFormData } from '../types'
 
 export default function Login() {
-  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,13 +30,11 @@ export default function Login() {
       const response = await apiService.login(formData)
       
       if (response.success) {
-        // Redirect based on user role
-        const user = response.data?.user
-        if (user?.role === 'admin' || user?.role === 'moderator') {
-          navigate('/admin')
-        } else {
-          navigate('/map')
-        }
+        // Show success message instead of auto-redirecting
+        setError(null)
+        // You can add a success state here if needed
+        console.log('Login successful!')
+        // User can manually navigate using the navigation menu
       }
     } catch (err) {
       console.error('Login error:', err)
