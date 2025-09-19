@@ -214,11 +214,14 @@ main (production)
 - [ ] Admin dashboard
 - [ ] Analytics system
 
-### Week 6: Testing & Optimization
-- [ ] All tests passing
-- [ ] Performance optimized
-- [ ] Security audited
-- [ ] User experience refined
+### Week 6: Refine AI Models & MVP Preparation
+- [ ] AI inference route implemented and tested (`/api/ai/predict`)
+- [ ] Frontend integrates inference behind feature flag
+- [ ] All frontend and backend tests passing on CI (Node 18/20)
+- [ ] Performance budget documented (bundle size, TTI proxy)
+- [ ] Security checks clean (no exposed secrets, audit high=0)
+- [ ] UX polish on signup/login/report flows
+- [ ] See detailed plan: `docs/week6-plan.md`
 
 ### Week 7: Deployment & Launch
 - [ ] Production deployment

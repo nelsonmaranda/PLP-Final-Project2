@@ -79,10 +79,11 @@ router.get('/:id', rateLimiter_1.apiLimiter, async (req, res) => {
     try {
         const route = await Route_1.default.findById(req.params.id).populate('stops');
         if (!route) {
-            res.status($1).json({
+            res.status(404).json({
                 success: false,
                 message: 'Route not found'
             });
+            return;
         }
         res.json({
             success: true,
@@ -119,10 +120,11 @@ router.put('/:id', auth_1.authenticateToken, (0, auth_1.requireRole)(['admin', '
     try {
         const route = await Route_1.default.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         if (!route) {
-            res.status($1).json({
+            res.status(404).json({
                 success: false,
                 message: 'Route not found'
             });
+            return;
         }
         res.json({
             success: true,
@@ -142,10 +144,11 @@ router.delete('/:id', auth_1.authenticateToken, (0, auth_1.requireRole)(['admin'
     try {
         const route = await Route_1.default.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
         if (!route) {
-            res.status($1).json({
+            res.status(404).json({
                 success: false,
                 message: 'Route not found'
             });
+            return;
         }
         res.json({
             success: true,

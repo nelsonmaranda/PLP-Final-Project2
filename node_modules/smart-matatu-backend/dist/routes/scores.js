@@ -50,10 +50,11 @@ router.get('/route/:routeId', rateLimiter_1.apiLimiter, async (req, res) => {
         const score = await Score_1.default.findOne({ routeId })
             .populate('routeId', 'name operator fare');
         if (!score) {
-            res.status($1).json({
+            res.status(404).json({
                 success: false,
                 message: 'Score not found for this route'
             });
+            return;
         }
         res.json({
             success: true,
@@ -135,10 +136,11 @@ router.post('/recalculate/:routeId', auth_1.authenticateToken, (0, auth_1.requir
         const { routeId } = req.params;
         const route = await Route_1.default.findById(routeId);
         if (!route) {
-            res.status($1).json({
+            res.status(404).json({
                 success: false,
                 message: 'Route not found'
             });
+            return;
         }
         const score = await calculateRouteScore(routeId);
         res.json({
@@ -200,15 +202,21 @@ async function calculateRouteScore(routeId) {
             comfortScore += impact * typeWeights.comfort;
     }
     const normalizeScore = (score) => Math.max(0, Math.min(5, 5 + score));
+    const reliability = normalizeScore(reliabilityScore);
+    const safety = normalizeScore(safetyScore);
+    const punctuality = normalizeScore(punctualityScore);
+    const comfort = normalizeScore(comfortScore);
+    const overall = (reliability + safety + punctuality + comfort) / 4;
     const finalScores = {
         routeId,
-        reliability: normalizeScore(reliabilityScore),
-        safety: normalizeScore(safetyScore),
-        punctuality: normalizeScore(punctualityScore),
-        comfort: normalizeScore(comfortScore),
+        reliability,
+        safety,
+        punctuality,
+        comfort,
+        overall,
         totalReports: reports.length,
         lastCalculated: new Date()
-    }(finalScores).overall = (finalScores.reliability + finalScores.safety + finalScores.punctuality + finalScores.comfort) / 4;
+    };
     await Score_1.default.findOneAndUpdate({ routeId }, finalScores, { upsert: true, new: true });
     return finalScores;
 }

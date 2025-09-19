@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useState, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
-import { MapPin, Clock, Star, Users, Filter, List } from 'lucide-react'
+import { MapPin, Clock, Star, Users, Filter, List, AlertCircle } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
+import apiService from '../services/api'
+import { RouteWithScores } from '../types'
+import LoadingSpinner from '../components/LoadingSpinner'
+import useOptimizedApi from '../hooks/useOptimizedApi'
+import { debounce } from '../utils/memoryOptimization'
 
 // Fix for default markers in react-leaflet
 import L from 'leaflet'
@@ -15,93 +20,104 @@ const DefaultIcon = L.icon({
   shadowSize: [41, 41]
 })
 
-L.Marker.prototype.options.icon = DefaultIcon
-
-interface Route {
-  id: number
-  name: string
-  path: [number, number][]
-  stops: { name: string; coords: [number, number] }[]
-  reliability: number
-  safety: number
-  fare: number
-  waitTime: number
-  color: string
+// Only set the default icon if L is available (not in test environment)
+if (typeof L !== 'undefined' && L.Marker) {
+  L.Marker.prototype.options.icon = DefaultIcon
 }
 
 export default function MapView() {
-  const [routes, setRoutes] = useState<Route[]>([])
-  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [selectedRoute, setSelectedRoute] = useState<RouteWithScores | null>(null)
+  const [filters, setFilters] = useState({
+    highReliability: true,
+    safeRoutes: true,
+    lowFare: false
+  })
 
   // Nairobi coordinates
   const nairobiCenter: [number, number] = [-1.2921, 36.8219]
 
-  // Sample route data
-  const sampleRoutes: Route[] = [
-    {
-      id: 1,
-      name: 'Route 42 - Thika Road',
-      path: [
-        [-1.2921, 36.8219], // CBD
-        [-1.2800, 36.8300], // Museum Hill
-        [-1.2600, 36.8500], // Thika Road
-        [-1.2400, 36.8700], // Garden City
-        [-1.2200, 36.8900], // Thika
-      ],
-      stops: [
-        { name: 'CBD', coords: [-1.2921, 36.8219] },
-        { name: 'Museum Hill', coords: [-1.2800, 36.8300] },
-        { name: 'Garden City', coords: [-1.2400, 36.8700] },
-        { name: 'Thika', coords: [-1.2200, 36.8900] },
-      ],
-      reliability: 4.2,
-      safety: 4.5,
-      fare: 50,
-      waitTime: 5,
-      color: '#3b82f6'
-    },
-    {
-      id: 2,
-      name: 'Route 17 - Waiyaki Way',
-      path: [
-        [-1.2921, 36.8219], // CBD
-        [-1.2900, 36.8000], // Westlands
-        [-1.2850, 36.7800], // Kileleshwa
-        [-1.2800, 36.7600], // Lavington
-      ],
-      stops: [
-        { name: 'CBD', coords: [-1.2921, 36.8219] },
-        { name: 'Westlands', coords: [-1.2900, 36.8000] },
-        { name: 'Kileleshwa', coords: [-1.2850, 36.7800] },
-        { name: 'Lavington', coords: [-1.2800, 36.7600] },
-      ],
-      reliability: 3.8,
-      safety: 4.0,
-      fare: 40,
-      waitTime: 8,
-      color: '#22c55e'
-    }
-  ]
+  // Optimized API call for routes
+  const loadRoutes = useCallback(async () => {
+    const response = await apiService.getRoutes({
+      page: 1,
+      limit: 50,
+      sort: 'createdAt',
+      order: 'desc'
+    })
 
-  useEffect(() => {
-    // Simulate API call
-    const loadRoutes = async () => {
-      setIsLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setRoutes(sampleRoutes)
-      setIsLoading(false)
+    if (response.success && response.data) {
+      const routesWithScores = await Promise.all(
+        response.data.routes.map(async (route) => {
+          try {
+            const scoreResponse = await apiService.getScoresByRoute(route._id)
+            return {
+              ...route,
+              score: scoreResponse.data?.score
+            }
+          } catch {
+            return route
+          }
+        })
+      )
+      return routesWithScores
     }
-
-    loadRoutes()
+    return []
   }, [])
+
+  const { data: routes, loading: isLoading, error, refetch } = useOptimizedApi(
+    loadRoutes,
+    [filters], // Re-fetch when filters change
+    {
+      debounceMs: 500,
+      cacheTime: 2 * 60 * 1000, // 2 minutes cache
+      retryAttempts: 2
+    }
+  )
+
+  const filteredRoutes = (routes || []).filter(route => {
+    if (filters.highReliability && (!route.score || route.score.reliability < 4)) return false
+    if (filters.safeRoutes && (!route.score || route.score.safety < 4)) return false
+    if (filters.lowFare && route.fare >= 50) return false
+    return true
+  })
+
+  const getScoreColor = (score: number) => {
+    if (score >= 4.5) return '#22c55e' // green
+    if (score >= 3.5) return '#f59e0b' // yellow
+    if (score >= 2.5) return '#f97316' // orange
+    return '#ef4444' // red
+  }
+
+  const getRouteColor = (route: RouteWithScores) => {
+    if (route.score) {
+      return getScoreColor(route.score.overall)
+    }
+    return '#3b82f6' // default blue
+  }
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="loading-spinner mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading routes...</p>
+          <LoadingSpinner />
+          <p className="text-gray-600 mt-4">Loading routes...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 mb-4">{error?.message || 'An error occurred'}</p>
+          <button
+            onClick={refetch}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     )
@@ -118,19 +134,25 @@ export default function MapView() {
                 <div className="flex justify-between items-center">
                   <h2 className="card-title">Nairobi Matatu Routes</h2>
                   <div className="flex space-x-2">
-                    <button className="btn btn-outline btn-sm">
-                      <Filter className="w-4 h-4 mr-2" />
+                    <button 
+                      className="btn btn-outline btn-sm"
+                      aria-label="Filter routes"
+                    >
+                      <Filter className="w-4 h-4 mr-2" aria-hidden="true" />
                       Filter
                     </button>
-                    <button className="btn btn-outline btn-sm">
-                      <List className="w-4 h-4 mr-2" />
+                    <button 
+                      className="btn btn-outline btn-sm"
+                      aria-label="View route list"
+                    >
+                      <List className="w-4 h-4 mr-2" aria-hidden="true" />
                       List
                     </button>
                   </div>
                 </div>
               </div>
               <div className="card-content p-0">
-                <div className="map-container h-96">
+                <div className="map-container h-96" role="img" aria-label="Interactive map showing Nairobi matatu routes">
                   <MapContainer
                     center={nairobiCenter}
                     zoom={11}
@@ -142,27 +164,41 @@ export default function MapView() {
                     />
                     
                     {/* Render routes */}
-                    {routes.map((route) => (
-                      <div key={route.id}>
+                    {filteredRoutes.map((route) => (
+                      <div key={route._id}>
                         {/* Route path */}
                         <Polyline
-                          positions={route.path}
-                          color={route.color}
-                          weight={4}
-                          opacity={0.8}
+                          positions={route.path as [number, number][]}
+                          color={getRouteColor(route)}
+                          weight={selectedRoute?._id === route._id ? 6 : 4}
+                          opacity={selectedRoute?._id === route._id ? 0.8 : 0.6}
                         />
                         
                         {/* Route stops */}
                         {route.stops.map((stop, index) => (
                           <Marker
                             key={index}
-                            position={stop.coords}
+                            position={stop.coordinates as [number, number]}
                             icon={DefaultIcon}
                           >
                             <Popup>
                               <div className="p-2">
                                 <h3 className="font-semibold">{stop.name}</h3>
                                 <p className="text-sm text-gray-600">{route.name}</p>
+                                <p className="text-xs text-gray-500 mt-1">{route.operator}</p>
+                                <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+                                  <div className="flex items-center">
+                                    <Star className="h-3 w-3 mr-1 text-yellow-400" />
+                                    {route.score?.overall?.toFixed(1) || 'N/A'}
+                                  </div>
+                                  <div className="flex items-center">
+                                    <Users className="h-3 w-3 mr-1" />
+                                    {route.score?.safety?.toFixed(1) || 'N/A'}
+                                  </div>
+                                  <div className="text-gray-600">
+                                    {route.fare} KES
+                                  </div>
+                                </div>
                               </div>
                             </Popup>
                           </Marker>
@@ -180,32 +216,97 @@ export default function MapView() {
             <div className="card">
               <div className="card-header">
                 <h3 className="text-lg font-semibold">Available Routes</h3>
+                <p className="text-sm text-gray-600">
+                  {filteredRoutes.length} of {routes?.length || 0} routes
+                </p>
               </div>
+              
+              {/* Filters */}
+              <div className="p-4 border-b">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Filter className="h-4 w-4 text-gray-500" aria-hidden="true" />
+                    <span className="text-sm font-medium text-gray-700">Filters</span>
+                  </div>
+                  
+                  <fieldset className="space-y-2">
+                    <legend className="sr-only">Route filters</legend>
+                    <label className="flex items-center">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={filters.highReliability}
+                        onChange={debounce((e) => setFilters(prev => ({ ...prev, highReliability: e.target.checked })), 300)}
+                        aria-describedby="high-reliability-desc"
+                      />
+                      <span className="ml-2 text-sm text-gray-600">High Reliability (4+ stars)</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={filters.safeRoutes}
+                        onChange={debounce((e) => setFilters(prev => ({ ...prev, safeRoutes: e.target.checked })), 300)}
+                        aria-describedby="safe-routes-desc"
+                      />
+                      <span className="ml-2 text-sm text-gray-600">Safe Routes (4+ stars)</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={filters.lowFare}
+                        onChange={debounce((e) => setFilters(prev => ({ ...prev, lowFare: e.target.checked })), 300)}
+                        aria-describedby="low-fare-desc"
+                      />
+                      <span className="ml-2 text-sm text-gray-600">Low Fare (Under 50 KES)</span>
+                    </label>
+                  </fieldset>
+                </div>
+              </div>
+              
               <div className="card-content p-0">
                 <div className="divide-y divide-gray-200">
-                  {routes.map((route) => (
+                  {filteredRoutes.map((route) => (
                     <div
-                      key={route.id}
+                      key={route._id}
                       className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                        selectedRoute?.id === route.id ? 'bg-primary-50 border-r-4 border-primary-500' : ''
+                        selectedRoute?._id === route._id ? 'bg-primary-50 border-r-4 border-primary-500' : ''
                       }`}
                       onClick={() => setSelectedRoute(route)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedRoute(route)
+                        }
+                      }}
+                      aria-label={`Select route ${route.name} by ${route.operator}`}
+                      aria-pressed={selectedRoute?._id === route._id}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{route.name}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{route.operator}</p>
                           <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
                             <div className="flex items-center">
-                              <Star className="w-4 h-4 text-yellow-500 mr-1" />
-                              {route.reliability}
+                              <Star className="w-4 h-4 text-yellow-500 mr-1" aria-hidden="true" />
+                              <span aria-label={`Overall rating: ${route.score?.overall?.toFixed(1) || 'N/A'} stars`}>
+                                {route.score?.overall?.toFixed(1) || 'N/A'}
+                              </span>
                             </div>
                             <div className="flex items-center">
-                              <Clock className="w-4 h-4 text-blue-500 mr-1" />
-                              {route.waitTime}min
+                              <Clock className="w-4 h-4 text-blue-500 mr-1" aria-hidden="true" />
+                              <span aria-label={`Operating hours: ${route.operatingHours.start} to ${route.operatingHours.end}`}>
+                                {route.operatingHours.start} - {route.operatingHours.end}
+                              </span>
                             </div>
                             <div className="flex items-center">
-                              <Users className="w-4 h-4 text-green-500 mr-1" />
-                              {route.safety}
+                              <Users className="w-4 h-4 text-green-500 mr-1" aria-hidden="true" />
+                              <span aria-label={`Safety rating: ${route.score?.safety?.toFixed(1) || 'N/A'} stars`}>
+                                {route.score?.safety?.toFixed(1) || 'N/A'}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -213,7 +314,11 @@ export default function MapView() {
                           <div className="text-lg font-semibold text-gray-900">
                             KES {route.fare}
                           </div>
-                          <div className="w-4 h-4 rounded-full mt-1" style={{ backgroundColor: route.color }}></div>
+                          <div 
+                            className="w-4 h-4 rounded-full mt-1" 
+                            style={{ backgroundColor: getRouteColor(route) }}
+                            aria-label={`Route quality indicator: ${getRouteColor(route)}`}
+                          ></div>
                         </div>
                       </div>
                     </div>
@@ -224,41 +329,53 @@ export default function MapView() {
 
             {/* Selected Route Details */}
             {selectedRoute && (
-              <div className="card mt-4">
+              <div className="card mt-4" role="region" aria-labelledby="route-details-heading">
                 <div className="card-header">
-                  <h3 className="text-lg font-semibold">Route Details</h3>
+                  <h3 id="route-details-heading" className="text-lg font-semibold">Route Details</h3>
                 </div>
                 <div className="card-content">
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium text-gray-900">{selectedRoute.name}</h4>
-                      <p className="text-sm text-gray-600">Real-time updates available</p>
+                      <p className="text-sm text-gray-600">{selectedRoute.operator}</p>
+                      <p className="text-xs text-gray-500 mt-1">Real-time updates available</p>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-primary-600">{selectedRoute.reliability}</div>
+                        <div className="text-2xl font-bold text-primary-600" aria-label={`Reliability score: ${selectedRoute.score?.reliability?.toFixed(1) || 'N/A'} out of 5`}>
+                          {selectedRoute.score?.reliability?.toFixed(1) || 'N/A'}
+                        </div>
                         <div className="text-sm text-gray-600">Reliability</div>
                       </div>
                       <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-secondary-600">{selectedRoute.safety}</div>
+                        <div className="text-2xl font-bold text-secondary-600" aria-label={`Safety score: ${selectedRoute.score?.safety?.toFixed(1) || 'N/A'} out of 5`}>
+                          {selectedRoute.score?.safety?.toFixed(1) || 'N/A'}
+                        </div>
                         <div className="text-sm text-gray-600">Safety</div>
                       </div>
                     </div>
                     
-                    <div className="space-y-2">
+                    <dl className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Fare:</span>
-                        <span className="font-medium">KES {selectedRoute.fare}</span>
+                        <dt className="text-gray-600">Fare:</dt>
+                        <dd className="font-medium">KES {selectedRoute.fare}</dd>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Wait Time:</span>
-                        <span className="font-medium">{selectedRoute.waitTime} minutes</span>
+                        <dt className="text-gray-600">Operating Hours:</dt>
+                        <dd className="font-medium">{selectedRoute.operatingHours.start} - {selectedRoute.operatingHours.end}</dd>
                       </div>
-                    </div>
+                      <div className="flex justify-between">
+                        <dt className="text-gray-600">Stops:</dt>
+                        <dd className="font-medium">{selectedRoute.stops.length} stops</dd>
+                      </div>
+                    </dl>
                     
-                    <button className="btn btn-primary w-full">
-                      <MapPin className="w-4 h-4 mr-2" />
+                    <button 
+                      className="btn btn-primary w-full"
+                      aria-label="View selected route on map"
+                    >
+                      <MapPin className="w-4 h-4 mr-2" aria-hidden="true" />
                       View on Map
                     </button>
                   </div>

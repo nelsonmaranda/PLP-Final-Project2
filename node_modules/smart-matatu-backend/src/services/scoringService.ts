@@ -132,18 +132,22 @@ class ScoringService {
     // Normalize scores to 0-5 range, starting from 5 (perfect score)
     const normalizeScore = (score: number) => Math.max(0, Math.min(5, 5 + score))
 
+    const reliability = normalizeScore(reliabilityScore);
+    const safety = normalizeScore(safetyScore);
+    const punctuality = normalizeScore(punctualityScore);
+    const comfort = normalizeScore(comfortScore);
+    const overall = (reliability + safety + punctuality + comfort) / 4;
+
     const finalScores: any = {
       routeId,
-      reliability: normalizeScore(reliabilityScore),
-      safety: normalizeScore(safetyScore),
-      punctuality: normalizeScore(punctualityScore),
-      comfort: normalizeScore(comfortScore),
+      reliability,
+      safety,
+      punctuality,
+      comfort,
+      overall,
       totalReports: reports.length,
       lastCalculated: new Date()
-    }
-
-    // Calculate overall score
-    (finalScores as any).overall = (finalScores.reliability + finalScores.safety + finalScores.punctuality + finalScores.comfort) / 4
+    };
 
     // Save or update score
     await Score.findOneAndUpdate(

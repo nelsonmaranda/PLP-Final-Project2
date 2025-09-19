@@ -16,10 +16,11 @@ router.post('/', rateLimiter_1.reportLimiter, rateLimiter_1.deviceFingerprintLim
         const { routeId, reportType, description, location, severity, isAnonymous } = req.body;
         const route = await Route_1.default.findById(routeId);
         if (!route) {
-            res.status($1).json({
+            res.status(404).json({
                 success: false,
                 message: 'Route not found'
             });
+            return;
         }
         const report = new Report_1.default({
             userId: req.user?._id,
@@ -97,10 +98,11 @@ router.get('/:id', auth_1.authenticateToken, (0, auth_1.requireRole)(['admin', '
             .populate('routeId', 'name operator')
             .populate('verifiedBy', 'displayName');
         if (!report) {
-            res.status($1).json({
+            res.status(404).json({
                 success: false,
                 message: 'Report not found'
             });
+            return;
         }
         res.json({
             success: true,
@@ -123,10 +125,11 @@ router.patch('/:id/verify', auth_1.authenticateToken, (0, auth_1.requireRole)(['
             verifiedAt: new Date()
         }, { new: true });
         if (!report) {
-            res.status($1).json({
+            res.status(404).json({
                 success: false,
                 message: 'Report not found'
             });
+            return;
         }
         res.json({
             success: true,
@@ -149,10 +152,11 @@ router.patch('/:id/resolve', auth_1.authenticateToken, (0, auth_1.requireRole)([
             resolvedAt: new Date()
         }, { new: true });
         if (!report) {
-            res.status($1).json({
+            res.status(404).json({
                 success: false,
                 message: 'Report not found'
             });
+            return;
         }
         res.json({
             success: true,
@@ -172,10 +176,11 @@ router.patch('/:id/dismiss', auth_1.authenticateToken, (0, auth_1.requireRole)([
     try {
         const report = await Report_1.default.findByIdAndUpdate(req.params.id, { status: 'dismissed' }, { new: true });
         if (!report) {
-            res.status($1).json({
+            res.status(404).json({
                 success: false,
                 message: 'Report not found'
             });
+            return;
         }
         res.json({
             success: true,

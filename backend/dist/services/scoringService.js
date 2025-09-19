@@ -109,15 +109,21 @@ class ScoringService {
                 comfortScore += impact * typeWeights.comfort;
         }
         const normalizeScore = (score) => Math.max(0, Math.min(5, 5 + score));
+        const reliability = normalizeScore(reliabilityScore);
+        const safety = normalizeScore(safetyScore);
+        const punctuality = normalizeScore(punctualityScore);
+        const comfort = normalizeScore(comfortScore);
+        const overall = (reliability + safety + punctuality + comfort) / 4;
         const finalScores = {
             routeId,
-            reliability: normalizeScore(reliabilityScore),
-            safety: normalizeScore(safetyScore),
-            punctuality: normalizeScore(punctualityScore),
-            comfort: normalizeScore(comfortScore),
+            reliability,
+            safety,
+            punctuality,
+            comfort,
+            overall,
             totalReports: reports.length,
             lastCalculated: new Date()
-        }(finalScores).overall = (finalScores.reliability + finalScores.safety + finalScores.punctuality + finalScores.comfort) / 4;
+        };
         await Score_1.default.findOneAndUpdate({ routeId }, finalScores, { upsert: true, new: true });
         return finalScores;
     }

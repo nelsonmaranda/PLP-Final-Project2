@@ -146,7 +146,7 @@ router.get('/profile', authenticateToken, async (req: AuthRequest, res): Promise
 })
 
 // Update user profile
-router.put('/profile', authenticateToken, async (req: AuthRequest, res): Promise<void> => {
+router.put('/profile', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { displayName } = req.body
     const userId = req.user!._id
@@ -158,13 +158,13 @@ router.put('/profile', authenticateToken, async (req: AuthRequest, res): Promise
     )
 
     if (!user) {
-      res.status(401).json({
+      return res.status(401).json({
         success: false,
         message: 'User not found'
       })
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Profile updated successfully',
       data: {
@@ -178,7 +178,7 @@ router.put('/profile', authenticateToken, async (req: AuthRequest, res): Promise
     })
   } catch (error) {
     console.error('Profile update error:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Internal server error'
     })

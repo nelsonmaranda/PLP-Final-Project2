@@ -1,0 +1,105 @@
+{
+  "routes": [
+    {
+      "_id": "1",
+      "name": "Route 42 - Thika Road",
+      "operator": "KBS",
+      "routeNumber": "42",
+      "path": [[-1.2921, 36.8219], [-1.3000, 36.8000]],
+      "stops": [
+        { "name": "CBD", "coordinates": [-1.2921, 36.8219] },
+        { "name": "Thika Road", "coordinates": [-1.3000, 36.8000] }
+      ],
+      "fare": 50,
+      "operatingHours": { "start": "05:00", "end": "22:00" },
+      "isActive": true,
+      "score": {
+        "reliability": 4.1,
+        "safety": 4.2,
+        "punctuality": 4.0,
+        "comfort": 3.8,
+        "overall": 4.0,
+        "totalReports": 25,
+        "lastCalculated": "2024-01-15T10:30:00.000Z"
+      }
+    },
+    {
+      "_id": "2",
+      "name": "Route 34 - Ngong Road",
+      "operator": "Citi Hoppa",
+      "routeNumber": "34",
+      "path": [[-1.2921, 36.8219], [-1.3100, 36.7500]],
+      "stops": [
+        { "name": "CBD", "coordinates": [-1.2921, 36.8219] },
+        { "name": "Ngong Road", "coordinates": [-1.3100, 36.7500] }
+      ],
+      "fare": 45,
+      "operatingHours": { "start": "05:30", "end": "21:30" },
+      "isActive": true,
+      "score": {
+        "reliability": 3.5,
+        "safety": 3.8,
+        "punctuality": 3.2,
+        "comfort": 3.5,
+        "overall": 3.5,
+        "totalReports": 18,
+        "lastCalculated": "2024-01-15T10:30:00.000Z"
+      }
+    },
+    {
+      "_id": "3",
+      "name": "Route 15 - Jogoo Road",
+      "operator": "KBS",
+      "routeNumber": "15",
+      "path": [[-1.2921, 36.8219], [-1.3200, 36.8200]],
+      "stops": [
+        { "name": "CBD", "coordinates": [-1.2921, 36.8219] },
+        { "name": "Jogoo Road", "coordinates": [-1.3200, 36.8200] }
+      ],
+      "fare": 40,
+      "operatingHours": { "start": "05:15", "end": "22:15" },
+      "isActive": true,
+      "score": {
+        "reliability": 4.3,
+        "safety": 4.5,
+        "punctuality": 4.2,
+        "comfort": 4.0,
+        "overall": 4.25,
+        "totalReports": 32,
+        "lastCalculated": "2024-01-15T10:30:00.000Z"
+      }
+    }
+  ],
+  "scores": [
+    {
+      "routeId": "1",
+      "reliability": 4.1,
+      "safety": 4.2,
+      "punctuality": 4.0,
+      "comfort": 3.8,
+      "overall": 4.0,
+      "totalReports": 25,
+      "lastCalculated": "2024-01-15T10:30:00.000Z"
+    },
+    {
+      "routeId": "2",
+      "reliability": 3.5,
+      "safety": 3.8,
+      "punctuality": 3.2,
+      "comfort": 3.5,
+      "overall": 3.5,
+      "totalReports": 18,
+      "lastCalculated": "2024-01-15T10:30:00.000Z"
+    },
+    {
+      "routeId": "3",
+      "reliability": 4.3,
+      "safety": 4.5,
+      "punctuality": 4.2,
+      "comfort": 4.0,
+      "overall": 4.25,
+      "totalReports": 32,
+      "lastCalculated": "2024-01-15T10:30:00.000Z"
+    }
+  ]
+}

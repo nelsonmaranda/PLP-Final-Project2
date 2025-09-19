@@ -16,10 +16,11 @@ router.post('/', reportLimiter, deviceFingerprintLimiter, optionalAuth, validate
     // Verify route exists
     const route = await Route.findById(routeId)
     if (!route) {
-      res.status($1).json({
+      res.status(404).json({
         success: false,
         message: 'Route not found'
       })
+      return
     }
 
     // Create report
@@ -105,10 +106,11 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'moderator']), async
       .populate('verifiedBy', 'displayName')
 
     if (!report) {
-      res.status($1).json({
+      res.status(404).json({
         success: false,
         message: 'Report not found'
       })
+      return
     }
 
     res.json({
@@ -138,10 +140,11 @@ router.patch('/:id/verify', authenticateToken, requireRole(['admin', 'moderator'
     )
 
     if (!report) {
-      res.status($1).json({
+      res.status(404).json({
         success: false,
         message: 'Report not found'
       })
+      return
     }
 
     res.json({
@@ -171,10 +174,11 @@ router.patch('/:id/resolve', authenticateToken, requireRole(['admin', 'moderator
     )
 
     if (!report) {
-      res.status($1).json({
+      res.status(404).json({
         success: false,
         message: 'Report not found'
       })
+      return
     }
 
     res.json({
@@ -201,10 +205,11 @@ router.patch('/:id/dismiss', authenticateToken, requireRole(['admin', 'moderator
     )
 
     if (!report) {
-      res.status($1).json({
+      res.status(404).json({
         success: false,
         message: 'Report not found'
       })
+      return
     }
 
     res.json({

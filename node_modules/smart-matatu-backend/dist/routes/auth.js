@@ -55,20 +55,22 @@ router.post('/login', rateLimiter_1.authLimiter, (0, validation_1.validate)(vali
         const { email, password } = req.body;
         const user = await User_1.default.findOne({ email }).select('+password');
         if (!user) {
-            res.status($1).json({
+            res.status(401).json({
                 success: false,
                 message: 'Invalid email or password'
             });
+            return;
         }
         if (!user.isActive) {
-            res.status($1).json({
+            res.status(401).json({
                 success: false,
                 message: 'Account is deactivated'
             });
+            return;
         }
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
-            res.status($1).json({
+            res.status(401).json({
                 success: false,
                 message: 'Invalid email or password'
             });
@@ -122,12 +124,12 @@ router.put('/profile', auth_1.authenticateToken, async (req, res) => {
         const userId = req.user._id;
         const user = await User_1.default.findByIdAndUpdate(userId, { displayName }, { new: true, runValidators: true });
         if (!user) {
-            res.status($1).json({
+            return res.status(401).json({
                 success: false,
                 message: 'User not found'
             });
         }
-        res.json({
+        return res.json({
             success: true,
             message: 'Profile updated successfully',
             data: {
@@ -142,7 +144,7 @@ router.put('/profile', auth_1.authenticateToken, async (req, res) => {
     }
     catch (error) {
         console.error('Profile update error:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Internal server error'
         });

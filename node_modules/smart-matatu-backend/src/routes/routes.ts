@@ -86,10 +86,11 @@ router.get('/:id', apiLimiter, async (req, res): Promise<void> => {
     const route = await Route.findById(req.params.id).populate('stops')
 
     if (!route) {
-      res.status($1).json({
+      res.status(404).json({
         success: false,
         message: 'Route not found'
       })
+      return
     }
 
     res.json({
@@ -135,10 +136,11 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'moderator']), valid
     )
 
     if (!route) {
-      res.status($1).json({
+      res.status(404).json({
         success: false,
         message: 'Route not found'
       })
+      return
     }
 
     res.json({
@@ -165,10 +167,11 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req: Aut
     )
 
     if (!route) {
-      res.status($1).json({
+      res.status(404).json({
         success: false,
         message: 'Route not found'
       })
+      return
     }
 
     res.json({

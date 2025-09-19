@@ -1,5 +1,5 @@
 # Database
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/smart-matatu
+MONGO_URI=mongodb+srv://your-username:your-password@your-cluster.mongodb.net/smart-matatu
 
 # Server
 PORT=3001
