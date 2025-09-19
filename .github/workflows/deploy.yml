@@ -1,0 +1,51 @@
+name: Firebase Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "What to deploy (hosting|functions|both)"
+        default: "hosting"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Firebase CLI
+        run: npm i -g firebase-tools
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      # Optional: build backend for Cloud Functions/Run if applicable
+      # - name: Build backend
+      #   working-directory: backend
+      #   run: |
+      #     npm ci
+      #     npm run build
+
+      - name: Deploy to Firebase
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          if [ "${{ github.event.inputs.target }}" = "hosting" ]; then
+            firebase deploy --only hosting --non-interactive --project ${{ secrets.FIREBASE_PROJECT_ID }}
+          elif [ "${{ github.event.inputs.target }}" = "functions" ]; then
+            firebase deploy --only functions --non-interactive --project ${{ secrets.FIREBASE_PROJECT_ID }}
+          else
+            firebase deploy --non-interactive --project ${{ secrets.FIREBASE_PROJECT_ID }}
+          fi
+
+
