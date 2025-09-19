@@ -1,46 +1,27 @@
 const functions = require('firebase-functions');
 const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 
 // Create Express app
 const app = express();
 
-// Security middleware
-app.use(helmet());
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://smart-matwana-ke.web.app',
-    'https://smart-matwana-ke.firebaseapp.com'
-  ],
-  credentials: true
-}));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+// Test endpoint
+app.get('/test', (req, res) => {
+  res.json({ message: 'Test endpoint working' });
 });
-app.use(limiter);
 
-// Body parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    environment: 'production',
-    version: '1.0.0'
+// Health endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      status: 'healthy',
+      timestamp: new Date().toISOString()
+    }
   });
 });
 
-// Mock routes endpoint for frontend
-app.get('/api/routes', (req, res) => {
+// Routes endpoint
+app.get('/routes', (req, res) => {
   const mockRoutes = [
     {
       _id: '1',
@@ -92,15 +73,24 @@ app.get('/api/routes', (req, res) => {
   
   res.json({
     success: true,
-    data: mockRoutes,
+    data: { 
+      routes: mockRoutes, 
+      pagination: { 
+        page: 1, 
+        limit: 10, 
+        total: 2, 
+        totalPages: 1 
+      } 
+    },
     message: 'Routes retrieved successfully'
   });
 });
 
-// Mock scores endpoint
-app.get('/api/scores', (req, res) => {
+// Scores endpoint
+app.get('/scores', (req, res) => {
   const mockScores = [
     {
+      _id: '1',
       routeId: '1',
       reliability: 4.1,
       safety: 4.2,
@@ -111,6 +101,7 @@ app.get('/api/scores', (req, res) => {
       lastCalculated: new Date().toISOString()
     },
     {
+      _id: '2',
       routeId: '2',
       reliability: 3.5,
       safety: 3.8,
@@ -124,16 +115,23 @@ app.get('/api/scores', (req, res) => {
   
   res.json({
     success: true,
-    data: mockScores,
+    data: { 
+      scores: mockScores, 
+      pagination: { 
+        page: 1, 
+        limit: 10, 
+        total: 2, 
+        totalPages: 1 
+      } 
+    },
     message: 'Scores retrieved successfully'
   });
 });
 
-// Mock reports endpoint
-app.post('/api/reports', (req, res) => {
-  const { routeId, reportType, description, severity } = req.body;
+// Reports endpoint
+app.post('/reports', (req, res) => {
+  const { routeId, reportType, description, severity, location, isAnonymous } = req.body;
   
-  // Basic validation
   if (!routeId || !reportType) {
     return res.status(400).json({
       success: false,
@@ -141,15 +139,15 @@ app.post('/api/reports', (req, res) => {
     });
   }
   
-  // Mock successful report creation
   const mockReport = {
     _id: Date.now().toString(),
     routeId,
     reportType,
     description: description || '',
     severity: severity || 'medium',
+    location: location || { type: 'Point', coordinates: [-1.2921, 36.8219] },
     status: 'pending',
-    isAnonymous: false,
+    isAnonymous: isAnonymous || false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -161,8 +159,36 @@ app.post('/api/reports', (req, res) => {
   });
 });
 
-// Mock authentication endpoints
-app.post('/api/auth/login', (req, res) => {
+// Analytics endpoint
+app.get('/analytics/summary', (req, res) => {
+  const mockAnalytics = {
+    totalRoutes: 2,
+    totalReports: 43,
+    totalUsers: 15,
+    averageScore: 3.75,
+    topRoutes: [
+      { routeId: '1', name: 'Route 42 - Thika Road', score: 4.0 },
+      { routeId: '2', name: 'Route 34 - Ngong Road', score: 3.5 }
+    ],
+    reportTypes: {
+      delay: 15,
+      breakdown: 8,
+      safety: 12,
+      crowding: 5,
+      other: 3
+    },
+    lastUpdated: new Date().toISOString()
+  };
+  
+  res.json({
+    success: true,
+    data: mockAnalytics,
+    message: 'Analytics retrieved successfully'
+  });
+});
+
+// Authentication endpoints
+app.post('/auth/login', (req, res) => {
   const { email, password } = req.body;
   
   if (!email || !password) {
@@ -172,7 +198,6 @@ app.post('/api/auth/login', (req, res) => {
     });
   }
   
-  // Mock successful login
   res.json({
     success: true,
     data: {
@@ -188,7 +213,7 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
-app.post('/api/auth/register', (req, res) => {
+app.post('/auth/register', (req, res) => {
   const { email, password, displayName } = req.body;
   
   if (!email || !password || !displayName) {
@@ -198,7 +223,6 @@ app.post('/api/auth/register', (req, res) => {
     });
   }
   
-  // Mock successful registration
   res.status(201).json({
     success: true,
     data: {
@@ -214,20 +238,13 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error'
-  });
-});
-
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Endpoint not found'
+    message: 'Endpoint not found',
+    requestedUrl: req.originalUrl,
+    method: req.method
   });
 });
 
