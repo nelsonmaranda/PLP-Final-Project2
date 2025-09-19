@@ -102,7 +102,7 @@ export default function ReportForm() {
       
       const response = await apiService.createReport(formData)
       
-      if (response.success) {
+      if (response.success && response.data) {
         setSuccess(true)
         // Reset form
         setFormData({
@@ -118,8 +118,12 @@ export default function ReportForm() {
         })
         
         // Show success message without redirecting
-        console.log('Report submitted successfully!')
-        // User can manually navigate using the navigation menu
+        console.log('Report submitted successfully!', response.data)
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => setSuccess(false), 3000)
+      } else {
+        setError('Failed to submit report. Please check your information and try again.')
       }
     } catch (err) {
       console.error('Error submitting report:', err)

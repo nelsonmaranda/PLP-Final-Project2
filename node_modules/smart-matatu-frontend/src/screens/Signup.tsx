@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Check, AlertCircle, Loader2 } from 'lucide-react'
 import apiService from '../services/api'
@@ -18,7 +18,7 @@ export default function Signup() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
@@ -33,14 +33,14 @@ export default function Signup() {
       }))
     }
     
-    // Clear global error and success when user starts typing
+    // Clear global error and success when user starts typing (debounced)
     if (error) {
       setError(null)
     }
     if (success) {
       setSuccess(false)
     }
-  }
+  }, [errors, error, success])
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}

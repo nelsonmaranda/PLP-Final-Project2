@@ -171,14 +171,22 @@ app.post('/reports', async (req, res) => {
     if (!isDBConnected) {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
+    
+    // Generate device fingerprint from IP and user agent
+    const deviceFingerprint = `${req.ip || 'unknown'}-${req.get('User-Agent') || 'unknown'}`.slice(0, 100);
+    
     const report = await Report.create({
       routeId,
       reportType,
-      description: description || '',
+      description: description || 'No description provided',
       severity: severity || 'medium',
-      location: location || { type: 'Point', coordinates: [-1.2921, 36.8219] },
+      location: {
+        coordinates: location?.coordinates || [36.8219, -1.2921], // [longitude, latitude]
+        address: location?.address || ''
+      },
       status: 'pending',
-      isAnonymous: Boolean(isAnonymous)
+      isAnonymous: Boolean(isAnonymous),
+      deviceFingerprint
     });
     return res.status(201).json({ success: true, data: report, message: 'Report submitted successfully' });
   } catch (error) {

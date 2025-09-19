@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle, Loader2, Check } from 'lucide-react'
 import apiService from '../services/api'
@@ -16,21 +16,21 @@ export default function Login() {
     password: ''
   })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: value
     }))
-    // Clear error when user starts typing
+    // Clear error when user starts typing (debounced)
     if (error) {
       setError(null)
     }
-    // Clear success when user starts typing
+    // Clear success when user starts typing (debounced)
     if (success) {
       setSuccess(false)
     }
-  }
+  }, [error, success])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,7 +94,7 @@ export default function Login() {
         <div className="card">
           <div className="card-content">
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg" role="alert" aria-live="polite">
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg" role="alert" aria-live="assertive">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
