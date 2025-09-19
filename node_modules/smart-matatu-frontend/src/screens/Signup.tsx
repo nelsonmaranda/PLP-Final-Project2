@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Check, AlertCircle, Loader2 } from 'lucide-react'
 import apiService from '../services/api'
 import { SignupFormData } from '../types'
@@ -7,6 +7,7 @@ import { useApp } from '../contexts/AppContext'
 
 export default function Signup() {
   const { setUser } = useApp()
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -81,24 +82,19 @@ export default function Signup() {
       
       // Strict validation: must have success=true, data object, user object, and token
       if (response.success && response.data && response.data.user && response.data.token) {
-        // Verify the token was stored and we can fetch the profile
-        const currentUser = await apiService.getCurrentUser()
-        
-        if (currentUser && currentUser._id) {
-          // Update user state in context
-          setUser(currentUser)
-          // Show success message and reset form
-          setSuccess(true)
-          setFormData({
-            displayName: '',
-            email: '',
-            password: ''
-          })
-          // Hide success message after 3 seconds
-          setTimeout(() => setSuccess(false), 3000)
-        } else {
-          setError('Account created but authentication failed. Please try logging in.')
-        }
+        // Update user state in context directly from signup response
+        setUser(response.data.user)
+        // Show success message and reset form
+        setSuccess(true)
+        setFormData({
+          displayName: '',
+          email: '',
+          password: ''
+        })
+        // Redirect to home page after successful signup
+        setTimeout(() => {
+          navigate('/')
+        }, 1500) // Wait 1.5 seconds to show success message
       } else {
         setError('Registration failed. Please check your information and try again.')
       }

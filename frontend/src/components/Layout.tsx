@@ -1,6 +1,7 @@
 import { ReactNode } from 'react'
 import { useApp } from '../contexts/AppContext'
 import Header from './Header'
+import Sidebar from './Sidebar'
 import Footer from './Footer'
 import LoadingSpinner from './LoadingSpinner'
 
@@ -23,6 +24,25 @@ export default function Layout({ children }: LayoutProps) {
     )
   }
 
+  // For authenticated users, use sidebar layout
+  if (state.isAuthenticated) {
+    return (
+      <div className="min-h-screen flex">
+        <Sidebar 
+          language={state.language} 
+          setLanguage={setLanguage}
+        />
+        <div className="flex-1 flex flex-col md:ml-0">
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </div>
+      </div>
+    )
+  }
+
+  // For non-authenticated users, use header layout
   return (
     <div className="min-h-screen flex flex-col">
       <Header 

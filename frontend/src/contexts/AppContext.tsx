@@ -168,22 +168,18 @@ export function AppProvider({ children }: AppProviderProps) {
             if (user) {
               dispatch({ type: 'SET_USER', payload: user })
             } else {
-              // If API call fails, use stored user data
-              const parsedUser = JSON.parse(storedUser)
-              dispatch({ type: 'SET_USER', payload: parsedUser })
-            }
-          } catch (error) {
-            // If API fails, still use stored data but log the error
-            console.warn('Failed to refresh user data, using stored data:', error)
-            try {
-              const parsedUser = JSON.parse(storedUser)
-              dispatch({ type: 'SET_USER', payload: parsedUser })
-            } catch (parseError) {
-              console.error('Error parsing stored user:', parseError)
-              // Clear invalid stored data
+              // If API call fails, clear stored data and log out
+              console.warn('API call failed, clearing stored data')
               localStorage.removeItem('authToken')
               localStorage.removeItem('user')
+              dispatch({ type: 'SET_USER', payload: null })
             }
+          } catch (error) {
+            // If API fails, clear stored data and log out
+            console.warn('Failed to refresh user data, clearing stored data:', error)
+            localStorage.removeItem('authToken')
+            localStorage.removeItem('user')
+            dispatch({ type: 'SET_USER', payload: null })
           }
         }
         // If no token/user, user remains null (not authenticated)
@@ -248,6 +244,7 @@ export function AppProvider({ children }: AppProviderProps) {
   }
 
   const setUser = (user: User | null) => {
+    console.log('AppContext setUser called with:', user)
     dispatch({ type: 'SET_USER', payload: user })
   }
 

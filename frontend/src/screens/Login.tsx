@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle, Loader2, Check } from 'lucide-react'
 import apiService from '../services/api'
 import { LoginFormData } from '../types'
@@ -7,6 +7,7 @@ import { useApp } from '../contexts/AppContext'
 
 export default function Login() {
   const { setUser } = useApp()
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,26 +42,31 @@ export default function Login() {
     try {
       const response = await apiService.login(formData)
       
+      // Debug logging
+      console.log('Login response:', response)
+      
       // Strict validation: must have success=true, data object, user object, and token
       if (response.success && response.data && response.data.user && response.data.token) {
-        // Verify the token was stored and we can fetch the profile
-        const currentUser = await apiService.getCurrentUser()
-        
-        if (currentUser && currentUser._id) {
-          // Update user state in context
-          setUser(currentUser)
-          // Show success message and reset form
-          setSuccess(true)
-          setFormData({
-            email: '',
-            password: ''
-          })
-          // Hide success message after 3 seconds
-          setTimeout(() => setSuccess(false), 3000)
-        } else {
-          setError('Authentication failed. Please try again.')
-        }
+        console.log('Login successful, setting user:', response.data.user)
+        // Update user state in context directly from login response
+        setUser(response.data.user)
+        // Show success message and reset form
+        setSuccess(true)
+        setFormData({
+          email: '',
+          password: ''
+        })
+        // Redirect to home page after successful login
+        setTimeout(() => {
+          navigate('/')
+        }, 1500) // Wait 1.5 seconds to show success message
       } else {
+        console.log('Login validation failed:', { 
+          success: response.success, 
+          hasData: !!response.data, 
+          hasUser: !!(response.data && response.data.user), 
+          hasToken: !!(response.data && response.data.token) 
+        })
         setError('Invalid email or password. Please check your credentials.')
       }
     } catch (err) {

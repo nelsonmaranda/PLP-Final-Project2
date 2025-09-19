@@ -290,3 +290,72 @@ export interface LanguageStrings {
     deleteRoute: string
   }
 }
+
+// AI/ML Types
+export interface WeatherData {
+  temperature: number
+  humidity: number
+  windSpeed: number
+  condition: string
+  description: string
+  icon: string
+  location: string
+  timestamp: string
+}
+
+export interface FarePrediction {
+  predictedFare: number
+  confidence: number
+  minFare: number
+  maxFare: number
+  trend: 'increasing' | 'decreasing' | 'stable'
+  factors: string[]
+  lastUpdated: string
+}
+
+export interface SafetyScore {
+  overallScore: number
+  reliabilityScore: number
+  incidentScore: number
+  driverScore: number
+  vehicleScore: number
+  factors: string[]
+  lastUpdated: string
+}
+
+export interface CrowdDensity {
+  level: 'low' | 'medium' | 'high'
+  percentage: number
+  predictedPeak: string
+  recommendedTime: string
+  lastUpdated: string
+}
+
+export interface RouteInsight {
+  routeId: string
+  routeName: string
+  farePrediction: FarePrediction
+  safetyScore: SafetyScore
+  crowdDensity: CrowdDensity
+  travelTime: number
+  recommendedTime: string
+  alternativeRoutes: string[]
+  weatherImpact: string
+  lastUpdated: string
+}
+
+export interface DashboardStats {
+  totalRoutes: number
+  activeReports: number
+  averageFare: number
+  safetyRating: number
+  weatherCondition: string
+  temperature: number
+  humidity: number
+  windSpeed: number
+  totalUsers: number
+  reportsToday: number
+  incidentsToday: number
+  topPerformingRoute: string
+  lastUpdated: string
+}

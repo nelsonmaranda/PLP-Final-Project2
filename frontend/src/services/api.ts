@@ -11,7 +11,13 @@ import {
   ApiResponse,
   PaginatedResponse,
   LoginFormData,
-  SignupFormData
+  SignupFormData,
+  WeatherData,
+  FarePrediction,
+  SafetyScore,
+  CrowdDensity,
+  RouteInsight,
+  DashboardStats
 } from '../types'
 
 class ApiService {
@@ -376,6 +382,133 @@ class ApiService {
         return { success: true, data: { prediction: 0.5, label: 'medium', confidence: 0.5 } } as any
       }
       const response: AxiosResponse<ApiResponse<{ prediction: number; label: string; confidence: number }>> = await this.api.post('/ai/predict', { routeId, features })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // User Profile Management
+  async updateProfile(userId: string, profileData: { displayName: string; email: string }): Promise<ApiResponse<{ user: User }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ user: User }>> = await this.api.put(`/users/${userId}`, profileData)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // User Reports
+  async getUserReports(userId: string): Promise<ApiResponse<{ reports: Report[] }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ reports: Report[] }>> = await this.api.get(`/users/${userId}/reports`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Favorite Routes
+  async getFavoriteRoutes(userId: string): Promise<ApiResponse<{ routes: Route[] }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ routes: Route[] }>> = await this.api.get(`/users/${userId}/favorites`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async addFavoriteRoute(userId: string, routeId: string): Promise<ApiResponse<{ success: boolean }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ success: boolean }>> = await this.api.post(`/users/${userId}/favorites`, { routeId })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async removeFavoriteRoute(userId: string, routeId: string): Promise<ApiResponse<{ success: boolean }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ success: boolean }>> = await this.api.delete(`/users/${userId}/favorites/${routeId}`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // User Analytics
+  async getUserAnalytics(userId: string): Promise<ApiResponse<{
+    totalReports: number;
+    reportsThisMonth: number;
+    favoriteRoutesCount: number;
+    averageRating: number;
+    mostReportedRoute: string | null;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        totalReports: number;
+        reportsThisMonth: number;
+        favoriteRoutesCount: number;
+        averageRating: number;
+        mostReportedRoute: string | null;
+      }>> = await this.api.get(`/users/${userId}/analytics`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Dashboard & AI Features
+  async getDashboardStats(): Promise<ApiResponse<DashboardStats>> {
+    try {
+      const response: AxiosResponse<ApiResponse<DashboardStats>> = await this.api.get('/dashboard/stats')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async getWeatherData(): Promise<ApiResponse<WeatherData>> {
+    try {
+      const response: AxiosResponse<ApiResponse<WeatherData>> = await this.api.get('/weather')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async getRouteInsights(): Promise<ApiResponse<{ insights: RouteInsight[] }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ insights: RouteInsight[] }>> = await this.api.get('/insights/routes')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async getFarePrediction(routeId: string, timeOfDay?: string): Promise<ApiResponse<FarePrediction>> {
+    try {
+      const params = timeOfDay ? { timeOfDay } : {}
+      const response: AxiosResponse<ApiResponse<FarePrediction>> = await this.api.get(`/predictions/fare/${routeId}`, { params })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async getSafetyScore(routeId: string): Promise<ApiResponse<SafetyScore>> {
+    try {
+      const response: AxiosResponse<ApiResponse<SafetyScore>> = await this.api.get(`/predictions/safety/${routeId}`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async getCrowdDensity(routeId: string, timeOfDay?: string): Promise<ApiResponse<CrowdDensity>> {
+    try {
+      const params = timeOfDay ? { timeOfDay } : {}
+      const response: AxiosResponse<ApiResponse<CrowdDensity>> = await this.api.get(`/predictions/crowd/${routeId}`, { params })
       return response.data
     } catch (error) {
       throw this.handleError(error)

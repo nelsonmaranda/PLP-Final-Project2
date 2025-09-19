@@ -8,11 +8,12 @@ import EnhancedErrorBoundary from './components/EnhancedErrorBoundary'
 import { setupGlobalErrorHandling } from './utils/errorHandling'
 
 // Lazy load components for better performance
-const Home = lazy(() => import('./screens/Home'))
+const HomePage = lazy(() => import('./components/HomePage'))
 const MapView = lazy(() => import('./screens/MapView'))
 const ReportForm = lazy(() => import('./screens/ReportForm'))
 const Login = lazy(() => import('./screens/Login'))
 const Signup = lazy(() => import('./screens/Signup'))
+const Profile = lazy(() => import('./screens/Profile'))
 const Admin = lazy(() => import('./screens/Admin'))
 
 function App() {
@@ -28,11 +29,12 @@ function App() {
           <Layout>
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<HomePage />} />
                 <Route path="/map" element={<MapView />} />
                 <Route path="/report" element={<ReportForm />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/profile" element={<Profile />} />
                 <Route path="/admin" element={<Admin />} />
               </Routes>
             </Suspense>

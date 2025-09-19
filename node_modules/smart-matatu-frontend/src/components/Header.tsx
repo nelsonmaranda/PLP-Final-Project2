@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, MapPin, BarChart3, User } from 'lucide-react'
+import { Menu, X, MapPin, BarChart3, User, LogOut } from 'lucide-react'
+import { useApp } from '../contexts/AppContext'
 
 interface HeaderProps {
   language: 'en' | 'sw'
@@ -10,13 +11,22 @@ interface HeaderProps {
 export default function Header({ language, setLanguage }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const location = useLocation()
+  const { state, logout } = useApp()
 
   const navigation = [
     { name: 'Home', href: '/', icon: MapPin },
     { name: 'Map', href: '/map', icon: MapPin },
     { name: 'Report', href: '/report', icon: BarChart3 },
-    { name: 'Login', href: '/login', icon: User },
   ]
+
+  const authNavigation = state.isAuthenticated 
+    ? [
+        { name: 'Profile', href: '/profile', icon: User },
+        { name: 'Logout', href: '#', icon: LogOut, action: logout }
+      ]
+    : [
+        { name: 'Login', href: '/login', icon: User }
+      ]
 
   const isActive = (path: string) => location.pathname === path
 
@@ -56,10 +66,45 @@ export default function Header({ language, setLanguage }: HeaderProps) {
                 </Link>
               )
             })}
+            {authNavigation.map((item) => {
+              const Icon = item.icon
+              if (item.action) {
+                return (
+                  <button
+                    key={item.name}
+                    onClick={item.action}
+                    className="nav-link flex items-center space-x-1"
+                  >
+                    <Icon className="w-4 h-4" aria-hidden="true" />
+                    <span>{item.name}</span>
+                  </button>
+                )
+              }
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`nav-link flex items-center space-x-1 ${
+                    isActive(item.href) ? 'nav-link-active' : ''
+                  }`}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
+                >
+                  <Icon className="w-4 h-4" aria-hidden="true" />
+                  <span>{item.name}</span>
+                </Link>
+              )
+            })}
           </nav>
 
-          {/* Language Toggle & Mobile Menu */}
+          {/* User Info & Controls */}
           <div className="flex items-center space-x-4">
+            {/* User Welcome Message */}
+            {state.isAuthenticated && state.user && (
+              <div className="hidden md:block text-sm text-gray-600">
+                Welcome, {state.user.displayName}
+              </div>
+            )}
+            
             {/* Language Toggle */}
             <button
               onClick={() => setLanguage(language === 'en' ? 'sw' : 'en')}
@@ -97,6 +142,38 @@ export default function Header({ language, setLanguage }: HeaderProps) {
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigation.map((item) => {
                 const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`nav-link flex items-center space-x-2 w-full ${
+                      isActive(item.href) ? 'nav-link-active' : ''
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                    aria-current={isActive(item.href) ? 'page' : undefined}
+                  >
+                    <Icon className="w-4 h-4" aria-hidden="true" />
+                    <span>{item.name}</span>
+                  </Link>
+                )
+              })}
+              {authNavigation.map((item) => {
+                const Icon = item.icon
+                if (item.action) {
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => {
+                        item.action?.()
+                        setIsMenuOpen(false)
+                      }}
+                      className="nav-link flex items-center space-x-2 w-full"
+                    >
+                      <Icon className="w-4 h-4" aria-hidden="true" />
+                      <span>{item.name}</span>
+                    </button>
+                  )
+                }
                 return (
                   <Link
                     key={item.name}
