@@ -14,13 +14,13 @@ const app = express();
 app.set('trust proxy', true);
 
 // JWT Secret (in production, use environment variable)
-const JWT_SECRET = functions.config().jwt?.secret || process.env.JWT_SECRET || 'smart-matatu-super-secret-jwt-key-2024';
+const JWT_SECRET = functions.config().jwt?.secret || process.env.JWT_SECRET;
 
 // Connect to MongoDB Atlas
 const connectDB = async () => {
   try {
     // Try Firebase config first, then environment variable
-    const mongoURI = functions.config().mongodb?.uri || process.env.MONGODB_URI || 'mongodb+srv://mnelson:27428516@cluster0.6k3x4ce.mongodb.net/smart-matwana-ke?retryWrites=true&w=majority&appName=Cluster0';
+    const mongoURI = functions.config().mongodb?.uri || process.env.MONGODB_URI;
     
     if (!mongoURI || mongoURI === 'undefined') {
       console.log('No MongoDB URI found, using mock data');
