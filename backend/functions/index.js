@@ -14,21 +14,20 @@ const app = express();
 app.set('trust proxy', true);
 
 // JWT Secret (in production, use environment variable)
-const JWT_SECRET = functions.config().jwt?.secret || 'your-super-secret-jwt-key-fallback';
+const JWT_SECRET = functions.config().jwt?.secret || process.env.JWT_SECRET || 'smart-matatu-super-secret-jwt-key-2024';
 
 // Connect to MongoDB Atlas
 const connectDB = async () => {
   try {
-    const mongoURI = functions.config().mongodb?.uri;
-    if (!mongoURI) {
-      console.log('No MongoDB URI found in Firebase config, using mock data');
+    // Try Firebase config first, then environment variable
+    const mongoURI = functions.config().mongodb?.uri || process.env.MONGODB_URI || 'mongodb+srv://mnelson:27428516@cluster0.6k3x4ce.mongodb.net/smart-matwana-ke?retryWrites=true&w=majority&appName=Cluster0';
+    
+    if (!mongoURI || mongoURI === 'undefined') {
+      console.log('No MongoDB URI found, using mock data');
       return false;
     }
 
-    await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(mongoURI);
     console.log('MongoDB Atlas connected successfully');
     return true;
   } catch (error) {
@@ -91,6 +90,28 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Temporary cleanup endpoint to fix database schema issues
+app.post('/cleanup', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+    
+    // Clear all collections to fix schema issues
+    await Promise.all([
+      Route.deleteMany({}),
+      Report.deleteMany({}),
+      Score.deleteMany({})
+    ]);
+    
+    console.log('Database cleaned up successfully');
+    return res.json({ success: true, message: 'Database cleaned up successfully' });
+  } catch (error) {
+    console.error('Error cleaning up database:', error);
+    return res.status(500).json({ success: false, message: 'Error cleaning up database' });
+  }
+});
+
 // Routes endpoint (database-backed)
 app.get('/routes', async (req, res) => {
   try {
@@ -104,11 +125,11 @@ app.get('/routes', async (req, res) => {
       console.log('No routes found, seeding sample routes...');
       const sampleRoutes = [
         {
-          name: 'CBD - Westlands',
+          name: 'Route 46 - CBD to Westlands',
           description: 'Route from Central Business District to Westlands',
           operator: 'Westlands Shuttle',
           routeNumber: '46',
-          path: [[36.8219, -1.2921], [36.8125, -1.2635]],
+          path: [36.8219, -1.2921, 36.8125, -1.2635],
           stops: [
             { name: 'Kencom', coordinates: [36.8219, -1.2921] },
             { name: 'Museum Hill', coordinates: [36.8125, -1.2635] },
@@ -119,11 +140,11 @@ app.get('/routes', async (req, res) => {
           isActive: true
         },
         {
-          name: 'CBD - Kasarani',
+          name: 'Route 44 - CBD to Kasarani',
           description: 'Route from Central Business District to Kasarani',
           operator: 'Kasarani Express',
           routeNumber: '44',
-          path: [[36.8219, -1.2921], [36.8908, -1.2203]],
+          path: [36.8219, -1.2921, 36.8908, -1.2203],
           stops: [
             { name: 'Kencom', coordinates: [36.8219, -1.2921] },
             { name: 'Thika Road Mall', coordinates: [36.8908, -1.2203] },
@@ -134,11 +155,11 @@ app.get('/routes', async (req, res) => {
           isActive: true
         },
         {
-          name: 'CBD - Embakasi',
+          name: 'Route 58 - CBD to Embakasi',
           description: 'Route from Central Business District to Embakasi',
           operator: 'Embakasi Matatu',
           routeNumber: '58',
-          path: [[36.8219, -1.2921], [36.8951, -1.3197]],
+          path: [36.8219, -1.2921, 36.8951, -1.3197],
           stops: [
             { name: 'Kencom', coordinates: [36.8219, -1.2921] },
             { name: 'Nyayo Stadium', coordinates: [36.8317, -1.3134] },
@@ -149,11 +170,11 @@ app.get('/routes', async (req, res) => {
           isActive: true
         },
         {
-          name: 'CBD - Karen',
+          name: 'Route 111 - CBD to Karen',
           description: 'Route from Central Business District to Karen',
           operator: 'Karen Shuttle',
           routeNumber: '111',
-          path: [[36.8219, -1.2921], [36.6872, -1.3197]],
+          path: [36.8219, -1.2921, 36.6872, -1.3197],
           stops: [
             { name: 'Kencom', coordinates: [36.8219, -1.2921] },
             { name: 'Yaya Centre', coordinates: [36.7833, -1.2833] },
@@ -164,11 +185,11 @@ app.get('/routes', async (req, res) => {
           isActive: true
         },
         {
-          name: 'CBD - Kibera',
+          name: 'Route 24 - CBD to Kibera',
           description: 'Route from Central Business District to Kibera',
           operator: 'Kibera Express',
           routeNumber: '24',
-          path: [[36.8219, -1.2921], [36.7833, -1.3134]],
+          path: [36.8219, -1.2921, 36.7833, -1.3134],
           stops: [
             { name: 'Kencom', coordinates: [36.8219, -1.2921] },
             { name: 'Railways', coordinates: [36.8281, -1.3054] },
@@ -222,7 +243,9 @@ app.get('/routes', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching routes:', error);
-    return res.status(500).json({ success: false, message: 'Error fetching routes' });
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    return res.status(500).json({ success: false, message: 'Error fetching routes', error: error.message });
   }
 });
 
@@ -320,8 +343,8 @@ app.post('/reports', async (req, res) => {
       description: description || 'No description provided',
       severity: severity || 'medium',
       location: {
-        coordinates: location?.coordinates || [36.8219, -1.2921], // [longitude, latitude]
-        address: location?.address || ''
+        type: 'Point',
+        coordinates: location?.coordinates || [36.8219, -1.2921] // [longitude, latitude]
       },
       status: 'pending',
       isAnonymous: Boolean(isAnonymous),

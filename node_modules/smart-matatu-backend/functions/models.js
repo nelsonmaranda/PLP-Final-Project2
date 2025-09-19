@@ -16,7 +16,7 @@ const routeSchema = new mongoose.Schema({
   name: { type: String, required: true },
   operator: { type: String, required: true },
   routeNumber: { type: String, required: true },
-  path: { type: [[Number]], required: true }, // Array of [lng, lat] coordinates
+  path: { type: [Number], required: true }, // Flattened array of coordinates [lng1, lat1, lng2, lat2, ...]
   stops: [{
     name: { type: String, required: true },
     coordinates: { type: [Number], required: true } // [lng, lat]
@@ -76,7 +76,7 @@ const scoreSchema = new mongoose.Schema({
 });
 
 // Create indexes for better performance
-routeSchema.index({ path: '2dsphere' });
+routeSchema.index({ 'stops.coordinates': '2dsphere' });
 reportSchema.index({ location: '2dsphere' });
 reportSchema.index({ routeId: 1, createdAt: -1 });
 scoreSchema.index({ routeId: 1 });
