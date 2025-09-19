@@ -1,0 +1,10 @@
+# Require review from repository owner by default
+* @nelsonmaranda
+
+# Frontend specific owners (optional)
+frontend/** @nelsonmaranda
+
+# Backend specific owners (optional)
+backend/** @nelsonmaranda
+
+
