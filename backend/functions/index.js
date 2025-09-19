@@ -98,6 +98,92 @@ app.get('/routes', async (req, res) => {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
+    // First, let's seed some routes if none exist
+    const routeCount = await Route.countDocuments({});
+    if (routeCount === 0) {
+      console.log('No routes found, seeding sample routes...');
+      const sampleRoutes = [
+        {
+          name: 'CBD - Westlands',
+          description: 'Route from Central Business District to Westlands',
+          operator: 'Westlands Shuttle',
+          routeNumber: '46',
+          path: [[36.8219, -1.2921], [36.8125, -1.2635]],
+          stops: [
+            { name: 'Kencom', coordinates: [36.8219, -1.2921] },
+            { name: 'Museum Hill', coordinates: [36.8125, -1.2635] },
+            { name: 'Westlands', coordinates: [36.8095, -1.2659] }
+          ],
+          fare: 50,
+          operatingHours: { start: '05:00', end: '22:00' },
+          isActive: true
+        },
+        {
+          name: 'CBD - Kasarani',
+          description: 'Route from Central Business District to Kasarani',
+          operator: 'Kasarani Express',
+          routeNumber: '44',
+          path: [[36.8219, -1.2921], [36.8908, -1.2203]],
+          stops: [
+            { name: 'Kencom', coordinates: [36.8219, -1.2921] },
+            { name: 'Thika Road Mall', coordinates: [36.8908, -1.2203] },
+            { name: 'Kasarani', coordinates: [36.8908, -1.2155] }
+          ],
+          fare: 80,
+          operatingHours: { start: '05:30', end: '21:30' },
+          isActive: true
+        },
+        {
+          name: 'CBD - Embakasi',
+          description: 'Route from Central Business District to Embakasi',
+          operator: 'Embakasi Matatu',
+          routeNumber: '58',
+          path: [[36.8219, -1.2921], [36.8951, -1.3197]],
+          stops: [
+            { name: 'Kencom', coordinates: [36.8219, -1.2921] },
+            { name: 'Nyayo Stadium', coordinates: [36.8317, -1.3134] },
+            { name: 'Embakasi', coordinates: [36.8951, -1.3197] }
+          ],
+          fare: 60,
+          operatingHours: { start: '05:00', end: '22:30' },
+          isActive: true
+        },
+        {
+          name: 'CBD - Karen',
+          description: 'Route from Central Business District to Karen',
+          operator: 'Karen Shuttle',
+          routeNumber: '111',
+          path: [[36.8219, -1.2921], [36.6872, -1.3197]],
+          stops: [
+            { name: 'Kencom', coordinates: [36.8219, -1.2921] },
+            { name: 'Yaya Centre', coordinates: [36.7833, -1.2833] },
+            { name: 'Karen', coordinates: [36.6872, -1.3197] }
+          ],
+          fare: 120,
+          operatingHours: { start: '06:00', end: '21:00' },
+          isActive: true
+        },
+        {
+          name: 'CBD - Kibera',
+          description: 'Route from Central Business District to Kibera',
+          operator: 'Kibera Express',
+          routeNumber: '24',
+          path: [[36.8219, -1.2921], [36.7833, -1.3134]],
+          stops: [
+            { name: 'Kencom', coordinates: [36.8219, -1.2921] },
+            { name: 'Railways', coordinates: [36.8281, -1.3054] },
+            { name: 'Kibera', coordinates: [36.7833, -1.3134] }
+          ],
+          fare: 40,
+          operatingHours: { start: '05:00', end: '23:00' },
+          isActive: true
+        }
+      ];
+      
+      await Route.insertMany(sampleRoutes);
+      console.log('Sample routes seeded successfully');
+    }
+
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 50;
     const skip = (page - 1) * limit;
@@ -129,6 +215,7 @@ app.get('/routes', async (req, res) => {
       };
     });
 
+    console.log(`Returning ${routesWithScores.length} routes out of ${total} total`);
     return res.json({
       success: true,
       data: { routes: routesWithScores, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } }

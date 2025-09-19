@@ -31,6 +31,7 @@ export default function ReportForm() {
   const loadRoutes = async () => {
     try {
       setIsLoading(true)
+      setError(null)
       const response = await apiService.getRoutes({
         page: 1,
         limit: 100,
@@ -40,10 +41,13 @@ export default function ReportForm() {
 
       if (response.success && response.data) {
         setRoutes(response.data.routes)
+        console.log(`Loaded ${response.data.routes.length} routes`)
+      } else {
+        setError('Failed to load routes. Please refresh the page and try again.')
       }
     } catch (err) {
       console.error('Error loading routes:', err)
-      setError('Failed to load routes. Please try again.')
+      setError('Failed to load routes. Please check your connection and try again.')
     } finally {
       setIsLoading(false)
     }
@@ -175,13 +179,25 @@ export default function ReportForm() {
 
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg" role="alert" aria-live="polite">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <AlertTriangle className="h-5 w-5 text-red-400" aria-hidden="true" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <AlertTriangle className="h-5 w-5 text-red-400" aria-hidden="true" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-red-800">{error}</p>
+                    </div>
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-red-800">{error}</p>
-                  </div>
+                  {error.includes('routes') && (
+                    <button
+                      type="button"
+                      onClick={loadRoutes}
+                      className="ml-4 text-sm bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded"
+                      disabled={isLoading}
+                    >
+                      Retry
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -197,11 +213,15 @@ export default function ReportForm() {
                   onChange={handleInputChange}
                   className="form-select"
                   aria-describedby="route-help"
+                  required
+                  disabled={isLoading || routes.length === 0}
                 >
-                  <option value="">Select a route</option>
+                  <option value="">
+                    {isLoading ? 'Loading routes...' : routes.length === 0 ? 'No routes available' : 'Select a route'}
+                  </option>
                   {routes.map(route => (
                     <option key={route._id} value={route._id}>
-                      {route.name} - {route.operator}
+                      {route.routeNumber} - {route.name} ({route.operator})
                     </option>
                   ))}
                 </select>
