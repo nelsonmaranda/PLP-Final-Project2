@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle, Loader2, Check } from 'lucide-react'
 import apiService from '../services/api'
 import { LoginFormData } from '../types'
+import { useApp } from '../contexts/AppContext'
 
 export default function Login() {
+  const { setUser } = useApp()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,7 +32,9 @@ export default function Login() {
     try {
       const response = await apiService.login(formData)
       
-      if (response.success) {
+      if (response.success && response.data) {
+        // Update user state in context
+        setUser(response.data.user)
         // Show success message and reset form
         setError(null)
         setSuccess(true)
@@ -40,6 +44,8 @@ export default function Login() {
         })
         // Hide success message after 5 seconds
         setTimeout(() => setSuccess(false), 5000)
+      } else {
+        setError('Login failed. Please try again.')
       }
     } catch (err) {
       console.error('Login error:', err)

@@ -2,12 +2,47 @@ const functions = require('firebase-functions');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { User, Route, Report, Score } = require('./models');
 
 // Create Express app
 const app = express();
 
 // Trust proxy for Firebase Functions
 app.set('trust proxy', true);
+
+// JWT Secret (in production, use environment variable)
+const JWT_SECRET = functions.config().jwt?.secret || 'your-super-secret-jwt-key-fallback';
+
+// Connect to MongoDB Atlas
+const connectDB = async () => {
+  try {
+    const mongoURI = functions.config().mongodb?.uri;
+    if (!mongoURI) {
+      console.log('No MongoDB URI found in Firebase config, using mock data');
+      return false;
+    }
+
+    await mongoose.connect(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('MongoDB Atlas connected successfully');
+    return true;
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    console.log('Falling back to mock data');
+    return false;
+  }
+};
+
+// Initialize database connection
+let isDBConnected = false;
+connectDB().then(connected => {
+  isDBConnected = connected;
+});
 
 // Basic middleware
 app.use(helmet({
@@ -224,54 +259,165 @@ app.get('/analytics/summary', (req, res) => {
 });
 
 // Authentication endpoints
-app.post('/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  
-  if (!email || !password) {
-    return res.status(400).json({
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    // If database is not connected, return error
+    if (!isDBConnected) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database connection unavailable. Please try again later.'
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        userId: user._id, 
+        email: user.email,
+        role: user.role 
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Return success response
+    res.json({
+      success: true,
+      data: {
+        user: {
+          _id: user._id,
+          email: user.email,
+          displayName: user.displayName,
+          role: user.role,
+          savedRoutes: user.savedRoutes
+        },
+        token
+      },
+      message: 'Login successful'
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
       success: false,
-      message: 'Email and password are required'
+      message: 'Internal server error'
     });
   }
-  
-  res.json({
-    success: true,
-    data: {
-      user: {
-        _id: '1',
-        email,
-        displayName: 'Test User',
-        role: 'user'
-      },
-      token: 'mock-jwt-token'
-    },
-    message: 'Login successful'
-  });
 });
 
-app.post('/auth/register', (req, res) => {
-  const { email, password, displayName } = req.body;
-  
-  if (!email || !password || !displayName) {
-    return res.status(400).json({
+app.post('/auth/register', async (req, res) => {
+  try {
+    const { email, password, displayName } = req.body;
+
+    if (!email || !password || !displayName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, password, and display name are required'
+      });
+    }
+
+    // If database is not connected, return error
+    if (!isDBConnected) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database connection unavailable. Please try again later.'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create new user
+    const newUser = new User({
+      email: email.toLowerCase(),
+      displayName: displayName.trim(),
+      password: hashedPassword,
+      role: 'user',
+      savedRoutes: []
+    });
+
+    await newUser.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        userId: newUser._id, 
+        email: newUser.email,
+        role: newUser.role 
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Return success response (don't include password)
+    res.status(201).json({
+      success: true,
+      data: {
+        user: {
+          _id: newUser._id,
+          email: newUser.email,
+          displayName: newUser.displayName,
+          role: newUser.role,
+          savedRoutes: newUser.savedRoutes
+        },
+        token
+      },
+      message: 'Registration successful'
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid input data'
+      });
+    }
+
+    res.status(500).json({
       success: false,
-      message: 'Email, password, and display name are required'
+      message: 'Internal server error'
     });
   }
-  
-  res.status(201).json({
-    success: true,
-    data: {
-      user: {
-        _id: Date.now().toString(),
-        email,
-        displayName,
-        role: 'user'
-      },
-      token: 'mock-jwt-token'
-    },
-    message: 'Registration successful'
-  });
 });
 
 // 404 handler
