@@ -155,12 +155,42 @@ export function AppProvider({ children }: AppProviderProps) {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const user = await apiService.getCurrentUser()
-        if (user) {
-          dispatch({ type: 'SET_USER', payload: user })
+        dispatch({ type: 'SET_LOADING', payload: true })
+        
+        // First check localStorage for existing token
+        const token = localStorage.getItem('authToken')
+        const storedUser = localStorage.getItem('user')
+        
+        if (token && storedUser) {
+          try {
+            // Try to get fresh user data from API
+            const user = await apiService.getCurrentUser()
+            if (user) {
+              dispatch({ type: 'SET_USER', payload: user })
+            } else {
+              // If API call fails, use stored user data
+              const parsedUser = JSON.parse(storedUser)
+              dispatch({ type: 'SET_USER', payload: parsedUser })
+            }
+          } catch (error) {
+            // If API fails, still use stored data but log the error
+            console.warn('Failed to refresh user data, using stored data:', error)
+            try {
+              const parsedUser = JSON.parse(storedUser)
+              dispatch({ type: 'SET_USER', payload: parsedUser })
+            } catch (parseError) {
+              console.error('Error parsing stored user:', parseError)
+              // Clear invalid stored data
+              localStorage.removeItem('authToken')
+              localStorage.removeItem('user')
+            }
+          }
         }
+        // If no token/user, user remains null (not authenticated)
       } catch (error) {
         console.error('Error loading user:', error)
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false })
       }
     }
 

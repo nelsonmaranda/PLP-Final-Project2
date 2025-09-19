@@ -45,10 +45,10 @@ class ApiService {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          // Token expired or invalid
+          // Token expired or invalid - clear auth data but don't redirect
+          // Let the app components handle the authentication state
           localStorage.removeItem('authToken')
           localStorage.removeItem('user')
-          window.location.href = '/login'
         }
         return Promise.reject(error)
       }
