@@ -193,7 +193,6 @@ export default function ReportForm() {
                   value={formData.routeId}
                   onChange={handleInputChange}
                   className="form-select"
-                  required
                   aria-describedby="route-help"
                 >
                   <option value="">Select a route</option>

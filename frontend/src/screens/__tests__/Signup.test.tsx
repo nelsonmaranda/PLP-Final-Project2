@@ -139,7 +139,7 @@ describe('Signup', () => {
     render(<Signup />)
     
     const passwordInput = screen.getByLabelText('Password')
-    const toggleButton = screen.getByRole('button', { name: /toggle password visibility/i })
+    const toggleButton = screen.getByRole('button', { name: /show password/i })
     
     // Password should be hidden by default
     expect(passwordInput).toHaveAttribute('type', 'password')
@@ -149,7 +149,7 @@ describe('Signup', () => {
     expect(passwordInput).toHaveAttribute('type', 'text')
     
     // Click to hide password
-    await userEvent.click(toggleButton)
+    await userEvent.click(screen.getByRole('button', { name: /hide password/i }))
     expect(passwordInput).toHaveAttribute('type', 'password')
   })
 

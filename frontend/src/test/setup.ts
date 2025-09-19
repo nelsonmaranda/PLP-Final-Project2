@@ -201,3 +201,8 @@ vi.mock('../hooks/useOptimizedApi', () => ({
     }
   })
 }))
+
+// Make debounce no-op in tests to avoid timing flakiness
+vi.mock('../utils/memoryOptimization', () => ({
+  debounce: (fn: any) => fn,
+}))

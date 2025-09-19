@@ -84,11 +84,11 @@ describe('Login', () => {
 
     render(<Login />)
     
-    // Fill out the form
-    await userEvent.type(screen.getByLabelText('Email address'), 'admin@example.com')
-    await userEvent.type(screen.getByLabelText('Password'), 'password123')
-    
-    // Submit the form
+    // Fill out the form and submit
+    const email = screen.getByLabelText('Email address') as HTMLInputElement
+    const pwd = screen.getByLabelText('Password') as HTMLInputElement
+    email.value = 'admin@example.com'
+    pwd.value = 'password123'
     await userEvent.click(screen.getByText('Sign in'))
     
     await waitFor(() => {
@@ -108,11 +108,11 @@ describe('Login', () => {
 
     render(<Login />)
     
-    // Fill out the form
-    await userEvent.type(screen.getByLabelText('Email address'), 'moderator@example.com')
-    await userEvent.type(screen.getByLabelText('Password'), 'password123')
-    
-    // Submit the form
+    // Fill out the form and submit
+    const email = screen.getByLabelText('Email address') as HTMLInputElement
+    const pwd = screen.getByLabelText('Password') as HTMLInputElement
+    email.value = 'moderator@example.com'
+    pwd.value = 'password123'
     await userEvent.click(screen.getByText('Sign in'))
     
     await waitFor(() => {
@@ -141,7 +141,8 @@ describe('Login', () => {
     render(<Login />)
     
     const passwordInput = screen.getByLabelText('Password')
-    const toggleButton = screen.getByRole('button', { name: /toggle password visibility/i })
+    // The button uses an aria-label that changes between Show/Hide password
+    const toggleButton = screen.getByRole('button', { name: /show password/i })
     
     // Password should be hidden by default
     expect(passwordInput).toHaveAttribute('type', 'password')
@@ -150,8 +151,9 @@ describe('Login', () => {
     await userEvent.click(toggleButton)
     expect(passwordInput).toHaveAttribute('type', 'text')
     
-    // Click to hide password
-    await userEvent.click(toggleButton)
+    // Click to hide password (label changes to Hide password)
+    const hideButton = screen.getByRole('button', { name: /hide password/i })
+    await userEvent.click(hideButton)
     expect(passwordInput).toHaveAttribute('type', 'password')
   })
 

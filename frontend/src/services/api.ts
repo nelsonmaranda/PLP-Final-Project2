@@ -367,6 +367,20 @@ class ApiService {
       throw this.handleError(error)
     }
   }
+
+  // AI Inference (feature-flagged)
+  async predict(routeId: string, features: Record<string, number>): Promise<ApiResponse<{ prediction: number; label: string; confidence: number }>> {
+    try {
+      const enabled = (window as any)?.featureFlags?.ai === true || process.env.VITE_ENABLE_AI === 'true'
+      if (!enabled) {
+        return { success: true, data: { prediction: 0.5, label: 'medium', confidence: 0.5 } } as any
+      }
+      const response: AxiosResponse<ApiResponse<{ prediction: number; label: string; confidence: number }>> = await this.api.post('/ai/predict', { routeId, features })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
 }
 
 // Create and export a singleton instance
