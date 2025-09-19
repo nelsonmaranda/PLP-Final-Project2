@@ -47,20 +47,8 @@ export default function MapView() {
     })
 
     if (response.success && response.data) {
-      const routesWithScores = await Promise.all(
-        response.data.routes.map(async (route) => {
-          try {
-            const scoreResponse = await apiService.getScoresByRoute(route._id)
-            return {
-              ...route,
-              score: scoreResponse.data?.score
-            }
-          } catch {
-            return route
-          }
-        })
-      )
-      return routesWithScores
+      // Routes already include scores from the backend
+      return response.data.routes
     }
     return []
   }, [])

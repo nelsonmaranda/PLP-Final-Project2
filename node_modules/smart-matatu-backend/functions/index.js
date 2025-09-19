@@ -248,6 +248,58 @@ app.get('/scores', async (req, res) => {
   }
 });
 
+// Score by route endpoint (database-backed)
+app.get('/scores/route/:routeId', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+    const { routeId } = req.params;
+    const score = await Score.findOne({ routeId }).lean();
+    
+    if (!score) {
+      return res.status(404).json({ success: false, message: 'Score not found for this route' });
+    }
+
+    return res.json({ success: true, data: { score } });
+  } catch (error) {
+    console.error('Error fetching route score:', error);
+    return res.status(500).json({ success: false, message: 'Error fetching route score' });
+  }
+});
+
+// Top routes endpoint (database-backed)
+app.get('/scores/top/:limit', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+    const limit = Math.min(Number(req.params.limit) || 10, 50); // Cap at 50
+    const scores = await Score.find({}).sort({ overall: -1 }).limit(limit).lean();
+    
+    return res.json({ success: true, data: { scores } });
+  } catch (error) {
+    console.error('Error fetching top routes:', error);
+    return res.status(500).json({ success: false, message: 'Error fetching top routes' });
+  }
+});
+
+// Worst routes endpoint (database-backed)
+app.get('/scores/worst/:limit', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+    const limit = Math.min(Number(req.params.limit) || 10, 50); // Cap at 50
+    const scores = await Score.find({}).sort({ overall: 1 }).limit(limit).lean();
+    
+    return res.json({ success: true, data: { scores } });
+  } catch (error) {
+    console.error('Error fetching worst routes:', error);
+    return res.status(500).json({ success: false, message: 'Error fetching worst routes' });
+  }
+});
+
 // Reports endpoint (database-backed)
 app.post('/reports', async (req, res) => {
   try {
