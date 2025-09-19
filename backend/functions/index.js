@@ -1,8 +1,44 @@
 const functions = require('firebase-functions');
 const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
 
 // Create Express app
 const app = express();
+
+// Trust proxy for Firebase Functions
+app.set('trust proxy', true);
+
+// Basic middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for API
+  crossOriginResourcePolicy: false // Allow cross-origin requests
+}));
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://smart-matwana-ke.web.app',
+    'https://smart-matwana-ke.firebaseapp.com'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
+}));
+
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Handle preflight requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
 // Test endpoint
 app.get('/test', (req, res) => {
