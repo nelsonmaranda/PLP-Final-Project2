@@ -91,171 +91,154 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Routes endpoint
-app.get('/routes', (req, res) => {
-  const mockRoutes = [
-    {
-      _id: '1',
-      name: 'Route 42 - Thika Road',
-      operator: 'KBS',
-      routeNumber: '42',
-      path: [[-1.2921, 36.8219], [-1.3000, 36.8000]],
-      stops: [
-        { name: 'CBD', coordinates: [-1.2921, 36.8219] },
-        { name: 'Thika Road', coordinates: [-1.3000, 36.8000] }
-      ],
-      fare: 50,
-      operatingHours: { start: '05:00', end: '22:00' },
-      isActive: true,
-      score: {
-        reliability: 4.1,
-        safety: 4.2,
-        punctuality: 4.0,
-        comfort: 3.8,
-        overall: 4.0,
-        totalReports: 25,
-        lastCalculated: new Date().toISOString()
-      }
-    },
-    {
-      _id: '2',
-      name: 'Route 34 - Ngong Road',
-      operator: 'Citi Hoppa',
-      routeNumber: '34',
-      path: [[-1.2921, 36.8219], [-1.3100, 36.7500]],
-      stops: [
-        { name: 'CBD', coordinates: [-1.2921, 36.8219] },
-        { name: 'Ngong Road', coordinates: [-1.3100, 36.7500] }
-      ],
-      fare: 45,
-      operatingHours: { start: '05:30', end: '21:30' },
-      isActive: true,
-      score: {
-        reliability: 3.5,
-        safety: 3.8,
-        punctuality: 3.2,
-        comfort: 3.5,
-        overall: 3.5,
-        totalReports: 18,
-        lastCalculated: new Date().toISOString()
-      }
+// Routes endpoint (database-backed)
+app.get('/routes', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
-  ];
-  
-  res.json({
-    success: true,
-    data: { 
-      routes: mockRoutes, 
-      pagination: { 
-        page: 1, 
-        limit: 10, 
-        total: 2, 
-        totalPages: 1 
-      } 
-    },
-    message: 'Routes retrieved successfully'
-  });
-});
 
-// Scores endpoint
-app.get('/scores', (req, res) => {
-  const mockScores = [
-    {
-      _id: '1',
-      routeId: '1',
-      reliability: 4.1,
-      safety: 4.2,
-      punctuality: 4.0,
-      comfort: 3.8,
-      overall: 4.0,
-      totalReports: 25,
-      lastCalculated: new Date().toISOString()
-    },
-    {
-      _id: '2',
-      routeId: '2',
-      reliability: 3.5,
-      safety: 3.8,
-      punctuality: 3.2,
-      comfort: 3.5,
-      overall: 3.5,
-      totalReports: 18,
-      lastCalculated: new Date().toISOString()
-    }
-  ];
-  
-  res.json({
-    success: true,
-    data: { 
-      scores: mockScores, 
-      pagination: { 
-        page: 1, 
-        limit: 10, 
-        total: 2, 
-        totalPages: 1 
-      } 
-    },
-    message: 'Scores retrieved successfully'
-  });
-});
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
 
-// Reports endpoint
-app.post('/reports', (req, res) => {
-  const { routeId, reportType, description, severity, location, isAnonymous } = req.body;
-  
-  if (!routeId || !reportType) {
-    return res.status(400).json({
-      success: false,
-      message: 'Route ID and report type are required'
+    const [routes, total] = await Promise.all([
+      Route.find({ isActive: true }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Route.countDocuments({ isActive: true })
+    ]);
+
+    const routeIds = routes.map((r) => r._id);
+    const scores = await Score.find({ routeId: { $in: routeIds } });
+    const scoreMap = new Map(scores.map((s) => [String(s.routeId), s]));
+
+    const routesWithScores = routes.map((r) => {
+      const s = scoreMap.get(String(r._id));
+      return {
+        ...r.toObject(),
+        score: s
+          ? {
+              reliability: s.reliability,
+              safety: s.safety,
+              punctuality: s.punctuality,
+              comfort: s.comfort,
+              overall: s.overall,
+              totalReports: s.totalReports,
+              lastCalculated: s.lastCalculated
+            }
+          : null
+      };
     });
+
+    return res.json({
+      success: true,
+      data: { routes: routesWithScores, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } }
+    });
+  } catch (error) {
+    console.error('Error fetching routes:', error);
+    return res.status(500).json({ success: false, message: 'Error fetching routes' });
   }
-  
-  const mockReport = {
-    _id: Date.now().toString(),
-    routeId,
-    reportType,
-    description: description || '',
-    severity: severity || 'medium',
-    location: location || { type: 'Point', coordinates: [-1.2921, 36.8219] },
-    status: 'pending',
-    isAnonymous: isAnonymous || false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  
-  res.status(201).json({
-    success: true,
-    data: mockReport,
-    message: 'Report submitted successfully'
-  });
 });
 
-// Analytics endpoint
-app.get('/analytics/summary', (req, res) => {
-  const mockAnalytics = {
-    totalRoutes: 2,
-    totalReports: 43,
-    totalUsers: 15,
-    averageScore: 3.75,
-    topRoutes: [
-      { routeId: '1', name: 'Route 42 - Thika Road', score: 4.0 },
-      { routeId: '2', name: 'Route 34 - Ngong Road', score: 3.5 }
-    ],
-    reportTypes: {
-      delay: 15,
-      breakdown: 8,
-      safety: 12,
-      crowding: 5,
-      other: 3
-    },
-    lastUpdated: new Date().toISOString()
-  };
-  
-  res.json({
-    success: true,
-    data: mockAnalytics,
-    message: 'Analytics retrieved successfully'
-  });
+// Scores endpoint (database-backed)
+app.get('/scores', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const [scores, total] = await Promise.all([
+      Score.find({}).sort({ lastCalculated: -1 }).skip(skip).limit(limit),
+      Score.countDocuments({})
+    ]);
+
+    return res.json({ success: true, data: { scores, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } } });
+  } catch (error) {
+    console.error('Error fetching scores:', error);
+    return res.status(500).json({ success: false, message: 'Error fetching scores' });
+  }
+});
+
+// Reports endpoint (database-backed)
+app.post('/reports', async (req, res) => {
+  try {
+    const { routeId, reportType, description, severity, location, isAnonymous } = req.body;
+    if (!routeId || !reportType) {
+      return res.status(400).json({ success: false, message: 'Route ID and report type are required' });
+    }
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+    const report = await Report.create({
+      routeId,
+      reportType,
+      description: description || '',
+      severity: severity || 'medium',
+      location: location || { type: 'Point', coordinates: [-1.2921, 36.8219] },
+      status: 'pending',
+      isAnonymous: Boolean(isAnonymous)
+    });
+    return res.status(201).json({ success: true, data: report, message: 'Report submitted successfully' });
+  } catch (error) {
+    console.error('Error creating report:', error);
+    return res.status(500).json({ success: false, message: 'Error creating report' });
+  }
+});
+
+// Analytics endpoint (database-backed)
+app.get('/analytics/summary', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+    const [totalRoutes, totalReports, totalUsers, avg] = await Promise.all([
+      Route.countDocuments({}),
+      Report.countDocuments({}),
+      User.countDocuments({}),
+      Score.aggregate([{ $group: { _id: null, avgOverall: { $avg: '$overall' } } }])
+    ]);
+    return res.json({
+      success: true,
+      data: {
+        totalRoutes,
+        totalReports,
+        totalUsers,
+        averageScore: avg[0]?.avgOverall || 0,
+        lastUpdated: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    return res.status(500).json({ success: false, message: 'Error fetching analytics' });
+  }
+});
+
+// Auth middleware and profile endpoint (for frontend current user)
+const authMiddleware = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = payload;
+    return next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+};
+
+app.get('/auth/profile', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    return res.json({ success: true, data: { user: { _id: user._id, email: user.email, displayName: user.displayName, role: user.role, savedRoutes: user.savedRoutes } } });
+  } catch (error) {
+    console.error('Profile error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
 });
 
 // Authentication endpoints

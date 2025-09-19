@@ -158,8 +158,9 @@ export interface AnalyticsData {
   totalUsers: number
   totalReports: number
   totalRoutes: number
-  averageReliability: number
-  averageSafety: number
+  averageScore?: number
+  averageReliability?: number
+  averageSafety?: number
   reportsByDay: Array<{
     date: string
     count: number

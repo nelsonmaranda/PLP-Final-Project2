@@ -32,6 +32,14 @@ export default function Signup() {
         [name]: ''
       }))
     }
+    
+    // Clear global error and success when user starts typing
+    if (error) {
+      setError(null)
+    }
+    if (success) {
+      setSuccess(false)
+    }
   }
 
   const validateForm = () => {
@@ -66,29 +74,37 @@ export default function Signup() {
 
     setIsLoading(true)
     setError(null)
+    setSuccess(false) // Clear any previous success state
 
     try {
       const response = await apiService.signup(formData)
       
-      if (response.success && response.data) {
-        // Update user state in context
-        setUser(response.data.user)
-        // Show success message and reset form
-        setError(null)
-        setSuccess(true)
-        setFormData({
-          displayName: '',
-          email: '',
-          password: ''
-        })
-        // Hide success message after 5 seconds
-        setTimeout(() => setSuccess(false), 5000)
+      // Strict validation: must have success=true, data object, user object, and token
+      if (response.success && response.data && response.data.user && response.data.token) {
+        // Verify the token was stored and we can fetch the profile
+        const currentUser = await apiService.getCurrentUser()
+        
+        if (currentUser && currentUser._id) {
+          // Update user state in context
+          setUser(currentUser)
+          // Show success message and reset form
+          setSuccess(true)
+          setFormData({
+            displayName: '',
+            email: '',
+            password: ''
+          })
+          // Hide success message after 3 seconds
+          setTimeout(() => setSuccess(false), 3000)
+        } else {
+          setError('Account created but authentication failed. Please try logging in.')
+        }
       } else {
-        setError('Registration failed. Please try again.')
+        setError('Registration failed. Please check your information and try again.')
       }
     } catch (err) {
       console.error('Signup error:', err)
-      setError('Failed to create account. Please try again.')
+      setError('Failed to create account. Please check your information and try again.')
     } finally {
       setIsLoading(false)
     }

@@ -1,30 +1,53 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, BarChart3, Shield, Users, Clock, Star, ArrowRight } from 'lucide-react'
+import apiService from '../services/api'
 
 export default function Home() {
   const [apiStatus, setApiStatus] = useState<'loading' | 'online' | 'offline'>('loading')
+  const [statsData, setStatsData] = useState({
+    totalRoutes: 0,
+    totalReports: 0,
+    averageScore: 0,
+    totalUsers: 0
+  })
 
   useEffect(() => {
-    // Simulate API health check
     const checkApiStatus = async () => {
       try {
-        // In a real app, this would call your API
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setApiStatus('online')
-      } catch (error) {
+        const res = await apiService.getHealth()
+        setApiStatus(res?.success ? 'online' : 'offline')
+      } catch {
         setApiStatus('offline')
       }
     }
-
     checkApiStatus()
   }, [])
 
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        const res = await apiService.getAnalytics()
+        if (res.success && res.data) {
+          setStatsData({
+            totalRoutes: res.data.totalRoutes ?? 0,
+            totalReports: res.data.totalReports ?? 0,
+            averageScore: Number(res.data.averageScore ?? 0),
+            totalUsers: res.data.totalUsers ?? 0
+          })
+        }
+      } catch {
+        // leave defaults
+      }
+    }
+    loadAnalytics()
+  }, [])
+
   const stats = [
-    { label: 'Active Routes', value: '15', icon: MapPin },
-    { label: 'Reports Today', value: '234', icon: BarChart3 },
-    { label: 'Safety Rating', value: '4.2★', icon: Shield },
-    { label: 'Active Users', value: '1,200', icon: Users },
+    { label: 'Active Routes', value: statsData.totalRoutes.toLocaleString(), icon: MapPin },
+    { label: 'Reports Today', value: statsData.totalReports.toLocaleString(), icon: BarChart3 },
+    { label: 'Safety Rating', value: `${statsData.averageScore.toFixed(1)}★`, icon: Shield },
+    { label: 'Active Users', value: statsData.totalUsers.toLocaleString(), icon: Users },
   ]
 
   const features = [

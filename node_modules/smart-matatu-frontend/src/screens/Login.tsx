@@ -22,34 +22,50 @@ export default function Login() {
       ...prev,
       [name]: value
     }))
+    // Clear error when user starts typing
+    if (error) {
+      setError(null)
+    }
+    // Clear success when user starts typing
+    if (success) {
+      setSuccess(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
+    setSuccess(false) // Clear any previous success state
 
     try {
       const response = await apiService.login(formData)
       
-      if (response.success && response.data) {
-        // Update user state in context
-        setUser(response.data.user)
-        // Show success message and reset form
-        setError(null)
-        setSuccess(true)
-        setFormData({
-          email: '',
-          password: ''
-        })
-        // Hide success message after 5 seconds
-        setTimeout(() => setSuccess(false), 5000)
+      // Strict validation: must have success=true, data object, user object, and token
+      if (response.success && response.data && response.data.user && response.data.token) {
+        // Verify the token was stored and we can fetch the profile
+        const currentUser = await apiService.getCurrentUser()
+        
+        if (currentUser && currentUser._id) {
+          // Update user state in context
+          setUser(currentUser)
+          // Show success message and reset form
+          setSuccess(true)
+          setFormData({
+            email: '',
+            password: ''
+          })
+          // Hide success message after 3 seconds
+          setTimeout(() => setSuccess(false), 3000)
+        } else {
+          setError('Authentication failed. Please try again.')
+        }
       } else {
-        setError('Login failed. Please try again.')
+        setError('Invalid email or password. Please check your credentials.')
       }
     } catch (err) {
       console.error('Login error:', err)
-      setError('Invalid email or password. Please try again.')
+      setError('Invalid email or password. Please check your credentials.')
     } finally {
       setIsLoading(false)
     }
