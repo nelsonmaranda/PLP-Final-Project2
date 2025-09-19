@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle, Loader2, Check } from 'lucide-react'
 import apiService from '../services/api'
 import { LoginFormData } from '../types'
 
@@ -8,6 +8,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: ''
@@ -30,11 +31,15 @@ export default function Login() {
       const response = await apiService.login(formData)
       
       if (response.success) {
-        // Show success message instead of auto-redirecting
+        // Show success message and reset form
         setError(null)
-        // You can add a success state here if needed
-        console.log('Login successful!')
-        // User can manually navigate using the navigation menu
+        setSuccess(true)
+        setFormData({
+          email: '',
+          password: ''
+        })
+        // Hide success message after 5 seconds
+        setTimeout(() => setSuccess(false), 5000)
       }
     } catch (err) {
       console.error('Login error:', err)
@@ -74,6 +79,21 @@ export default function Login() {
                   </div>
                   <div className="ml-3">
                     <p className="text-sm font-medium text-red-800">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {success && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg" role="alert" aria-live="polite">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Check className="h-5 w-5 text-green-400" aria-hidden="true" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-green-800">
+                      Login successful! Welcome back to Smart Matatu.
+                    </p>
                   </div>
                 </div>
               </div>

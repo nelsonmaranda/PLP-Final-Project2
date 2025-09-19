@@ -72,7 +72,10 @@ export default function Footer() {
                 <li className="flex items-center space-x-2">
                   <Mail className="w-4 h-4 text-gray-400" aria-hidden="true" />
                   <button 
-                    onClick={() => window.open(`mailto:contact@smart-matatu.ke`, '_blank')}
+                    onClick={() => {
+                      // Open email client with pre-filled subject and body
+                      window.location.href = 'mailto:contact@smart-matatu.ke?subject=Smart Matatu Inquiry&body=Hello, I would like to get in touch regarding Smart Matatu services.'
+                    }}
                     className="text-gray-400 hover:text-white transition-colors text-left"
                   >
                     contact@smart-matatu.ke
