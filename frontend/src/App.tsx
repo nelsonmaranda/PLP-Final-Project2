@@ -16,6 +16,8 @@ const Signup = lazy(() => import('./screens/Signup'))
 const Profile = lazy(() => import('./screens/Profile'))
 const Admin = lazy(() => import('./screens/Admin'))
 const AnalyticsDashboard = lazy(() => import('./screens/AnalyticsDashboard'))
+const SaccoDashboard = lazy(() => import('./screens/SaccoDashboard'))
+const AuthorityDashboard = lazy(() => import('./screens/AuthorityDashboard'))
 
 function App() {
   // Setup global error handling
@@ -38,6 +40,8 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/analytics" element={<AnalyticsDashboard />} />
+                <Route path="/sacco" element={<SaccoDashboard />} />
+                <Route path="/authority" element={<AuthorityDashboard />} />
               </Routes>
             </Suspense>
           </Layout>

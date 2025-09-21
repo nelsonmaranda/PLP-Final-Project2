@@ -23,7 +23,15 @@ import {
   AlternativeRoute,
   TrendAnalysis,
   DemandForecast,
-  UserRecommendation
+  UserRecommendation,
+  RoutePerformance,
+  DriverPerformance,
+  CustomerFeedback,
+  FleetStatus,
+  ComplianceData,
+  SafetyIncident,
+  SystemMetrics,
+  AuditLog
 } from '../types'
 
 class ApiService {
@@ -642,6 +650,70 @@ class ApiService {
         recentTrends: any[];
         lastUpdated: string;
       }>> = await this.api.get(`/analytics/dashboard/${userId}`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+  // ==================== STAKEHOLDER METHODS ====================
+
+  // SACCO Dashboard
+  async getSaccoDashboard(): Promise<ApiResponse<{
+    routePerformance: RoutePerformance[]
+    driverPerformance: DriverPerformance[]
+    customerFeedback: CustomerFeedback[]
+    fleetStatus: FleetStatus
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        routePerformance: RoutePerformance[]
+        driverPerformance: DriverPerformance[]
+        customerFeedback: CustomerFeedback[]
+        fleetStatus: FleetStatus
+      }>> = await this.api.get('/sacco/dashboard')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Authority Dashboard
+  async getAuthorityDashboard(): Promise<ApiResponse<{
+    complianceData: ComplianceData[]
+    safetyIncidents: SafetyIncident[]
+    systemMetrics: SystemMetrics
+    auditLogs: AuditLog[]
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        complianceData: ComplianceData[]
+        safetyIncidents: SafetyIncident[]
+        systemMetrics: SystemMetrics
+        auditLogs: AuditLog[]
+      }>> = await this.api.get('/authority/dashboard')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Data Export
+  async exportComplianceData(): Promise<Blob> {
+    try {
+      const response = await this.api.get('/export/compliance', {
+        responseType: 'blob'
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async exportIncidentsData(): Promise<Blob> {
+    try {
+      const response = await this.api.get('/export/incidents', {
+        responseType: 'blob'
+      })
       return response.data
     } catch (error) {
       throw this.handleError(error)

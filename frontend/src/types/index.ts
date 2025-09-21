@@ -3,8 +3,10 @@ export interface User {
   _id: string
   email: string
   displayName: string
-  role: 'user' | 'moderator' | 'admin'
+  role: 'user' | 'moderator' | 'admin' | 'sacco' | 'authority'
   savedRoutes: string[]
+  organization?: string
+  permissions?: string[]
   createdAt: string
   updatedAt: string
 }
@@ -485,4 +487,97 @@ export interface UserRecommendation {
     convenience: number
   }
   lastUpdated: string
+}
+
+// ==================== STAKEHOLDER TYPES ====================
+
+// SACCO Dashboard Types
+export interface RoutePerformance {
+  routeId: string
+  routeName: string
+  routeNumber: string
+  efficiencyScore: number
+  revenue: number
+  passengerCount: number
+  onTimePercentage: number
+  safetyScore: number
+  trend: 'up' | 'down' | 'stable'
+}
+
+export interface DriverPerformance {
+  driverId: string
+  driverName: string
+  safetyScore: number
+  onTimePercentage: number
+  customerRating: number
+  incidentCount: number
+  routes: string[]
+  status: 'active' | 'suspended' | 'warning'
+}
+
+export interface CustomerFeedback {
+  id: string
+  routeId: string
+  routeName: string
+  rating: number
+  comment: string
+  category: 'safety' | 'comfort' | 'punctuality' | 'service' | 'other'
+  status: 'pending' | 'in_progress' | 'resolved'
+  createdAt: string
+  responseTime?: number
+}
+
+export interface FleetStatus {
+  totalVehicles: number
+  activeVehicles: number
+  maintenanceDue: number
+  averageAge: number
+  utilizationRate: number
+}
+
+// Authority Dashboard Types
+export interface ComplianceData {
+  saccoId: string
+  saccoName: string
+  licenseStatus: 'valid' | 'expired' | 'pending'
+  safetyScore: number
+  incidentCount: number
+  lastInspection: string
+  violations: number
+  status: 'compliant' | 'warning' | 'non-compliant'
+}
+
+export interface SafetyIncident {
+  id: string
+  routeId: string
+  routeName: string
+  saccoName: string
+  type: 'accident' | 'breakdown' | 'overcrowding' | 'speeding' | 'other'
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  description: string
+  location: string
+  reportedAt: string
+  status: 'reported' | 'investigating' | 'resolved' | 'closed'
+  assignedTo?: string
+  resolution?: string
+  resolvedAt?: string
+}
+
+export interface SystemMetrics {
+  totalUsers: number
+  activeReports: number
+  totalRoutes: number
+  systemUptime: number
+  dataQuality: number
+  averageResponseTime: number
+}
+
+export interface AuditLog {
+  id: string
+  action: string
+  user: string
+  timestamp: string
+  details: string
+  ipAddress: string
+  status: 'success' | 'failed' | 'warning'
 }

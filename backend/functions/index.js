@@ -1732,6 +1732,250 @@ app.get('/analytics/recommendations/:userId', async (req, res) => {
   }
 });
 
+// ==================== STAKEHOLDER APIS ====================
+
+// SACCO Dashboard APIs
+app.get('/sacco/dashboard', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    // Get route performance data
+    const routes = await Route.find({ isActive: true });
+    const routePerformance = routes.map(route => ({
+      routeId: route._id,
+      routeName: route.name,
+      routeNumber: route.routeNumber,
+      efficiencyScore: Math.floor(Math.random() * 30) + 70,
+      revenue: Math.floor(Math.random() * 50000) + 20000,
+      passengerCount: Math.floor(Math.random() * 1000) + 200,
+      onTimePercentage: Math.floor(Math.random() * 30) + 70,
+      safetyScore: Math.floor(Math.random() * 20) + 80,
+      trend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)]
+    }));
+
+    // Get driver performance data (mock data)
+    const driverPerformance = [
+      {
+        driverId: '1',
+        driverName: 'John Mwangi',
+        safetyScore: 92,
+        onTimePercentage: 88,
+        customerRating: 4.5,
+        incidentCount: 1,
+        routes: ['Route 1', 'Route 2'],
+        status: 'active'
+      },
+      {
+        driverId: '2',
+        driverName: 'Mary Wanjiku',
+        safetyScore: 95,
+        onTimePercentage: 92,
+        customerRating: 4.8,
+        incidentCount: 0,
+        routes: ['Route 3', 'Route 4'],
+        status: 'active'
+      }
+    ];
+
+    // Get customer feedback (mock data)
+    const customerFeedback = [
+      {
+        id: '1',
+        routeId: '1',
+        routeName: 'Route 1 - CBD to Westlands',
+        rating: 4,
+        comment: 'Driver was very professional and punctual',
+        category: 'service',
+        status: 'resolved',
+        createdAt: new Date().toISOString(),
+        responseTime: 2
+      }
+    ];
+
+    // Get fleet status (mock data)
+    const fleetStatus = {
+      totalVehicles: 25,
+      activeVehicles: 23,
+      maintenanceDue: 3,
+      averageAge: 4.2,
+      utilizationRate: 87
+    };
+
+    res.json({
+      success: true,
+      data: {
+        routePerformance,
+        driverPerformance,
+        customerFeedback,
+        fleetStatus
+      }
+    });
+
+  } catch (error) {
+    console.error('SACCO dashboard error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to load SACCO dashboard data'
+    });
+  }
+});
+
+// Authority Dashboard APIs
+app.get('/authority/dashboard', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    // Get compliance data (mock data)
+    const complianceData = [
+      {
+        saccoId: '1',
+        saccoName: 'Nairobi City Sacco',
+        licenseStatus: 'valid',
+        safetyScore: 92,
+        incidentCount: 2,
+        lastInspection: '2025-09-15',
+        violations: 0,
+        status: 'compliant'
+      },
+      {
+        saccoId: '2',
+        saccoName: 'Eastlands Matatu Sacco',
+        licenseStatus: 'valid',
+        safetyScore: 78,
+        incidentCount: 5,
+        lastInspection: '2025-09-10',
+        violations: 2,
+        status: 'warning'
+      }
+    ];
+
+    // Get safety incidents (mock data)
+    const safetyIncidents = [
+      {
+        id: '1',
+        routeId: '1',
+        routeName: 'Route 1 - CBD to Westlands',
+        saccoName: 'Nairobi City Sacco',
+        type: 'accident',
+        severity: 'high',
+        description: 'Minor collision at roundabout',
+        location: 'Westlands Roundabout',
+        reportedAt: new Date().toISOString(),
+        status: 'investigating',
+        assignedTo: 'Inspector John Doe'
+      }
+    ];
+
+    // Get system metrics (mock data)
+    const systemMetrics = {
+      totalUsers: 1250,
+      activeReports: 45,
+      totalRoutes: 25,
+      systemUptime: 99.8,
+      dataQuality: 94.5,
+      averageResponseTime: 1.2
+    };
+
+    // Get audit logs (mock data)
+    const auditLogs = [
+      {
+        id: '1',
+        action: 'User Login',
+        user: 'admin@authority.ke',
+        timestamp: new Date().toISOString(),
+        details: 'Successful login from 192.168.1.100',
+        ipAddress: '192.168.1.100',
+        status: 'success'
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: {
+        complianceData,
+        safetyIncidents,
+        systemMetrics,
+        auditLogs
+      }
+    });
+
+  } catch (error) {
+    console.error('Authority dashboard error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to load authority dashboard data'
+    });
+  }
+});
+
+// Data export endpoints
+app.get('/export/compliance', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    // Get compliance data for export
+    const complianceData = [
+      {
+        saccoId: '1',
+        saccoName: 'Nairobi City Sacco',
+        licenseStatus: 'valid',
+        safetyScore: 92,
+        incidentCount: 2,
+        lastInspection: '2025-09-15',
+        violations: 0,
+        status: 'compliant'
+      }
+    ];
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=compliance-report.json');
+    res.json({
+      success: true,
+      data: complianceData,
+      exportedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Export compliance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export compliance data'
+    });
+  }
+});
+
+app.get('/export/incidents', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    // Get incidents data for export
+    const incidents = await Report.find({ reportType: 'safety' }).limit(100);
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=safety-incidents.json');
+    res.json({
+      success: true,
+      data: incidents,
+      exportedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Export incidents error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export incidents data'
+    });
+  }
+});
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({

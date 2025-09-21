@@ -31,13 +31,26 @@ export default function Sidebar({ language, setLanguage }: SidebarProps) {
     return location.pathname === path
   }
 
-  const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Map', href: '/map', icon: MapPin },
-    { name: 'Report', href: '/report', icon: BarChart3 },
-    { name: 'Analytics', href: '/analytics', icon: TrendingUp },
-    { name: 'Profile', href: '/profile', icon: User },
-  ]
+  const getNavigation = () => {
+    const baseNavigation = [
+      { name: 'Dashboard', href: '/', icon: Home },
+      { name: 'Map', href: '/map', icon: MapPin },
+      { name: 'Report', href: '/report', icon: BarChart3 },
+      { name: 'Analytics', href: '/analytics', icon: TrendingUp },
+      { name: 'Profile', href: '/profile', icon: User },
+    ]
+
+    // Add role-based navigation
+    if (state.user?.role === 'sacco') {
+      baseNavigation.splice(4, 0, { name: 'SACCO Dashboard', href: '/sacco', icon: BarChart3 })
+    } else if (state.user?.role === 'authority') {
+      baseNavigation.splice(4, 0, { name: 'Authority Dashboard', href: '/authority', icon: Shield })
+    }
+
+    return baseNavigation
+  }
+
+  const navigation = getNavigation()
 
   const quickActions = [
     { name: 'Favorites', href: '/profile?tab=favorites', icon: Heart },
