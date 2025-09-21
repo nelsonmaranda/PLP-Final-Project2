@@ -43,7 +43,27 @@ export default function UserManagement() {
   const loadUsers = async () => {
     try {
       setLoading(true)
-      // Mock data for now - replace with actual API call
+      // Use real API call
+      const response = await fetch('https://us-central1-smart-matwana-ke.cloudfunctions.net/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch users')
+      }
+      
+      const data = await response.json()
+      if (data.success) {
+        setUsers(data.data)
+      } else {
+        throw new Error(data.message || 'Failed to load users')
+      }
+    } catch (error) {
+      console.error('Error loading users:', error)
+      // Fallback to mock data if API fails
       const mockUsers: User[] = [
         {
           _id: '1',
@@ -76,8 +96,6 @@ export default function UserManagement() {
         }
       ]
       setUsers(mockUsers)
-    } catch (error) {
-      console.error('Error loading users:', error)
     } finally {
       setLoading(false)
     }
@@ -86,22 +104,39 @@ export default function UserManagement() {
   const handleApprove = async (userId: string) => {
     try {
       setActionLoading(userId)
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 1000))
       
-      setUsers(prev => prev.map(user => 
-        user._id === userId 
-          ? { 
-              ...user, 
-              role: user.requestedRole || user.role,
-              status: 'active' as const,
-              requestedRole: undefined,
-              approvedAt: new Date().toISOString()
-            }
-          : user
-      ))
+      const response = await fetch(`https://us-central1-smart-matwana-ke.cloudfunctions.net/api/admin/users/${userId}/approve`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to approve user')
+      }
+      
+      const data = await response.json()
+      if (data.success) {
+        // Update the user in the local state
+        setUsers(prev => prev.map(user => 
+          user._id === userId 
+            ? { 
+                ...user, 
+                role: user.requestedRole || user.role,
+                status: 'active' as const,
+                requestedRole: undefined,
+                approvedAt: new Date().toISOString()
+              }
+            : user
+        ))
+      } else {
+        throw new Error(data.message || 'Failed to approve user')
+      }
     } catch (error) {
       console.error('Error approving user:', error)
+      alert('Failed to approve user. Please try again.')
     } finally {
       setActionLoading(null)
     }
@@ -110,21 +145,39 @@ export default function UserManagement() {
   const handleReject = async (userId: string, reason: string) => {
     try {
       setActionLoading(userId)
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 1000))
       
-      setUsers(prev => prev.map(user => 
-        user._id === userId 
-          ? { 
-              ...user, 
-              status: 'rejected' as const,
-              rejectionReason: reason,
-              requestedRole: undefined
-            }
-          : user
-      ))
+      const response = await fetch(`https://us-central1-smart-matwana-ke.cloudfunctions.net/api/admin/users/${userId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to reject user')
+      }
+      
+      const data = await response.json()
+      if (data.success) {
+        // Update the user in the local state
+        setUsers(prev => prev.map(user => 
+          user._id === userId 
+            ? { 
+                ...user, 
+                status: 'rejected' as const,
+                rejectionReason: reason,
+                requestedRole: undefined
+              }
+            : user
+        ))
+      } else {
+        throw new Error(data.message || 'Failed to reject user')
+      }
     } catch (error) {
       console.error('Error rejecting user:', error)
+      alert('Failed to reject user. Please try again.')
     } finally {
       setActionLoading(null)
     }

@@ -404,7 +404,27 @@ app.get('/auth/profile', authMiddleware, async (req, res) => {
     if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    return res.json({ success: true, data: { user: { _id: user._id, email: user.email, displayName: user.displayName, role: user.role, savedRoutes: user.savedRoutes } } });
+    return res.json({ 
+      success: true, 
+      data: { 
+        user: { 
+          _id: user._id, 
+          email: user.email, 
+          displayName: user.displayName, 
+          role: user.role,
+          requestedRole: user.requestedRole,
+          status: user.status,
+          organization: user.organization,
+          permissions: user.permissions,
+          approvedBy: user.approvedBy,
+          approvedAt: user.approvedAt,
+          rejectionReason: user.rejectionReason,
+          savedRoutes: user.savedRoutes,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        } 
+      } 
+    });
   } catch (error) {
     console.error('Profile error:', error);
     return res.status(500).json({ success: false, message: 'Internal server error' });
@@ -469,7 +489,16 @@ app.post('/auth/login', async (req, res) => {
           email: user.email,
           displayName: user.displayName,
           role: user.role,
-          savedRoutes: user.savedRoutes
+          requestedRole: user.requestedRole,
+          status: user.status,
+          organization: user.organization,
+          permissions: user.permissions,
+          approvedBy: user.approvedBy,
+          approvedAt: user.approvedAt,
+          rejectionReason: user.rejectionReason,
+          savedRoutes: user.savedRoutes,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
         },
         token
       },
