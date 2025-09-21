@@ -953,7 +953,13 @@ app.get('/weather', async (req, res) => {
     );
 
     if (!weatherResponse.ok) {
-      throw new Error(`OpenWeatherMap API error: ${weatherResponse.status}`);
+      const errorData = await weatherResponse.json().catch(() => ({}));
+      console.error(`OpenWeatherMap API error: ${weatherResponse.status}`, errorData);
+      
+      if (weatherResponse.status === 401) {
+        throw new Error(`OpenWeatherMap API key is invalid or not activated. Please check your API key. Status: ${weatherResponse.status}`);
+      }
+      throw new Error(`OpenWeatherMap API error: ${weatherResponse.status} - ${errorData.message || 'Unknown error'}`);
     }
 
     const weatherData = await weatherResponse.json();
@@ -999,7 +1005,8 @@ app.get('/weather', async (req, res) => {
     res.json({
       success: true,
       data: fallbackData,
-      warning: 'Using fallback data due to API error'
+      warning: 'Using fallback data due to API error',
+      error: error.message
     });
   }
 });
