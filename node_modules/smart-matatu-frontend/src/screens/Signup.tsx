@@ -4,14 +4,16 @@ import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Check, AlertCircle, Loader2 }
 import apiService from '../services/api'
 import { SignupFormData } from '../types'
 import { useApp } from '../contexts/AppContext'
+import RoleSelector from '../components/RoleSelector'
 
 export default function Signup() {
-  const { setUser } = useApp()
+  const { setUser, state } = useApp()
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [selectedRole, setSelectedRole] = useState('user')
   const [formData, setFormData] = useState<SignupFormData>({
     displayName: '',
     email: '',
@@ -78,7 +80,13 @@ export default function Signup() {
     setSuccess(false) // Clear any previous success state
 
     try {
-      const response = await apiService.signup(formData)
+      // Add role to form data
+      const signupData = {
+        ...formData,
+        role: selectedRole
+      }
+      
+      const response = await apiService.signup(signupData)
       
       // Strict validation: must have success=true, data object, user object, and token
       if (response.success && response.data && response.data.user && response.data.token) {
@@ -91,6 +99,7 @@ export default function Signup() {
           email: '',
           password: ''
         })
+        setSelectedRole('user')
         // Redirect to home page after successful signup
         setTimeout(() => {
           navigate('/')
@@ -272,6 +281,15 @@ export default function Signup() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Role Selection */}
+              <div className="form-group">
+                <RoleSelector
+                  selectedRole={selectedRole}
+                  onRoleChange={setSelectedRole}
+                  language={state.language}
+                />
               </div>
 
               {/* Submit Button */}

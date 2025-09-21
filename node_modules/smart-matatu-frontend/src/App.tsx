@@ -5,6 +5,7 @@ import { AccessibilityProvider } from './contexts/AccessibilityContext'
 import Layout from './components/Layout'
 import LoadingSpinner from './components/LoadingSpinner'
 import EnhancedErrorBoundary from './components/EnhancedErrorBoundary'
+import ProtectedRoute from './components/ProtectedRoute'
 import { setupGlobalErrorHandling } from './utils/errorHandling'
 
 // Lazy load components for better performance
@@ -32,16 +33,45 @@ function App() {
           <Layout>
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
+                {/* Public routes */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/map" element={<MapView />} />
                 <Route path="/report" element={<ReportForm />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/analytics" element={<AnalyticsDashboard />} />
-                <Route path="/sacco" element={<SaccoDashboard />} />
-                <Route path="/authority" element={<AuthorityDashboard />} />
+                
+                {/* Protected routes - require authentication */}
+                <Route path="/profile" element={
+                  <ProtectedRoute requireAuth={true}>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics" element={
+                  <ProtectedRoute requireAuth={true}>
+                    <AnalyticsDashboard />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Admin-only routes */}
+                <Route path="/admin" element={
+                  <ProtectedRoute requireAuth={true} allowedRoles={['admin', 'moderator']}>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                
+                {/* SACCO-only routes */}
+                <Route path="/sacco" element={
+                  <ProtectedRoute requireAuth={true} allowedRoles={['sacco', 'admin']}>
+                    <SaccoDashboard />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Authority-only routes */}
+                <Route path="/authority" element={
+                  <ProtectedRoute requireAuth={true} allowedRoles={['authority', 'admin']}>
+                    <AuthorityDashboard />
+                  </ProtectedRoute>
+                } />
               </Routes>
             </Suspense>
           </Layout>

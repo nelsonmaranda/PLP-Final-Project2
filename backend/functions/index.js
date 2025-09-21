@@ -487,7 +487,7 @@ app.post('/auth/login', async (req, res) => {
 
 app.post('/auth/register', async (req, res) => {
   try {
-    const { email, password, displayName } = req.body;
+    const { email, password, displayName, role } = req.body;
 
     if (!email || !password || !displayName) {
       return res.status(400).json({
@@ -495,6 +495,10 @@ app.post('/auth/register', async (req, res) => {
         message: 'Email, password, and display name are required'
       });
     }
+
+    // Validate role
+    const validRoles = ['user', 'sacco', 'authority', 'moderator', 'admin'];
+    const userRole = role && validRoles.includes(role) ? role : 'user';
 
     // If database is not connected, return error
     if (!isDBConnected) {
@@ -522,7 +526,7 @@ app.post('/auth/register', async (req, res) => {
       email: email.toLowerCase(),
       displayName: displayName.trim(),
       password: hashedPassword,
-      role: 'user',
+      role: userRole,
       savedRoutes: []
     });
 

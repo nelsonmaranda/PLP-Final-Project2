@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import { useApp } from '../contexts/AppContext'
 import Header from './Header'
-import Sidebar from './Sidebar'
+import RoleBasedNavigation from './RoleBasedNavigation'
 import Footer from './Footer'
 import LoadingSpinner from './LoadingSpinner'
 
@@ -24,15 +24,15 @@ export default function Layout({ children }: LayoutProps) {
     )
   }
 
-  // For authenticated users, use sidebar layout
+  // For authenticated users, use role-based navigation
   if (state.isAuthenticated) {
     return (
       <div className="min-h-screen flex">
-        <Sidebar 
+        <RoleBasedNavigation 
           language={state.language} 
           setLanguage={setLanguage}
         />
-        <div className="flex-1 flex flex-col md:ml-0">
+        <div className="flex-1 flex flex-col lg:ml-0">
           <main className="flex-1">
             {children}
           </main>
