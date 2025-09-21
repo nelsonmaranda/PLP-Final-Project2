@@ -917,16 +917,80 @@ app.get('/dashboard/stats', async (req, res) => {
   }
 });
 
-// Weather endpoint (mock for now, can integrate with OpenWeatherMap API)
+// Weather endpoint with real OpenWeatherMap API integration
 app.get('/weather', async (req, res) => {
   try {
-    // Mock weather data for Nairobi
-    const weatherData = {
-      temperature: 24 + Math.floor(Math.random() * 6) - 3, // 21-27°C
-      humidity: 60 + Math.floor(Math.random() * 20), // 60-80%
-      windSpeed: 8 + Math.floor(Math.random() * 10), // 8-18 km/h
+    // Get OpenWeatherMap API key from config
+    const apiKey = functions.config().openweathermap?.api_key || process.env.OPENWEATHERMAP_API_KEY;
+    
+    if (!apiKey) {
+      console.log('OpenWeatherMap API key not found, using mock data');
+      // Fallback to mock data if API key is not configured
+      const weatherData = {
+        temperature: 24 + Math.floor(Math.random() * 6) - 3, // 21-27°C
+        humidity: 60 + Math.floor(Math.random() * 20), // 60-80%
+        windSpeed: 8 + Math.floor(Math.random() * 10), // 8-18 km/h
+        condition: ['Sunny', 'Partly Cloudy', 'Cloudy', 'Light Rain'][Math.floor(Math.random() * 4)],
+        description: 'Good conditions for travel (Mock Data)',
+        icon: 'partly-cloudy',
+        location: 'Nairobi, Kenya',
+        timestamp: new Date().toISOString()
+      };
+
+      return res.json({
+        success: true,
+        data: weatherData
+      });
+    }
+
+    // Nairobi coordinates
+    const lat = -1.2921;
+    const lon = 36.8219;
+    
+    // Fetch real weather data from OpenWeatherMap
+    const weatherResponse = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`
+    );
+
+    if (!weatherResponse.ok) {
+      throw new Error(`OpenWeatherMap API error: ${weatherResponse.status}`);
+    }
+
+    const weatherData = await weatherResponse.json();
+
+    // Transform the data to match our expected format
+    const transformedData = {
+      temperature: Math.round(weatherData.main.temp),
+      humidity: weatherData.main.humidity,
+      windSpeed: Math.round(weatherData.wind.speed * 3.6), // Convert m/s to km/h
+      condition: weatherData.weather[0].main,
+      description: weatherData.weather[0].description,
+      icon: weatherData.weather[0].icon,
+      location: weatherData.name + ', ' + weatherData.sys.country,
+      timestamp: new Date().toISOString(),
+      feelsLike: Math.round(weatherData.main.feels_like),
+      pressure: weatherData.main.pressure,
+      visibility: weatherData.visibility ? Math.round(weatherData.visibility / 1000) : null, // Convert to km
+      uvIndex: null, // Not available in current weather API
+      sunrise: new Date(weatherData.sys.sunrise * 1000).toISOString(),
+      sunset: new Date(weatherData.sys.sunset * 1000).toISOString()
+    };
+
+    res.json({
+      success: true,
+      data: transformedData
+    });
+
+  } catch (error) {
+    console.error('Weather data error:', error);
+    
+    // Fallback to mock data on error
+    const fallbackData = {
+      temperature: 24 + Math.floor(Math.random() * 6) - 3,
+      humidity: 60 + Math.floor(Math.random() * 20),
+      windSpeed: 8 + Math.floor(Math.random() * 10),
       condition: ['Sunny', 'Partly Cloudy', 'Cloudy', 'Light Rain'][Math.floor(Math.random() * 4)],
-      description: 'Good conditions for travel',
+      description: 'Good conditions for travel (Fallback Data)',
       icon: 'partly-cloudy',
       location: 'Nairobi, Kenya',
       timestamp: new Date().toISOString()
@@ -934,14 +998,8 @@ app.get('/weather', async (req, res) => {
 
     res.json({
       success: true,
-      data: weatherData
-    });
-
-  } catch (error) {
-    console.error('Weather data error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
+      data: fallbackData,
+      warning: 'Using fallback data due to API error'
     });
   }
 });

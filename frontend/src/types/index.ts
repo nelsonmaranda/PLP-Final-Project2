@@ -301,6 +301,12 @@ export interface WeatherData {
   icon: string
   location: string
   timestamp: string
+  feelsLike?: number
+  pressure?: number
+  visibility?: number
+  uvIndex?: number
+  sunrise?: string
+  sunset?: string
 }
 
 export interface FarePrediction {
