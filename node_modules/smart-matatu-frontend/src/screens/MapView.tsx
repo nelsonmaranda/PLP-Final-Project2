@@ -63,12 +63,33 @@ export default function MapView() {
     }
   )
 
-  const filteredRoutes = (routes || []).filter(route => {
-    if (filters.highReliability && (!route.score || route.score.reliability < 4)) return false
-    if (filters.safeRoutes && (!route.score || route.score.safety < 4)) return false
-    if (filters.lowFare && route.fare >= 50) return false
-    return true
-  })
+  const filteredRoutes = (() => {
+    try {
+      return (routes || []).filter(route => {
+        // Only apply filters if they are checked
+        if (filters.highReliability) {
+          if (!route.score || typeof route.score.reliability !== 'number' || route.score.reliability < 4) {
+            return false
+          }
+        }
+        if (filters.safeRoutes) {
+          if (!route.score || typeof route.score.safety !== 'number' || route.score.safety < 4) {
+            return false
+          }
+        }
+        if (filters.lowFare) {
+          if (typeof route.fare !== 'number' || route.fare >= 50) {
+            return false
+          }
+        }
+        return true
+      })
+    } catch (error) {
+      console.error('Error filtering routes:', error)
+      // Return all routes if filtering fails
+      return routes || []
+    }
+  })()
 
   const getScoreColor = (score: number) => {
     if (score >= 4.5) return '#22c55e' // green
@@ -247,47 +268,88 @@ export default function MapView() {
                     />
                     
                     {/* Render routes */}
-                    {filteredRoutes.map((route) => (
-                      <div key={route._id}>
-                        {/* Route path */}
-                        <Polyline
-                          positions={route.path as [number, number][]}
-                          color={getRouteColor(route)}
-                          weight={selectedRoute?._id === route._id ? 6 : 4}
-                          opacity={selectedRoute?._id === route._id ? 0.8 : 0.6}
-                        />
+                    {filteredRoutes.map((route) => {
+                      try {
+                        // Safely process route path - convert flattened array to coordinate pairs
+                        const routePath: [number, number][] = []
+                        if (route.path && Array.isArray(route.path) && route.path.length > 0) {
+                          for (let i = 0; i < route.path.length; i += 2) {
+                            if (i + 1 < route.path.length) {
+                              const lat = route.path[i + 1]
+                              const lng = route.path[i]
+                              if (typeof lat === 'number' && typeof lng === 'number' && 
+                                  !isNaN(lat) && !isNaN(lng)) {
+                                routePath.push([lat, lng])
+                              }
+                            }
+                          }
+                        }
+
+                        return (
+                          <div key={route._id}>
+                            {/* Route path */}
+                            {routePath.length > 0 && (
+                              <Polyline
+                                positions={routePath}
+                                color={getRouteColor(route)}
+                                weight={selectedRoute?._id === route._id ? 6 : 4}
+                                opacity={selectedRoute?._id === route._id ? 0.8 : 0.6}
+                              />
+                            )}
                         
-                        {/* Route stops */}
-                        {route.stops.map((stop, index) => (
-                          <Marker
-                            key={index}
-                            position={stop.coordinates as [number, number]}
-                            icon={DefaultIcon}
-                          >
-                            <Popup>
-                              <div className="p-2">
-                                <h3 className="font-semibold">{stop.name}</h3>
-                                <p className="text-sm text-gray-600">{route.name}</p>
-                                <p className="text-xs text-gray-500 mt-1">{route.operator}</p>
-                                <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
-                                  <div className="flex items-center">
-                                    <Star className="h-3 w-3 mr-1 text-yellow-400" />
-                                    {route.score?.overall?.toFixed(1) || 'N/A'}
-                                  </div>
-                                  <div className="flex items-center">
-                                    <Users className="h-3 w-3 mr-1" />
-                                    {route.score?.safety?.toFixed(1) || 'N/A'}
-                                  </div>
-                                  <div className="text-gray-600">
-                                    {route.fare} KES
-                                  </div>
-                                </div>
-                              </div>
-                            </Popup>
-                          </Marker>
-                        ))}
-                      </div>
-                    ))}
+                            {/* Route stops */}
+                            {route.stops && Array.isArray(route.stops) && route.stops.map((stop, index) => {
+                              try {
+                                const coords = stop.coordinates
+                                if (!coords || !Array.isArray(coords) || coords.length !== 2) {
+                                  return null
+                                }
+                                const [lat, lng] = coords
+                                if (typeof lat !== 'number' || typeof lng !== 'number' || 
+                                    isNaN(lat) || isNaN(lng)) {
+                                  return null
+                                }
+                                
+                                return (
+                                  <Marker
+                                    key={index}
+                                    position={[lat, lng]}
+                                    icon={DefaultIcon}
+                                  >
+                                    <Popup>
+                                      <div className="p-2">
+                                        <h3 className="font-semibold">{stop.name}</h3>
+                                        <p className="text-sm text-gray-600">{route.name}</p>
+                                        <p className="text-xs text-gray-500 mt-1">{route.operator}</p>
+                                        <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+                                          <div className="flex items-center">
+                                            <Star className="h-3 w-3 mr-1 text-yellow-400" />
+                                            {route.score?.overall?.toFixed(1) || 'N/A'}
+                                          </div>
+                                          <div className="flex items-center">
+                                            <Users className="h-3 w-3 mr-1" />
+                                            {route.score?.safety?.toFixed(1) || 'N/A'}
+                                          </div>
+                                          <div className="text-gray-600">
+                                            {route.fare} KES
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </Popup>
+                                  </Marker>
+                                )
+                              } catch (error) {
+                                console.error('Error rendering stop:', error)
+                                return null
+                              }
+                            })}
+                          </div>
+                        )
+                      } catch (error) {
+                        console.error('Error rendering route:', error)
+                        return null
+                      }
+                    })}
                     </MapContainer>
                   </div>
                 )}
