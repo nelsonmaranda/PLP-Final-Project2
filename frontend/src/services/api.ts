@@ -17,7 +17,13 @@ import {
   SafetyScore,
   CrowdDensity,
   RouteInsight,
-  DashboardStats
+  DashboardStats,
+  RouteEfficiencyScore,
+  TravelTimePrediction,
+  AlternativeRoute,
+  TrendAnalysis,
+  DemandForecast,
+  UserRecommendation
 } from '../types'
 
 class ApiService {
@@ -509,6 +515,133 @@ class ApiService {
     try {
       const params = timeOfDay ? { timeOfDay } : {}
       const response: AxiosResponse<ApiResponse<CrowdDensity>> = await this.api.get(`/predictions/crowd/${routeId}`, { params })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // ==================== ANALYTICS METHODS ====================
+
+  // Route efficiency scoring
+  async getRouteEfficiency(routeId: string): Promise<ApiResponse<RouteEfficiencyScore>> {
+    try {
+      const response: AxiosResponse<ApiResponse<RouteEfficiencyScore>> = await this.api.get(`/analytics/efficiency/${routeId}`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Travel time prediction
+  async predictTravelTime(routeId: string, fromStop: string, toStop: string, timeOfDay?: string): Promise<ApiResponse<TravelTimePrediction>> {
+    try {
+      const response: AxiosResponse<ApiResponse<TravelTimePrediction>> = await this.api.post('/analytics/travel-time/predict', {
+        routeId,
+        fromStop,
+        toStop,
+        timeOfDay
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Alternative routes
+  async findAlternativeRoutes(fromStop: string, toStop: string, maxTime?: number, maxCost?: number): Promise<ApiResponse<{ alternatives: AlternativeRoute[]; count: number }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ alternatives: AlternativeRoute[]; count: number }>> = await this.api.post('/analytics/routes/alternatives', {
+        fromStop,
+        toStop,
+        maxTime,
+        maxCost
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Trend analysis
+  async analyzeTrends(routeId: string, period: 'daily' | 'weekly' | 'monthly' = 'weekly'): Promise<ApiResponse<TrendAnalysis>> {
+    try {
+      const response: AxiosResponse<ApiResponse<TrendAnalysis>> = await this.api.get(`/analytics/trends/${routeId}`, {
+        params: { period }
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Demand forecasting
+  async forecastDemand(routeId: string, timeSlot: string): Promise<ApiResponse<DemandForecast>> {
+    try {
+      const response: AxiosResponse<ApiResponse<DemandForecast>> = await this.api.post('/analytics/demand/forecast', {
+        routeId,
+        timeSlot
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // User recommendations
+  async getUserRecommendations(userId: string): Promise<ApiResponse<UserRecommendation>> {
+    try {
+      const response: AxiosResponse<ApiResponse<UserRecommendation>> = await this.api.get(`/analytics/recommendations/${userId}`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Bulk efficiency scores
+  async getBulkEfficiencyScores(routeIds: string[]): Promise<ApiResponse<{ scores: RouteEfficiencyScore[]; count: number; total: number }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ scores: RouteEfficiencyScore[]; count: number; total: number }>> = await this.api.post('/analytics/efficiency/bulk', {
+        routeIds
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Route comparison
+  async compareRoutes(routeIds: string[]): Promise<ApiResponse<{ 
+    comparisons: any[]; 
+    bestRoute: any; 
+    worstRoute: any 
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ 
+        comparisons: any[]; 
+        bestRoute: any; 
+        worstRoute: any 
+      }>> = await this.api.post('/analytics/routes/compare', {
+        routeIds
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Analytics dashboard
+  async getAnalyticsDashboard(userId: string): Promise<ApiResponse<{
+    recommendations: UserRecommendation;
+    recentTrends: any[];
+    lastUpdated: string;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        recommendations: UserRecommendation;
+        recentTrends: any[];
+        lastUpdated: string;
+      }>> = await this.api.get(`/analytics/dashboard/${userId}`)
       return response.data
     } catch (error) {
       throw this.handleError(error)

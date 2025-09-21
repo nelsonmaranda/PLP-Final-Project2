@@ -54,6 +54,7 @@ import routeRoutes from './routes/routes'
 import reportRoutes from './routes/reports'
 import scoreRoutes from './routes/scores'
 import aiRoutes from './routes/ai'
+import analyticsRoutes from './routes/analytics'
 
 // Import services
 import scoringService from './services/scoringService'
@@ -64,6 +65,7 @@ app.use('/api/routes', routeRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/scores', scoreRoutes)
 app.use('/api/ai', aiRoutes)
+app.use('/api/analytics', analyticsRoutes)
 
 // 404 handler
 app.use('*', (req, res) => {

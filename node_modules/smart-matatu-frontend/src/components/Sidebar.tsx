@@ -12,7 +12,8 @@ import {
   History,
   Shield,
   TrendingUp,
-  Cloud
+  Cloud,
+  Clock
 } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
 
@@ -34,14 +35,15 @@ export default function Sidebar({ language, setLanguage }: SidebarProps) {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Map', href: '/map', icon: MapPin },
     { name: 'Report', href: '/report', icon: BarChart3 },
+    { name: 'Analytics', href: '/analytics', icon: TrendingUp },
     { name: 'Profile', href: '/profile', icon: User },
   ]
 
   const quickActions = [
     { name: 'Favorites', href: '/profile?tab=favorites', icon: Heart },
     { name: 'Reports', href: '/profile?tab=reports', icon: History },
-    { name: 'Safety', href: '/profile?tab=analytics', icon: Shield },
-    { name: 'Analytics', href: '/profile?tab=analytics', icon: TrendingUp },
+    { name: 'Safety', href: '/profile?tab=safety', icon: Shield },
+    { name: 'Predictions', href: '/analytics', icon: Clock },
   ]
 
   const toggleSidebar = () => {

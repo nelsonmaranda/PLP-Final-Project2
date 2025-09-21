@@ -1210,6 +1210,463 @@ app.get('/predictions/crowd/:routeId', async (req, res) => {
   }
 });
 
+// ==================== ANALYTICS ENDPOINTS ====================
+
+// Route efficiency scoring
+app.get('/analytics/efficiency/:routeId', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { routeId } = req.params;
+    const route = await Route.findById(routeId);
+    
+    if (!route) {
+      return res.status(404).json({ success: false, message: 'Route not found' });
+    }
+
+    // Get recent reports and scores
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const reports = await Report.find({
+      routeId: routeId,
+      createdAt: { $gte: thirtyDaysAgo }
+    });
+
+    // Calculate efficiency factors
+    const onTimeReports = reports.filter(r => r.reportType === 'reliability' && r.severity === 'low');
+    const reliabilityScore = reports.length > 0 ? (onTimeReports.length / reports.length) * 100 : 50;
+
+    const safetyReports = reports.filter(r => r.reportType === 'safety');
+    const safetyScore = safetyReports.length > 0
+      ? 100 - (safetyReports.reduce((sum, r) => sum + (r.severity === 'high' ? 30 : r.severity === 'medium' ? 15 : 5), 0) / safetyReports.length)
+      : 80;
+
+    const comfortReports = reports.filter(r => r.reportType === 'comfort');
+    const comfortScore = comfortReports.length > 0
+      ? comfortReports.reduce((sum, r) => sum + (r.severity === 'low' ? 90 : r.severity === 'medium' ? 70 : 50), 0) / comfortReports.length
+      : 70;
+
+    const avgFare = route.fare || 50;
+    const costScore = Math.max(0, 100 - (avgFare - 30) * 2);
+
+    const operatingHours = route.operatingHours ? 
+      (parseInt(route.operatingHours.end.split(':')[0]) - parseInt(route.operatingHours.start.split(':')[0])) : 12;
+    const frequencyScore = Math.min(100, operatingHours * 2);
+
+    // Calculate overall efficiency score
+    const weights = { reliability: 0.25, safety: 0.25, comfort: 0.15, cost: 0.10, frequency: 0.05, speed: 0.20 };
+    const efficiencyScore = 
+      (reliabilityScore * weights.reliability) +
+      (safetyScore * weights.safety) +
+      (comfortScore * weights.comfort) +
+      (costScore * weights.cost) +
+      (frequencyScore * weights.frequency) +
+      (70 * weights.speed); // Default speed score
+
+    const recommendations = [];
+    if (reliabilityScore < 70) recommendations.push('Improve on-time performance through better scheduling');
+    if (safetyScore < 80) recommendations.push('Address safety concerns and improve driver training');
+    if (comfortScore < 70) recommendations.push('Upgrade vehicles and improve passenger comfort');
+    if (costScore < 60) recommendations.push('Review fare structure for better value proposition');
+    if (frequencyScore < 50) recommendations.push('Increase service frequency during peak hours');
+
+    res.json({
+      success: true,
+      data: {
+        routeId,
+        routeName: route.name,
+        efficiencyScore: Math.round(efficiencyScore),
+        factors: {
+          reliability: Math.round(reliabilityScore),
+          safety: Math.round(safetyScore),
+          comfort: Math.round(comfortScore),
+          cost: Math.round(costScore),
+          frequency: Math.round(frequencyScore),
+          speed: 70
+        },
+        recommendations,
+        lastUpdated: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Route efficiency error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to calculate route efficiency'
+    });
+  }
+});
+
+// Travel time prediction
+app.post('/analytics/travel-time/predict', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { routeId, fromStop, toStop, timeOfDay } = req.body;
+    
+    if (!routeId || !fromStop || !toStop) {
+      return res.status(400).json({
+        success: false,
+        message: 'Route ID, from stop, and to stop are required'
+      });
+    }
+
+    const route = await Route.findById(routeId);
+    if (!route) {
+      return res.status(404).json({ success: false, message: 'Route not found' });
+    }
+
+    // Calculate base travel time (simplified)
+    const fromIndex = route.stops.findIndex(s => s.name === fromStop);
+    const toIndex = route.stops.findIndex(s => s.name === toStop);
+    const stopCount = toIndex - fromIndex;
+    const baseTime = Math.max(5, stopCount * 3);
+
+    // Apply time-of-day multiplier
+    let timeMultiplier = 1.0;
+    if (timeOfDay) {
+      const hour = parseInt(timeOfDay.split(':')[0]);
+      if (hour >= 7 && hour <= 9) timeMultiplier = 1.3; // Morning rush
+      if (hour >= 17 && hour <= 19) timeMultiplier = 1.4; // Evening rush
+      if (hour >= 22 || hour <= 5) timeMultiplier = 0.8; // Night time
+    }
+
+    const predictedTime = Math.round(baseTime * timeMultiplier);
+    const confidence = 75; // Default confidence
+
+    res.json({
+      success: true,
+      data: {
+        routeId,
+        fromStop,
+        toStop,
+        predictedTime,
+        confidence,
+        factors: {
+          timeOfDay: timeMultiplier,
+          dayOfWeek: 1.0,
+          weather: 1.1,
+          traffic: timeMultiplier,
+          historical: 1.0
+        },
+        alternativeTimes: {
+          optimistic: Math.round(predictedTime * 0.8),
+          realistic: predictedTime,
+          pessimistic: Math.round(predictedTime * 1.3)
+        },
+        lastUpdated: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Travel time prediction error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to predict travel time'
+    });
+  }
+});
+
+// Alternative routes
+app.post('/analytics/routes/alternatives', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { fromStop, toStop, maxTime, maxCost } = req.body;
+    
+    if (!fromStop || !toStop) {
+      return res.status(400).json({
+        success: false,
+        message: 'From stop and to stop are required'
+      });
+    }
+
+    // Find routes that serve both stops
+    const routes = await Route.find({
+      'stops.name': { $in: [fromStop, toStop] },
+      isActive: true
+    });
+
+    const alternatives = [];
+
+    for (const route of routes) {
+      const fromIndex = route.stops.findIndex(s => s.name === fromStop);
+      const toIndex = route.stops.findIndex(s => s.name === toStop);
+
+      if (fromIndex === -1 || toIndex === -1 || fromIndex >= toIndex) continue;
+
+      const travelTime = Math.max(5, (toIndex - fromIndex) * 3);
+      const cost = route.fare || 50;
+
+      if (maxTime && travelTime > maxTime) continue;
+      if (maxCost && cost > maxCost) continue;
+
+      // Calculate efficiency score (simplified)
+      const efficiency = 70 + Math.random() * 20; // Mock efficiency
+
+      const reasons = [];
+      if (efficiency > 80) reasons.push('Highly efficient route');
+      if (travelTime < 20) reasons.push('Fast travel time');
+      if (cost < 40) reasons.push('Affordable fare');
+
+      alternatives.push({
+        routeId: route._id.toString(),
+        routeName: route.name,
+        totalTime: travelTime,
+        totalCost: cost,
+        efficiency: Math.round(efficiency),
+        reasons,
+        stops: route.stops.slice(fromIndex, toIndex + 1).map(s => s.name)
+      });
+    }
+
+    // Sort by efficiency
+    alternatives.sort((a, b) => b.efficiency - a.efficiency);
+
+    res.json({
+      success: true,
+      data: {
+        alternatives,
+        count: alternatives.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Alternative routes error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to find alternative routes'
+    });
+  }
+});
+
+// Trend analysis
+app.get('/analytics/trends/:routeId', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { routeId } = req.params;
+    const { period = 'weekly' } = req.query;
+    
+    if (!['daily', 'weekly', 'monthly'].includes(period)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Period must be daily, weekly, or monthly'
+      });
+    }
+
+    const now = new Date();
+    let startDate;
+    switch (period) {
+      case 'daily': startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); break;
+      case 'weekly': startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
+      case 'monthly': startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); break;
+    }
+
+    const previousStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()));
+
+    const currentReports = await Report.find({
+      routeId: routeId,
+      createdAt: { $gte: startDate, $lt: now }
+    });
+
+    const previousReports = await Report.find({
+      routeId: routeId,
+      createdAt: { $gte: previousStart, $lt: startDate }
+    });
+
+    const currentRidership = currentReports.length;
+    const previousRidership = previousReports.length;
+    const ridershipChange = previousRidership > 0 
+      ? ((currentRidership - previousRidership) / previousRidership) * 100 
+      : 0;
+
+    const currentSafety = currentReports.filter(r => r.reportType === 'safety').length;
+    const previousSafety = previousReports.filter(r => r.reportType === 'safety').length;
+    const safetyChange = previousSafety > 0 
+      ? ((currentSafety - previousSafety) / previousSafety) * 100 
+      : 0;
+
+    const insights = [];
+    if (ridershipChange > 10) insights.push('Ridership is increasing significantly');
+    else if (ridershipChange < -10) insights.push('Ridership is declining, consider promotional activities');
+    
+    if (safetyChange < -10) insights.push('Safety incidents have decreased');
+    else if (safetyChange > 10) insights.push('Safety concerns are increasing');
+
+    res.json({
+      success: true,
+      data: {
+        routeId,
+        period,
+        trends: {
+          ridership: {
+            current: currentRidership,
+            previous: previousRidership,
+            change: Math.round(ridershipChange * 100) / 100,
+            trend: ridershipChange > 5 ? 'increasing' : ridershipChange < -5 ? 'decreasing' : 'stable'
+          },
+          efficiency: {
+            current: 75,
+            previous: 70,
+            change: 7.14,
+            trend: 'improving'
+          },
+          safety: {
+            current: currentSafety,
+            previous: previousSafety,
+            change: Math.round(safetyChange * 100) / 100,
+            trend: safetyChange < -10 ? 'safer' : safetyChange > 10 ? 'riskier' : 'stable'
+          },
+          cost: {
+            current: 50,
+            previous: 50,
+            change: 0,
+            trend: 'stable'
+          }
+        },
+        insights,
+        lastUpdated: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Trend analysis error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to analyze trends'
+    });
+  }
+});
+
+// Demand forecasting
+app.post('/analytics/demand/forecast', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { routeId, timeSlot } = req.body;
+    
+    if (!routeId || !timeSlot) {
+      return res.status(400).json({
+        success: false,
+        message: 'Route ID and time slot are required'
+      });
+    }
+
+    // Get historical data
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const reports = await Report.find({
+      routeId: routeId,
+      createdAt: { $gte: thirtyDaysAgo }
+    });
+
+    // Calculate predicted demand (simplified)
+    const historicalDemand = Math.min(100, reports.length * 2);
+    const predictedDemand = Math.round(historicalDemand * 1.1); // 10% increase
+    const confidence = Math.min(95, 60 + (reports.length * 1.5));
+
+    const recommendations = [];
+    if (predictedDemand > 80) recommendations.push('Consider increasing frequency during this time');
+    else if (predictedDemand < 30) recommendations.push('Low demand period, consider reducing frequency');
+
+    res.json({
+      success: true,
+      data: {
+        routeId,
+        timeSlot,
+        predictedDemand,
+        confidence,
+        factors: {
+          historical: historicalDemand,
+          weather: 1.0,
+          events: 1.0,
+          seasonality: 1.1
+        },
+        recommendations,
+        lastUpdated: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Demand forecasting error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to forecast demand'
+    });
+  }
+});
+
+// User recommendations
+app.get('/analytics/recommendations/:userId', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { userId } = req.params;
+    
+    // Get user's historical data
+    const userReports = await Report.find({ userId: userId });
+    
+    // Get all active routes
+    const routes = await Route.find({ isActive: true });
+    
+    const recommendations = [];
+    
+    for (const route of routes.slice(0, 10)) { // Limit to first 10 routes for performance
+      const efficiency = 70 + Math.random() * 20; // Mock efficiency
+      const score = efficiency + Math.random() * 10;
+      
+      if (score > 60) {
+        recommendations.push({
+          routeId: route._id.toString(),
+          routeName: route.name,
+          reason: efficiency > 85 ? 'High efficiency rating' : 'Good overall performance',
+          score: Math.round(score),
+          type: efficiency > 80 ? 'efficiency' : 'safety'
+        });
+      }
+    }
+    
+    // Sort by score and take top 5
+    const topRecommendations = recommendations
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+
+    res.json({
+      success: true,
+      data: {
+        userId,
+        recommendations: topRecommendations,
+        preferences: {
+          efficiency: 0.3,
+          safety: 0.3,
+          cost: 0.2,
+          convenience: 0.2
+        },
+        lastUpdated: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('User recommendations error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate recommendations'
+    });
+  }
+});
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({

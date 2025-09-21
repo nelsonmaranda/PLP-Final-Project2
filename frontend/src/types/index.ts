@@ -359,3 +359,124 @@ export interface DashboardStats {
   topPerformingRoute: string
   lastUpdated: string
 }
+
+// ==================== ANALYTICS TYPES ====================
+
+// Route Efficiency Scoring
+export interface RouteEfficiencyScore {
+  routeId: string
+  routeName: string
+  efficiencyScore: number // 0-100
+  factors: {
+    reliability: number // Based on on-time performance
+    speed: number // Average speed vs expected
+    safety: number // Safety incident rate
+    comfort: number // User comfort ratings
+    cost: number // Value for money
+    frequency: number // Service frequency
+  }
+  recommendations: string[]
+  lastUpdated: string
+}
+
+// Travel Time Prediction
+export interface TravelTimePrediction {
+  routeId: string
+  fromStop: string
+  toStop: string
+  predictedTime: number // in minutes
+  confidence: number // 0-100
+  factors: {
+    timeOfDay: number
+    dayOfWeek: number
+    weather: number
+    traffic: number
+    historical: number
+  }
+  alternativeTimes: {
+    optimistic: number
+    realistic: number
+    pessimistic: number
+  }
+  lastUpdated: string
+}
+
+// Alternative Route
+export interface AlternativeRoute {
+  routeId: string
+  routeName: string
+  totalTime: number
+  totalCost: number
+  efficiency: number
+  reasons: string[]
+  stops: string[]
+}
+
+// Trend Analysis
+export interface TrendAnalysis {
+  routeId: string
+  period: 'daily' | 'weekly' | 'monthly'
+  trends: {
+    ridership: {
+      current: number
+      previous: number
+      change: number
+      trend: 'increasing' | 'decreasing' | 'stable'
+    }
+    efficiency: {
+      current: number
+      previous: number
+      change: number
+      trend: 'improving' | 'declining' | 'stable'
+    }
+    safety: {
+      current: number
+      previous: number
+      change: number
+      trend: 'safer' | 'riskier' | 'stable'
+    }
+    cost: {
+      current: number
+      previous: number
+      change: number
+      trend: 'increasing' | 'decreasing' | 'stable'
+    }
+  }
+  insights: string[]
+  lastUpdated: string
+}
+
+// Demand Forecast
+export interface DemandForecast {
+  routeId: string
+  timeSlot: string
+  predictedDemand: number // 0-100
+  confidence: number
+  factors: {
+    historical: number
+    weather: number
+    events: number
+    seasonality: number
+  }
+  recommendations: string[]
+  lastUpdated: string
+}
+
+// User Recommendation
+export interface UserRecommendation {
+  userId: string
+  recommendations: {
+    routeId: string
+    routeName: string
+    reason: string
+    score: number
+    type: 'efficiency' | 'safety' | 'cost' | 'convenience'
+  }[]
+  preferences: {
+    efficiency: number
+    safety: number
+    cost: number
+    convenience: number
+  }
+  lastUpdated: string
+}
