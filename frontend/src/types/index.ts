@@ -4,9 +4,14 @@ export interface User {
   email: string
   displayName: string
   role: 'user' | 'moderator' | 'admin' | 'sacco' | 'authority'
+  requestedRole?: 'user' | 'moderator' | 'admin' | 'sacco' | 'authority'
+  status?: 'active' | 'pending' | 'suspended' | 'rejected'
   savedRoutes: string[]
   organization?: string
   permissions?: string[]
+  approvedBy?: string
+  approvedAt?: string
+  rejectionReason?: string
   createdAt: string
   updatedAt: string
 }

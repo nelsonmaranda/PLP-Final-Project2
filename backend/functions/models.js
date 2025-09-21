@@ -5,7 +5,25 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   displayName: { type: String, required: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['user', 'moderator', 'admin'], default: 'user' },
+  role: { 
+    type: String, 
+    enum: ['user', 'sacco', 'authority', 'moderator', 'admin'], 
+    default: 'user' 
+  },
+  requestedRole: { 
+    type: String, 
+    enum: ['user', 'sacco', 'authority', 'moderator', 'admin'] 
+  },
+  status: { 
+    type: String, 
+    enum: ['active', 'pending', 'suspended', 'rejected'], 
+    default: 'active' 
+  },
+  organization: { type: String },
+  permissions: [{ type: String }],
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  approvedAt: { type: Date },
+  rejectionReason: { type: String },
   savedRoutes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Route' }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

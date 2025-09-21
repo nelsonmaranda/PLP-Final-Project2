@@ -16,7 +16,8 @@ import {
   Clock,
   Building2,
   Gavel,
-  Settings
+  Settings,
+  Users
 } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
 
@@ -52,6 +53,7 @@ export default function RoleBasedNavigation({ language, setLanguage }: RoleBased
           { name: 'Analytics', href: '/analytics', icon: TrendingUp },
           { name: 'SACCO Dashboard', href: '/sacco', icon: Building2 },
           { name: 'Authority Dashboard', href: '/authority', icon: Gavel },
+          { name: 'User Management', href: '/users', icon: Users },
           { name: 'Admin Panel', href: '/admin', icon: Settings },
           { name: 'Profile', href: '/profile', icon: User },
         ]

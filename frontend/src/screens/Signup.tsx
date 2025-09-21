@@ -19,6 +19,7 @@ export default function Signup() {
     email: '',
     password: ''
   })
+  const [organization, setOrganization] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,10 +81,11 @@ export default function Signup() {
     setSuccess(false) // Clear any previous success state
 
     try {
-      // Add role to form data
+      // Add role and organization to form data
       const signupData = {
         ...formData,
-        role: selectedRole
+        role: selectedRole,
+        organization: organization
       }
       
       const response = await apiService.signup(signupData)
@@ -291,6 +293,28 @@ export default function Signup() {
                   language={state.language}
                 />
               </div>
+
+              {/* Organization Field - Show for roles that require approval */}
+              {['sacco', 'authority', 'moderator', 'admin'].includes(selectedRole) && (
+                <div className="form-group">
+                  <label htmlFor="organization" className="form-label">
+                    Organization Name
+                  </label>
+                  <input
+                    id="organization"
+                    name="organization"
+                    type="text"
+                    value={organization}
+                    onChange={(e) => setOrganization(e.target.value)}
+                    className="form-input"
+                    placeholder="Enter your organization name"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    This helps us verify your role request
+                  </p>
+                </div>
+              )}
 
               {/* Submit Button */}
               <div>

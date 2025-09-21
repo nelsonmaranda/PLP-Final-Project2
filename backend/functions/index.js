@@ -496,9 +496,14 @@ app.post('/auth/register', async (req, res) => {
       });
     }
 
-    // Validate role
+    // Validate role and determine approval requirements
     const validRoles = ['user', 'sacco', 'authority', 'moderator', 'admin'];
-    const userRole = role && validRoles.includes(role) ? role : 'user';
+    const requestedRole = role && validRoles.includes(role) ? role : 'user';
+    
+    // Determine if role requires approval
+    const requiresApproval = ['sacco', 'authority', 'moderator', 'admin'].includes(requestedRole);
+    const finalRole = requiresApproval ? 'user' : requestedRole; // Start as 'user' if requires approval
+    const userStatus = requiresApproval ? 'pending' : 'active';
 
     // If database is not connected, return error
     if (!isDBConnected) {
@@ -526,7 +531,10 @@ app.post('/auth/register', async (req, res) => {
       email: email.toLowerCase(),
       displayName: displayName.trim(),
       password: hashedPassword,
-      role: userRole,
+      role: finalRole,
+      requestedRole: requiresApproval ? requestedRole : undefined,
+      status: userStatus,
+      organization: req.body.organization || undefined,
       savedRoutes: []
     });
 
@@ -543,6 +551,12 @@ app.post('/auth/register', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Prepare response message based on approval status
+    let message = 'Registration successful';
+    if (requiresApproval) {
+      message = `Account created successfully. Your request for ${requestedRole} role is pending admin approval. You currently have user access.`;
+    }
+
     // Return success response (don't include password)
     res.status(201).json({
       success: true,
@@ -552,11 +566,16 @@ app.post('/auth/register', async (req, res) => {
           email: newUser.email,
           displayName: newUser.displayName,
           role: newUser.role,
+          requestedRole: newUser.requestedRole,
+          status: newUser.status,
+          organization: newUser.organization,
           savedRoutes: newUser.savedRoutes
         },
         token
       },
-      message: 'Registration successful'
+      message: message,
+      requiresApproval: requiresApproval,
+      pendingRole: requiresApproval ? requestedRole : null
     });
 
   } catch (error) {
