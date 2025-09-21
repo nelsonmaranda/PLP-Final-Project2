@@ -1935,6 +1935,212 @@ app.get('/authority/dashboard', async (req, res) => {
   }
 });
 
+// ==================== ADMIN MANAGEMENT ENDPOINTS ====================
+
+// Get all users for admin management
+app.get('/admin/users', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+
+    const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      data: users
+    });
+
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users'
+    });
+  }
+});
+
+// Approve user role
+app.post('/admin/users/:userId/approve', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!user.requestedRole) {
+      return res.status(400).json({ success: false, message: 'No role request to approve' });
+    }
+
+    // Update user role and status
+    user.role = user.requestedRole;
+    user.status = 'active';
+    user.requestedRole = undefined;
+    user.approvedBy = req.user.userId;
+    user.approvedAt = new Date();
+    user.updatedAt = new Date();
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'User role approved successfully',
+      data: {
+        user: {
+          _id: user._id,
+          email: user.email,
+          displayName: user.displayName,
+          role: user.role,
+          status: user.status,
+          organization: user.organization,
+          approvedAt: user.approvedAt
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Approve user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve user role'
+    });
+  }
+});
+
+// Reject user role
+app.post('/admin/users/:userId/reject', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+
+    const { userId } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({ success: false, message: 'Rejection reason is required' });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Update user status
+    user.status = 'rejected';
+    user.rejectionReason = reason;
+    user.requestedRole = undefined;
+    user.updatedAt = new Date();
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'User role request rejected',
+      data: {
+        user: {
+          _id: user._id,
+          email: user.email,
+          displayName: user.displayName,
+          role: user.role,
+          status: user.status,
+          rejectionReason: user.rejectionReason
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Reject user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject user role'
+    });
+  }
+});
+
+// Update user role (admin only)
+app.put('/admin/users/:userId/role', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+
+    const { userId } = req.params;
+    const { role, organization } = req.body;
+
+    const validRoles = ['user', 'sacco', 'authority', 'moderator', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid role' });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Update user role
+    user.role = role;
+    user.status = 'active';
+    user.organization = organization || user.organization;
+    user.approvedBy = req.user.userId;
+    user.approvedAt = new Date();
+    user.updatedAt = new Date();
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'User role updated successfully',
+      data: {
+        user: {
+          _id: user._id,
+          email: user.email,
+          displayName: user.displayName,
+          role: user.role,
+          status: user.status,
+          organization: user.organization,
+          approvedAt: user.approvedAt
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Update user role error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user role'
+    });
+  }
+});
+
 // Data export endpoints
 app.get('/export/compliance', async (req, res) => {
   try {
