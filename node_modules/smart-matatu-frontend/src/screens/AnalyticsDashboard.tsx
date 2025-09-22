@@ -27,6 +27,13 @@ import {
   UserRecommendation 
 } from '../types'
 
+interface SimpleRoute {
+  _id: string
+  name: string
+  routeNumber?: string
+  stops?: { name: string; coordinates: [number, number] }[]
+}
+
 export default function AnalyticsDashboard() {
   const { state } = useApp()
   const [isLoading, setIsLoading] = useState(true)
@@ -41,10 +48,48 @@ export default function AnalyticsDashboard() {
   const [demandForecasts, setDemandForecasts] = useState<DemandForecast[]>([])
   const [userRecommendations, setUserRecommendations] = useState<UserRecommendation | null>(null)
 
-  // Filter states
+  // Route and filter states
+  const [routes, setRoutes] = useState<SimpleRoute[]>([])
   const [selectedRoute, setSelectedRoute] = useState<string>('')
+  const [availableStops, setAvailableStops] = useState<string[]>([])
+  const [fromStop, setFromStop] = useState<string>('')
+  const [toStop, setToStop] = useState<string>('')
   const [timeSlot, setTimeSlot] = useState<string>('08:00')
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly')
+
+  // Load list of routes once
+  useEffect(() => {
+    const loadRoutes = async () => {
+      try {
+        const res = await apiService.getRoutes({ page: 1, limit: 200, sort: 'name', order: 'asc' })
+        if (res.success && res.data && res.data.routes) {
+          const simple: SimpleRoute[] = (res.data.routes as any[]).map(r => ({
+            _id: r._id,
+            name: r.name,
+            routeNumber: r.routeNumber,
+            stops: r.stops
+          }))
+          setRoutes(simple)
+        } else {
+          setRoutes([])
+        }
+      } catch (e) {
+        console.error('Failed to load routes for analytics', e)
+        setRoutes([])
+      }
+    }
+    loadRoutes()
+  }, [])
+
+  // When route changes, derive stops
+  useEffect(() => {
+    const r = routes.find(rt => rt._id === selectedRoute)
+    const stops = r?.stops?.map(s => s.name) || []
+    setAvailableStops(stops)
+    // reset selections that may be invalid
+    setFromStop(prev => (stops.includes(prev) ? prev : ''))
+    setToStop(prev => (stops.includes(prev) ? prev : ''))
+  }, [selectedRoute, routes])
 
   const loadAnalyticsData = useCallback(async () => {
     if (!state.user?._id) {
@@ -82,7 +127,7 @@ export default function AnalyticsDashboard() {
         setDemandForecasts([])
       }
 
-      // Alternative routes and travel predictions depend on inputs; keep empty until user triggers
+      // Alternative routes and travel predictions are user-triggered
       setAlternativeRoutes([])
       setTravelPredictions([])
 
@@ -100,11 +145,13 @@ export default function AnalyticsDashboard() {
 
   const handlePredictTravel = async () => {
     try {
+      if (!selectedRoute || !fromStop || !toStop) {
+        setError('Please select a route, From stop, and To stop.')
+        return
+      }
       setIsLoading(true)
       setError(null)
-      if (!selectedRoute) return
-      // Demo: use placeholders for fromStop/toStop until UI exposes selectors
-      const resp = await apiService.predictTravelTime(selectedRoute, 'From', 'To', timeSlot)
+      const resp = await apiService.predictTravelTime(selectedRoute, fromStop, toStop, timeSlot)
       setTravelPredictions(resp.success && resp.data ? [resp.data] : [])
     } catch (e) {
       console.error(e)
@@ -116,10 +163,13 @@ export default function AnalyticsDashboard() {
 
   const handleFindAlternatives = async () => {
     try {
+      if (!fromStop || !toStop) {
+        setError('Please select From and To stops to find alternatives.')
+        return
+      }
       setIsLoading(true)
       setError(null)
-      // Demo: use placeholders for fromStop/toStop until UI exposes selectors
-      const resp = await apiService.findAlternativeRoutes('From', 'To')
+      const resp = await apiService.findAlternativeRoutes(fromStop, toStop)
       setAlternativeRoutes(resp.success && resp.data ? resp.data.alternatives : [])
     } catch (e) {
       console.error(e)
@@ -254,9 +304,13 @@ export default function AnalyticsDashboard() {
                     className="form-select"
                   >
                     <option value="">Select a route</option>
-                    {/* Populate from server in future UI iteration */}
+                    {routes.map(r => (
+                      <option key={r._id} value={r._id}>
+                        {r.routeNumber ? `${r.routeNumber} - ${r.name}` : r.name}
+                      </option>
+                    ))}
                   </select>
-                  <button className="btn btn-outline" onClick={loadAnalyticsData}>
+                  <button className="btn btn-outline" onClick={loadAnalyticsData} disabled={!selectedRoute}>
                     <Filter className="w-4 h-4 mr-2" />
                     Refresh
                   </button>
@@ -319,13 +373,47 @@ export default function AnalyticsDashboard() {
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900">Travel Time Predictions</h2>
                 <div className="flex items-center space-x-4">
+                  <select
+                    value={selectedRoute}
+                    onChange={(e) => setSelectedRoute(e.target.value)}
+                    className="form-select"
+                  >
+                    <option value="">Select route</option>
+                    {routes.map(r => (
+                      <option key={r._id} value={r._id}>
+                        {r.routeNumber ? `${r.routeNumber} - ${r.name}` : r.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={fromStop}
+                    onChange={(e) => setFromStop(e.target.value)}
+                    className="form-select"
+                    disabled={!selectedRoute}
+                  >
+                    <option value="">From stop</option>
+                    {availableStops.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={toStop}
+                    onChange={(e) => setToStop(e.target.value)}
+                    className="form-select"
+                    disabled={!selectedRoute}
+                  >
+                    <option value="">To stop</option>
+                    {availableStops.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                   <input
                     type="time"
                     value={timeSlot}
                     onChange={(e) => setTimeSlot(e.target.value)}
                     className="form-input"
                   />
-                  <button className="btn btn-primary" onClick={handlePredictTravel}>
+                  <button className="btn btn-primary" onClick={handlePredictTravel} disabled={!selectedRoute || !fromStop || !toStop}>
                     <Zap className="w-4 h-4 mr-2" />
                     Predict
                   </button>
@@ -383,10 +471,34 @@ export default function AnalyticsDashboard() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-semibold text-gray-900">Alternative Routes</h3>
-                  <button className="btn btn-outline" onClick={handleFindAlternatives}>
-                    <Filter className="w-4 h-4 mr-2" />
-                    Find
-                  </button>
+                  <div className="flex items-center space-x-3">
+                    <select
+                      value={fromStop}
+                      onChange={(e) => setFromStop(e.target.value)}
+                      className="form-select"
+                      disabled={!selectedRoute}
+                    >
+                      <option value="">From stop</option>
+                      {availableStops.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={toStop}
+                      onChange={(e) => setToStop(e.target.value)}
+                      className="form-select"
+                      disabled={!selectedRoute}
+                    >
+                      <option value="">To stop</option>
+                      {availableStops.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                    <button className="btn btn-outline" onClick={handleFindAlternatives} disabled={!fromStop || !toStop}>
+                      <Filter className="w-4 h-4 mr-2" />
+                      Find
+                    </button>
+                  </div>
                 </div>
                 {alternativeRoutes.length > 0 && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -424,6 +536,18 @@ export default function AnalyticsDashboard() {
                 <h2 className="text-2xl font-bold text-gray-900">Trend Analysis</h2>
                 <div className="flex items-center space-x-4">
                   <select
+                    value={selectedRoute}
+                    onChange={(e) => setSelectedRoute(e.target.value)}
+                    className="form-select"
+                  >
+                    <option value="">Select route</option>
+                    {routes.map(r => (
+                      <option key={r._id} value={r._id}>
+                        {r.routeNumber ? `${r.routeNumber} - ${r.name}` : r.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
                     value={period}
                     onChange={(e) => setPeriod(e.target.value as any)}
                     className="form-select"
@@ -432,7 +556,7 @@ export default function AnalyticsDashboard() {
                     <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>
                   </select>
-                  <button className="btn btn-outline" onClick={loadAnalyticsData}>
+                  <button className="btn btn-outline" onClick={loadAnalyticsData} disabled={!selectedRoute}>
                     <Calendar className="w-4 h-4 mr-2" />
                     Update
                   </button>

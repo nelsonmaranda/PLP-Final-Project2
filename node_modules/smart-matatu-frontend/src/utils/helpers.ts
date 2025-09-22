@@ -82,14 +82,14 @@ export function getScoreBgColor(score: number): string {
   return 'bg-red-100'
 }
 
-// Get crowding level info
-export function getCrowdingLevelInfo(level: string) {
+// Get crowding level info (CROWDING_LEVELS has value:number)
+export function getCrowdingLevelInfo(level: number) {
   return CROWDING_LEVELS.find(c => c.value === level) || CROWDING_LEVELS[0]
 }
 
-// Get time bucket info
+// Get time bucket info (TIME_BUCKETS is string[])
 export function getTimeBucketInfo(bucket: string) {
-  return TIME_BUCKETS.find(t => t.value === bucket) || TIME_BUCKETS[0]
+  return TIME_BUCKETS.find(t => t === bucket) || TIME_BUCKETS[0]
 }
 
 // Calculate distance between two points

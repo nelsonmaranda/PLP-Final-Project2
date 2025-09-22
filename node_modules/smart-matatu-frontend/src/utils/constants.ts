@@ -37,29 +37,30 @@ export const USER_ROLES = {
 
 // Crowding Levels
 export const CROWDING_LEVELS = [
-  { value: 'low', label: 'Low - Plenty of space', color: 'text-green-600', bgColor: 'bg-green-100' },
-  { value: 'medium', label: 'Medium - Some standing', color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
-  { value: 'high', label: 'High - Crowded', color: 'text-orange-600', bgColor: 'bg-orange-100' },
-  { value: 'full', label: 'Full - Standing room only', color: 'text-red-600', bgColor: 'bg-red-100' },
-] as const
+  { label: 'Empty', value: 1 },
+  { label: 'Light', value: 2 },
+  { label: 'Moderate', value: 3 },
+  { label: 'Busy', value: 4 },
+  { label: 'Packed', value: 5 },
+]
 
-// Incident Types
 export const INCIDENT_TYPES = [
-  'Overcrowding',
-  'Reckless driving',
-  'Overcharging',
-  'Rude conductor',
-  'Vehicle breakdown',
-  'Long delays',
-  'Other',
-] as const
+  'delay', 'overcrowding', 'breakdown', 'accident', 'harassment', 'other'
+]
 
-// Time Buckets
 export const TIME_BUCKETS = [
-  { value: 'morning', label: 'Morning (6AM - 12PM)', start: 6, end: 12 },
-  { value: 'afternoon', label: 'Afternoon (12PM - 6PM)', start: 12, end: 18 },
-  { value: 'evening', label: 'Evening (6PM - 12AM)', start: 18, end: 24 },
-] as const
+  '06:00', '07:00', '08:00', '09:00', '10:00', '12:00', '15:00', '17:00', '19:00', '21:00'
+]
+
+export const MATATU_SACCOS = [
+  'Super metro','Latema','Starbus','Embassava','Forward Travellers','ROG','Manchester','Zuri','MSL','Metro Trans','Lopha','Enabled','NNK','Double M','Risen','NMOA Compliant','City Shuttle','Citihoppa','Tram','Expresso','KMO','Buruburu'
+]
+
+export function stripSaccoFromRouteName(name: string): string {
+  if (!name) return name
+  const saccoRegex = new RegExp(`\\b(${MATATU_SACCOS.map(s => s.replace(/[-/\\^$*+?.()|[\]{}]/g, r => r)).join('|')})\\b`, 'i')
+  return name.replace(saccoRegex, '').replace(/\s{2,}/g, ' ').trim()
+}
 
 // Score Ranges
 export const SCORE_RANGES = {
