@@ -46,7 +46,7 @@ export default function UserManagement() {
       // Use real API call
       const response = await fetch('https://us-central1-smart-matwana-ke.cloudfunctions.net/api/admin/users', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json'
         }
       })
@@ -63,39 +63,7 @@ export default function UserManagement() {
       }
     } catch (error) {
       console.error('Error loading users:', error)
-      // Fallback to mock data if API fails
-      const mockUsers: User[] = [
-        {
-          _id: '1',
-          email: 'john@sacco.com',
-          displayName: 'John Mwangi',
-          role: 'user',
-          requestedRole: 'sacco',
-          status: 'pending',
-          organization: 'Nairobi City Sacco',
-          createdAt: '2025-09-20T10:00:00Z'
-        },
-        {
-          _id: '2',
-          email: 'mary@authority.ke',
-          displayName: 'Mary Wanjiku',
-          role: 'user',
-          requestedRole: 'authority',
-          status: 'pending',
-          organization: 'Transport Authority',
-          createdAt: '2025-09-21T14:30:00Z'
-        },
-        {
-          _id: '3',
-          email: 'peter@admin.com',
-          displayName: 'Peter Kimani',
-          role: 'admin',
-          status: 'active',
-          createdAt: '2025-09-15T09:00:00Z',
-          approvedAt: '2025-09-15T09:00:00Z'
-        }
-      ]
-      setUsers(mockUsers)
+      setUsers([])
     } finally {
       setLoading(false)
     }
@@ -108,7 +76,7 @@ export default function UserManagement() {
       const response = await fetch(`https://us-central1-smart-matwana-ke.cloudfunctions.net/api/admin/users/${userId}/approve`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json'
         }
       })
@@ -149,7 +117,7 @@ export default function UserManagement() {
       const response = await fetch(`https://us-central1-smart-matwana-ke.cloudfunctions.net/api/admin/users/${userId}/reject`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ reason })
