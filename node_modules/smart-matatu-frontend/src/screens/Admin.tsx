@@ -1,14 +1,7 @@
 import { useState, useEffect } from 'react'
 import { BarChart3, Users, MapPin, AlertTriangle, Plus, Edit, Trash2, Eye } from 'lucide-react'
-
-interface Route {
-  id: string
-  name: string
-  reliability: number
-  safety: number
-  reports: number
-  status: 'active' | 'inactive' | 'maintenance'
-}
+import apiService from '../services/api'
+import { Route } from '../types'
 
 export default function Admin() {
   const [isLoading, setIsLoading] = useState(true)
@@ -19,83 +12,73 @@ export default function Admin() {
     description: '',
   })
 
-  // Sample data
-  const sampleRoutes: Route[] = [
-    {
-      id: '1',
-      name: 'Route 42 - Thika Road',
-      reliability: 4.2,
-      safety: 4.5,
-      reports: 156,
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Route 17 - Waiyaki Way',
-      reliability: 3.8,
-      safety: 4.0,
-      reports: 98,
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Route 8 - Jogoo Road',
-      reliability: 3.5,
-      safety: 3.8,
-      reports: 67,
-      status: 'maintenance'
-    },
-    {
-      id: '4',
-      name: 'Route 23 - Ngong Road',
-      reliability: 4.0,
-      safety: 4.2,
-      reports: 89,
-      status: 'active'
-    }
-  ]
-
   useEffect(() => {
-    // Simulate API call
     const loadRoutes = async () => {
-      setIsLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setRoutes(sampleRoutes)
-      setIsLoading(false)
+      try {
+        setIsLoading(true)
+        const res = await apiService.getRoutes({ page: 1, limit: 100, sort: 'createdAt', order: 'desc' })
+        if (res.success && res.data) {
+          setRoutes(res.data.routes as any)
+        } else {
+          setRoutes([])
+        }
+      } catch (e) {
+        console.error('Failed to load routes', e)
+        setRoutes([])
+      } finally {
+        setIsLoading(false)
+      }
     }
 
     loadRoutes()
   }, [])
 
-  const handleAddRoute = () => {
-    if (newRoute.name.trim()) {
-      const route: Route = {
-        id: Date.now().toString(),
-        name: newRoute.name,
-        reliability: 0,
-        safety: 0,
-        reports: 0,
-        status: 'active'
+  const handleAddRoute = async () => {
+    try {
+      if (newRoute.name.trim()) {
+        setIsLoading(true)
+        const created = await apiService.createRoute({ name: newRoute.name, description: newRoute.description })
+        if (created.success && created.data) {
+          const updated = await apiService.getRoutes({ page: 1, limit: 100, sort: 'createdAt', order: 'desc' })
+          setRoutes(updated.success && updated.data ? (updated.data.routes as any) : [])
+          setNewRoute({ name: '', description: '' })
+          setShowAddRoute(false)
+        }
       }
-      setRoutes(prev => [...prev, route])
-      setNewRoute({ name: '', description: '' })
-      setShowAddRoute(false)
+    } catch (e) {
+      console.error('Failed to add route', e)
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleDeleteRoute = (id: string) => {
-    setRoutes(prev => prev.filter(route => route.id !== id))
+  const handleDeleteRoute = async (id: string) => {
+    try {
+      setIsLoading(true)
+      await apiService.deleteRoute(id)
+      const updated = await apiService.getRoutes({ page: 1, limit: 100, sort: 'createdAt', order: 'desc' })
+      setRoutes(updated.success && updated.data ? (updated.data.routes as any) : [])
+    } catch (e) {
+      console.error('Failed to delete route', e)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleToggleStatus = (id: string) => {
-    setRoutes(prev => prev.map(route => 
-      route.id === id 
-        ? { 
-            ...route, 
-            status: route.status === 'active' ? 'inactive' : 'active' 
-          }
-        : route
-    ))
+  const handleToggleStatus = async (id: string) => {
+    try {
+      setIsLoading(true)
+      const route = routes.find(r => (r as any)._id === id || (r as any).id === id)
+      if (!route) return
+      const next = (route as any).status === 'active' ? 'inactive' : 'active'
+      await apiService.updateRoute((route as any)._id || (route as any).id, { status: next } as any)
+      const updated = await apiService.getRoutes({ page: 1, limit: 100, sort: 'createdAt', order: 'desc' })
+      setRoutes(updated.success && updated.data ? (updated.data.routes as any) : [])
+    } catch (e) {
+      console.error('Failed to toggle route status', e)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const stats = [
@@ -108,21 +91,21 @@ export default function Admin() {
     },
     {
       title: 'Active Routes',
-      value: routes.filter(r => r.status === 'active').length,
+      value: routes.filter((r: any) => r.status === 'active').length,
       icon: BarChart3,
       color: 'text-green-600',
       bgColor: 'bg-green-100'
     },
     {
       title: 'Total Reports',
-      value: routes.reduce((sum, r) => sum + r.reports, 0),
+      value: (routes as any).reduce((sum: number, r: any) => sum + (r.reports || 0), 0),
       icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
     },
     {
       title: 'Safety Issues',
-      value: 3,
+      value: (routes as any).reduce((sum: number, r: any) => sum + (r.safetyIssues || 0), 0),
       icon: AlertTriangle,
       color: 'text-red-600',
       bgColor: 'bg-red-100'
@@ -256,35 +239,35 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {routes.map((route) => (
-                    <tr key={route.id} className="hover:bg-gray-50">
+                  {routes.map((route: any) => (
+                    <tr key={route._id || route.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{route.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="text-sm text-gray-900">{route.reliability}</div>
+                          <div className="text-sm text-gray-900">{route.score?.reliability ?? '-'}</div>
                           <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
                             <div 
                               className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${(route.reliability / 5) * 100}%` }}
+                              style={{ width: `${((route.score?.reliability ?? 0) / 5) * 100}%` }}
                             ></div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="text-sm text-gray-900">{route.safety}</div>
+                          <div className="text-sm text-gray-900">{route.score?.safety ?? '-'}</div>
                           <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
                             <div 
                               className="bg-green-600 h-2 rounded-full" 
-                              style={{ width: `${(route.safety / 5) * 100}%` }}
+                              style={{ width: `${((route.score?.safety ?? 0) / 5) * 100}%` }}
                             ></div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {route.reports}
+                        {route.reportsCount ?? 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -294,7 +277,7 @@ export default function Admin() {
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {route.status}
+                          {route.status || 'active'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -306,13 +289,13 @@ export default function Admin() {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button 
-                            onClick={() => handleToggleStatus(route.id)}
+                            onClick={() => handleToggleStatus(route._id || route.id)}
                             className="text-green-600 hover:text-green-900"
                           >
-                            {route.status === 'active' ? 'Deactivate' : 'Activate'}
+                            {(route.status || 'active') === 'active' ? 'Deactivate' : 'Activate'}
                           </button>
                           <button 
-                            onClick={() => handleDeleteRoute(route.id)}
+                            onClick={() => handleDeleteRoute(route._id || route.id)}
                             className="text-red-600 hover:text-red-900"
                           >
                             <Trash2 className="w-4 h-4" />

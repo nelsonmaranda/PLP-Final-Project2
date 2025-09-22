@@ -12,6 +12,7 @@ import {
   Eye,
   Settings
 } from 'lucide-react'
+import apiService from '../services/api'
 
 interface ComplianceData {
   saccoId: string
@@ -77,130 +78,27 @@ export default function AuthorityDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true)
-      
-      // Load compliance data
-      const complianceData: ComplianceData[] = [
-        {
-          saccoId: '1',
-          saccoName: 'Nairobi City Sacco',
-          licenseStatus: 'valid',
-          safetyScore: 92,
-          incidentCount: 2,
-          lastInspection: '2025-09-15',
-          violations: 0,
-          status: 'compliant'
-        },
-        {
-          saccoId: '2',
-          saccoName: 'Eastlands Matatu Sacco',
-          licenseStatus: 'valid',
-          safetyScore: 78,
-          incidentCount: 5,
-          lastInspection: '2025-09-10',
-          violations: 2,
-          status: 'warning'
-        },
-        {
-          saccoId: '3',
-          saccoName: 'Westlands Transport Sacco',
-          licenseStatus: 'expired',
-          safetyScore: 65,
-          incidentCount: 8,
-          lastInspection: '2025-08-20',
-          violations: 4,
-          status: 'non-compliant'
-        }
-      ]
-      setComplianceData(complianceData)
 
-      // Load safety incidents
-      const incidentsData: SafetyIncident[] = [
-        {
-          id: '1',
-          routeId: '1',
-          routeName: 'Route 1 - CBD to Westlands',
-          saccoName: 'Nairobi City Sacco',
-          type: 'accident',
-          severity: 'high',
-          description: 'Minor collision at roundabout',
-          location: 'Westlands Roundabout',
-          reportedAt: '2025-09-21T10:30:00Z',
-          status: 'investigating',
-          assignedTo: 'Inspector John Doe'
-        },
-        {
-          id: '2',
-          routeId: '2',
-          routeName: 'Route 2 - CBD to Eastleigh',
-          saccoName: 'Eastlands Matatu Sacco',
-          type: 'overcrowding',
-          severity: 'medium',
-          description: 'Vehicle carrying 20 passengers instead of 14',
-          location: 'Eastleigh Bus Stop',
-          reportedAt: '2025-09-21T14:20:00Z',
-          status: 'reported'
-        },
-        {
-          id: '3',
-          routeId: '3',
-          routeName: 'Route 3 - CBD to Kasarani',
-          saccoName: 'Westlands Transport Sacco',
-          type: 'breakdown',
-          severity: 'low',
-          description: 'Vehicle breakdown causing traffic delay',
-          location: 'Thika Road',
-          reportedAt: '2025-09-20T16:45:00Z',
-          status: 'resolved',
-          resolution: 'Vehicle towed, traffic cleared',
-          resolvedAt: '2025-09-20T18:30:00Z'
-        }
-      ]
-      setSafetyIncidents(incidentsData)
-
-      // Load system metrics
-      setSystemMetrics({
-        totalUsers: 1250,
-        activeReports: 45,
-        totalRoutes: 25,
-        systemUptime: 99.8,
-        dataQuality: 94.5,
-        averageResponseTime: 1.2
-      })
-
-      // Load audit logs
-      const auditData: AuditLog[] = [
-        {
-          id: '1',
-          action: 'User Login',
-          user: 'admin@authority.ke',
-          timestamp: '2025-09-21T14:30:00Z',
-          details: 'Successful login from 192.168.1.100',
-          ipAddress: '192.168.1.100',
-          status: 'success'
-        },
-        {
-          id: '2',
-          action: 'Report Generated',
-          user: 'inspector@authority.ke',
-          timestamp: '2025-09-21T14:25:00Z',
-          details: 'Compliance report exported for Q3 2025',
-          ipAddress: '192.168.1.101',
-          status: 'success'
-        },
-        {
-          id: '3',
-          action: 'Data Export',
-          user: 'analyst@authority.ke',
-          timestamp: '2025-09-21T14:20:00Z',
-          details: 'Safety incident data exported',
-          ipAddress: '192.168.1.102',
-          status: 'success'
-        }
-      ]
-      setAuditLogs(auditData)
+      const response = await apiService.getAuthorityDashboard()
+      if (response.success && response.data) {
+        const { complianceData, safetyIncidents, systemMetrics, auditLogs } = response.data
+        setComplianceData(complianceData || [])
+        setSafetyIncidents(safetyIncidents || [])
+        setSystemMetrics(systemMetrics || null)
+        setAuditLogs(auditLogs || [])
+      } else {
+        setComplianceData([])
+        setSafetyIncidents([])
+        setSystemMetrics(null)
+        setAuditLogs([])
+      }
 
     } catch (error) {
       console.error('Error loading dashboard data:', error)
+      setComplianceData([])
+      setSafetyIncidents([])
+      setSystemMetrics(null)
+      setAuditLogs([])
     } finally {
       setLoading(false)
     }

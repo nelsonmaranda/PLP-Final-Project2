@@ -57,140 +57,34 @@ export default function AnalyticsDashboard() {
     setError(null)
 
     try {
-      // Load all analytics data in parallel
-      const [
-        recommendationsResponse,
-        // Add more parallel calls as needed
-      ] = await Promise.all([
-        apiService.getUserRecommendations(state.user._id),
-        // Add more API calls here
-      ])
-
-      // Set user recommendations
+      // Fetch recommendations
+      const recommendationsResponse = await apiService.getUserRecommendations(state.user._id)
       if (recommendationsResponse.success && recommendationsResponse.data) {
         setUserRecommendations(recommendationsResponse.data)
+      } else {
+        setUserRecommendations(null)
       }
 
-      // Mock data for demonstration (replace with real API calls)
-      setEfficiencyScores([
-        {
-          routeId: '1',
-          routeName: 'Route 46 - CBD to Westlands',
-          efficiencyScore: 85,
-          factors: {
-            reliability: 80,
-            speed: 75,
-            safety: 90,
-            comfort: 85,
-            cost: 70,
-            frequency: 95
-          },
-          recommendations: ['Increase frequency during peak hours', 'Improve vehicle comfort'],
-          lastUpdated: new Date().toISOString()
-        },
-        {
-          routeId: '2',
-          routeName: 'Route 34 - Eastleigh to CBD',
-          efficiencyScore: 72,
-          factors: {
-            reliability: 65,
-            speed: 80,
-            safety: 75,
-            comfort: 70,
-            cost: 85,
-            frequency: 60
-          },
-          recommendations: ['Improve on-time performance', 'Address safety concerns'],
-          lastUpdated: new Date().toISOString()
-        }
-      ])
+      // If a route is selected, load per-route analytics; otherwise, clear
+      if (selectedRoute) {
+        const [effResp, trendsResp, demandResp] = await Promise.all([
+          apiService.getRouteEfficiency(selectedRoute),
+          apiService.analyzeTrends(selectedRoute, period),
+          apiService.forecastDemand(selectedRoute, timeSlot)
+        ])
 
-      setTravelPredictions([
-        {
-          routeId: '1',
-          fromStop: 'Kencom',
-          toStop: 'Westlands',
-          predictedTime: 25,
-          confidence: 85,
-          factors: {
-            timeOfDay: 1.2,
-            dayOfWeek: 1.0,
-            weather: 1.1,
-            traffic: 1.3,
-            historical: 0.9
-          },
-          alternativeTimes: {
-            optimistic: 20,
-            realistic: 25,
-            pessimistic: 32
-          },
-          lastUpdated: new Date().toISOString()
-        }
-      ])
+        setEfficiencyScores(effResp.success && effResp.data ? [effResp.data] : [])
+        setTrendAnalysis(trendsResp.success && trendsResp.data ? [trendsResp.data] : [])
+        setDemandForecasts(demandResp.success && demandResp.data ? [demandResp.data] : [])
+      } else {
+        setEfficiencyScores([])
+        setTrendAnalysis([])
+        setDemandForecasts([])
+      }
 
-      setAlternativeRoutes([
-        {
-          routeId: '2',
-          routeName: 'Route 34 - Alternative Route',
-          totalTime: 30,
-          totalCost: 45,
-          efficiency: 78,
-          reasons: ['Affordable fare', 'Multiple stops available'],
-          stops: ['Kencom', 'Museum Hill', 'Eastleigh', 'Westlands']
-        }
-      ])
-
-      setTrendAnalysis([
-        {
-          routeId: '1',
-          period: 'weekly',
-          trends: {
-            ridership: {
-              current: 150,
-              previous: 120,
-              change: 25,
-              trend: 'increasing'
-            },
-            efficiency: {
-              current: 85,
-              previous: 80,
-              change: 6.25,
-              trend: 'improving'
-            },
-            safety: {
-              current: 2,
-              previous: 5,
-              change: -60,
-              trend: 'safer'
-            },
-            cost: {
-              current: 50,
-              previous: 50,
-              change: 0,
-              trend: 'stable'
-            }
-          },
-          insights: ['Ridership is increasing significantly', 'Safety incidents have decreased'],
-          lastUpdated: new Date().toISOString()
-        }
-      ])
-
-      setDemandForecasts([
-        {
-          routeId: '1',
-          timeSlot: '08:00',
-          predictedDemand: 85,
-          confidence: 80,
-          factors: {
-            historical: 75,
-            weather: 1.0,
-            events: 1.1,
-            seasonality: 1.0
-          },
-          recommendations: ['Consider increasing frequency during this time'],
-          lastUpdated: new Date().toISOString()
-        }
-      ])
+      // Alternative routes and travel predictions depend on inputs; keep empty until user triggers
+      setAlternativeRoutes([])
+      setTravelPredictions([])
 
     } catch (error) {
       console.error('Error loading analytics data:', error)
@@ -198,11 +92,42 @@ export default function AnalyticsDashboard() {
     } finally {
       setIsLoading(false)
     }
-  }, [state.user?._id])
+  }, [state.user?._id, selectedRoute, period, timeSlot])
 
   useEffect(() => {
     loadAnalyticsData()
   }, [loadAnalyticsData])
+
+  const handlePredictTravel = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      if (!selectedRoute) return
+      // Demo: use placeholders for fromStop/toStop until UI exposes selectors
+      const resp = await apiService.predictTravelTime(selectedRoute, 'From', 'To', timeSlot)
+      setTravelPredictions(resp.success && resp.data ? [resp.data] : [])
+    } catch (e) {
+      console.error(e)
+      setError('Failed to predict travel time.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleFindAlternatives = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      // Demo: use placeholders for fromStop/toStop until UI exposes selectors
+      const resp = await apiService.findAlternativeRoutes('From', 'To')
+      setAlternativeRoutes(resp.success && resp.data ? resp.data.alternatives : [])
+    } catch (e) {
+      console.error(e)
+      setError('Failed to fetch alternative routes.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getTrendIcon = (trend: 'increasing' | 'decreasing' | 'stable' | 'improving' | 'declining' | 'safer' | 'riskier') => {
     switch (trend) {
@@ -328,13 +253,12 @@ export default function AnalyticsDashboard() {
                     onChange={(e) => setSelectedRoute(e.target.value)}
                     className="form-select"
                   >
-                    <option value="">All Routes</option>
-                    <option value="1">Route 46 - CBD to Westlands</option>
-                    <option value="2">Route 34 - Eastleigh to CBD</option>
+                    <option value="">Select a route</option>
+                    {/* Populate from server in future UI iteration */}
                   </select>
-                  <button className="btn btn-outline">
+                  <button className="btn btn-outline" onClick={loadAnalyticsData}>
                     <Filter className="w-4 h-4 mr-2" />
-                    Filter
+                    Refresh
                   </button>
                 </div>
               </div>
@@ -401,7 +325,7 @@ export default function AnalyticsDashboard() {
                     onChange={(e) => setTimeSlot(e.target.value)}
                     className="form-input"
                   />
-                  <button className="btn btn-primary">
+                  <button className="btn btn-primary" onClick={handlePredictTravel}>
                     <Zap className="w-4 h-4 mr-2" />
                     Predict
                   </button>
@@ -456,9 +380,15 @@ export default function AnalyticsDashboard() {
               </div>
 
               {/* Alternative Routes */}
-              {alternativeRoutes.length > 0 && (
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Alternative Routes</h3>
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-gray-900">Alternative Routes</h3>
+                  <button className="btn btn-outline" onClick={handleFindAlternatives}>
+                    <Filter className="w-4 h-4 mr-2" />
+                    Find
+                  </button>
+                </div>
+                {alternativeRoutes.length > 0 && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {alternativeRoutes.map((route, index) => (
                       <div key={index} className="card p-4">
@@ -482,8 +412,8 @@ export default function AnalyticsDashboard() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
@@ -502,7 +432,7 @@ export default function AnalyticsDashboard() {
                     <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>
                   </select>
-                  <button className="btn btn-outline">
+                  <button className="btn btn-outline" onClick={loadAnalyticsData}>
                     <Calendar className="w-4 h-4 mr-2" />
                     Update
                   </button>
@@ -558,7 +488,7 @@ export default function AnalyticsDashboard() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900">Personalized Recommendations</h2>
-                <button className="btn btn-primary">
+                <button className="btn btn-primary" onClick={loadAnalyticsData}>
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Refresh
                 </button>

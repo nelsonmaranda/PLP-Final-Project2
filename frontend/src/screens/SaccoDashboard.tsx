@@ -72,96 +72,27 @@ export default function SaccoDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true)
-      
-      // Load route performance data
-      const routesResponse = await apiService.getRoutes()
-      if (routesResponse.success && routesResponse.data && routesResponse.data.routes) {
-        const performanceData = routesResponse.data.routes.map((route: any) => ({
-          routeId: route._id,
-          routeName: route.name,
-          routeNumber: route.routeNumber,
-          efficiencyScore: route.efficiencyScore || 75,
-          revenue: Math.floor(Math.random() * 50000) + 20000,
-          passengerCount: Math.floor(Math.random() * 1000) + 200,
-          onTimePercentage: Math.floor(Math.random() * 30) + 70,
-          safetyScore: Math.floor(Math.random() * 20) + 80,
-          trend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as 'up' | 'down' | 'stable'
-        }))
-        setRoutePerformance(performanceData)
+
+      const response = await apiService.getSaccoDashboard()
+      if (response.success && response.data) {
+        const { routePerformance, driverPerformance, customerFeedback, fleetStatus } = response.data
+        setRoutePerformance(routePerformance || [])
+        setDriverPerformance(driverPerformance || [])
+        setCustomerFeedback(customerFeedback || [])
+        setFleetStatus(fleetStatus || null)
+      } else {
+        setRoutePerformance([])
+        setDriverPerformance([])
+        setCustomerFeedback([])
+        setFleetStatus(null)
       }
-
-      // Load driver performance data
-      const driversData: DriverPerformance[] = [
-        {
-          driverId: '1',
-          driverName: 'John Mwangi',
-          safetyScore: 92,
-          onTimePercentage: 88,
-          customerRating: 4.5,
-          incidentCount: 1,
-          routes: ['Route 1', 'Route 2'],
-          status: 'active'
-        },
-        {
-          driverId: '2',
-          driverName: 'Mary Wanjiku',
-          safetyScore: 95,
-          onTimePercentage: 92,
-          customerRating: 4.8,
-          incidentCount: 0,
-          routes: ['Route 3', 'Route 4'],
-          status: 'active'
-        },
-        {
-          driverId: '3',
-          driverName: 'Peter Kimani',
-          safetyScore: 78,
-          onTimePercentage: 75,
-          customerRating: 3.9,
-          incidentCount: 3,
-          routes: ['Route 5'],
-          status: 'warning'
-        }
-      ]
-      setDriverPerformance(driversData)
-
-      // Load customer feedback
-      const feedbackData: CustomerFeedback[] = [
-        {
-          id: '1',
-          routeId: '1',
-          routeName: 'Route 1 - CBD to Westlands',
-          rating: 4,
-          comment: 'Driver was very professional and punctual',
-          category: 'service',
-          status: 'resolved',
-          createdAt: '2025-09-20T10:30:00Z',
-          responseTime: 2
-        },
-        {
-          id: '2',
-          routeId: '2',
-          routeName: 'Route 2 - CBD to Eastleigh',
-          rating: 2,
-          comment: 'Vehicle was overcrowded and uncomfortable',
-          category: 'comfort',
-          status: 'in_progress',
-          createdAt: '2025-09-21T14:20:00Z'
-        }
-      ]
-      setCustomerFeedback(feedbackData)
-
-      // Load fleet status
-      setFleetStatus({
-        totalVehicles: 25,
-        activeVehicles: 23,
-        maintenanceDue: 3,
-        averageAge: 4.2,
-        utilizationRate: 87
-      })
 
     } catch (error) {
       console.error('Error loading dashboard data:', error)
+      setRoutePerformance([])
+      setDriverPerformance([])
+      setCustomerFeedback([])
+      setFleetStatus(null)
     } finally {
       setLoading(false)
     }
@@ -298,7 +229,7 @@ export default function SaccoDashboard() {
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      KSh {routePerformance.reduce((sum, route) => sum + route.revenue, 0).toLocaleString()}
+                      KSh {routePerformance.reduce((sum, route) => sum + (route.revenue || 0), 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -312,7 +243,11 @@ export default function SaccoDashboard() {
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Avg Rating</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {(driverPerformance.reduce((sum, driver) => sum + driver.customerRating, 0) / driverPerformance.length).toFixed(1)}
+                      {driverPerformance.length > 0 
+                        ? (
+                          driverPerformance.reduce((sum, driver) => sum + (driver.customerRating || 0), 0) / driverPerformance.length
+                        ).toFixed(1)
+                        : '0.0'}
                     </p>
                   </div>
                 </div>
@@ -384,7 +319,7 @@ export default function SaccoDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        KSh {route.revenue.toLocaleString()}
+                        KSh {(route.revenue || 0).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {route.passengerCount}
