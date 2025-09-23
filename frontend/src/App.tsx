@@ -20,6 +20,7 @@ const AnalyticsDashboard = lazy(() => import('./screens/AnalyticsDashboard'))
 const SaccoDashboard = lazy(() => import('./screens/SaccoDashboard'))
 const AuthorityDashboard = lazy(() => import('./screens/AuthorityDashboard'))
 const UserManagement = lazy(() => import('./screens/UserManagement'))
+const RouteEditor = lazy(() => import('./screens/RouteEditor'))
 
 function App() {
   // Setup global error handling
@@ -62,6 +63,11 @@ function App() {
                 <Route path="/users" element={
                   <ProtectedRoute requireAuth={true} allowedRoles={['admin']}>
                     <UserManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/routes" element={
+                  <ProtectedRoute requireAuth={true} allowedRoles={['admin']}>
+                    <RouteEditor />
                   </ProtectedRoute>
                 } />
                 

@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User, Route, Report, Score } = require('./models');
+const { User, Route, Report, Score, RateLimit } = require('./models');
 
 // Create Express app
 const app = express();
@@ -249,6 +249,110 @@ app.get('/routes', async (req, res) => {
   }
 });
 
+// Rate a route (live rider rating)
+app.post('/routes/:routeId/rate', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { routeId } = req.params;
+    const { reliability, safety, punctuality, comfort, overall } = req.body || {};
+
+    // Basic validation: at least one score and all provided scores within 0-5
+    const provided = { reliability, safety, punctuality, comfort, overall };
+    const keys = Object.keys(provided).filter(k => provided[k] !== undefined);
+    if (keys.length === 0) {
+      return res.status(400).json({ success: false, message: 'At least one score is required' });
+    }
+    for (const k of keys) {
+      const v = Number(provided[k]);
+      if (Number.isNaN(v) || v < 0 || v > 5) {
+        return res.status(400).json({ success: false, message: `Invalid value for ${k}. Expected 0-5` });
+      }
+    }
+
+    const route = await Route.findById(routeId);
+    if (!route) {
+      return res.status(404).json({ success: false, message: 'Route not found' });
+    }
+
+    // Device fingerprint (IP + User-Agent)
+    const fingerprint = `${req.ip || 'unknown'}-${req.get('User-Agent') || 'unknown'}`.slice(0, 150);
+    const now = Date.now();
+    const windowMs = 2 * 60 * 1000; // 2 minutes
+    const maxPerWindow = 2; // allow up to 2 ratings per window per device per route
+
+    // Upsert rate limit doc and decide if allowed
+    let rl = await RateLimit.findOne({ routeId, fingerprint });
+    if (!rl) {
+      rl = await RateLimit.create({ routeId, fingerprint, lastRatedAt: new Date(now), count: 1 });
+    } else {
+      const since = now - new Date(rl.lastRatedAt).getTime();
+      if (since <= windowMs) {
+        if ((rl.count || 0) >= maxPerWindow) {
+          const retryAfter = Math.ceil((windowMs - since) / 1000);
+          return res.status(429).json({ success: false, message: `Too many ratings. Try again in ${retryAfter}s` });
+        }
+        rl.count += 1;
+      } else {
+        rl.count = 1;
+        rl.lastRatedAt = new Date(now);
+      }
+      await rl.save();
+    }
+
+    let scoreDoc = await Score.findOne({ routeId });
+    if (!scoreDoc) {
+      // Create a new score document using provided values; default missing subs to provided overall or mid-scale 3
+      const r = reliability ?? overall ?? 3;
+      const s = safety ?? overall ?? 3;
+      const p = punctuality ?? overall ?? 3;
+      const c = comfort ?? overall ?? 3;
+      const o = overall ?? Math.max(0, Math.min(5, (r + s + p + c) / 4));
+      scoreDoc = await Score.create({
+        routeId,
+        reliability: r,
+        safety: s,
+        punctuality: p,
+        comfort: c,
+        overall: o,
+        totalReports: 1,
+        lastCalculated: new Date()
+      });
+      return res.status(201).json({ success: true, data: { score: scoreDoc }, message: 'Rating submitted' });
+    }
+
+    // Weighted running average update
+    const n = scoreDoc.totalReports || 0;
+    const nextN = n + 1;
+    const avg = (oldV, newV) => {
+      if (newV === undefined) return oldV;
+      return ((oldV * n) + Number(newV)) / nextN;
+    };
+
+    scoreDoc.reliability = avg(scoreDoc.reliability, reliability ?? overall);
+    scoreDoc.safety = avg(scoreDoc.safety, safety ?? overall);
+    scoreDoc.punctuality = avg(scoreDoc.punctuality, punctuality ?? overall);
+    scoreDoc.comfort = avg(scoreDoc.comfort, comfort ?? overall);
+    // Recompute overall: if provided overall, average it; else mean of subs
+    const newOverall = overall !== undefined 
+      ? ((scoreDoc.overall * n) + Number(overall)) / nextN
+      : (scoreDoc.reliability + scoreDoc.safety + scoreDoc.punctuality + scoreDoc.comfort) / 4;
+    scoreDoc.overall = Math.max(0, Math.min(5, newOverall));
+    scoreDoc.totalReports = nextN;
+    scoreDoc.lastCalculated = new Date();
+    scoreDoc.updatedAt = new Date();
+
+    await scoreDoc.save();
+
+    return res.json({ success: true, data: { score: scoreDoc }, message: 'Rating submitted' });
+  } catch (error) {
+    console.error('Rate route error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to submit rating' });
+  }
+});
+
 // Scores endpoint (database-backed)
 app.get('/scores', async (req, res) => {
   try {
@@ -397,6 +501,23 @@ const authMiddleware = (req, res, next) => {
   } catch (err) {
     return res.status(401).json({ success: false, message: 'Unauthorized' });
   }
+};
+
+const requireRoles = (roles = []) => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user?.userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+      const dbUser = await User.findById(req.user.userId).lean();
+      if (!dbUser) return res.status(401).json({ success: false, message: 'Unauthorized' });
+      if (roles.length > 0 && !roles.includes(dbUser.role)) {
+        return res.status(403).json({ success: false, message: 'Forbidden' });
+      }
+      req.user.role = dbUser.role;
+      return next();
+    } catch (e) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+  };
 };
 
 app.get('/auth/profile', authMiddleware, async (req, res) => {
@@ -1329,7 +1450,7 @@ app.get('/predictions/crowd/:routeId', async (req, res) => {
 
 // ==================== ANALYTICS ENDPOINTS ====================
 
-// Route efficiency scoring
+// Route efficiency scoring (prefers real Score docs; falls back to Reports)
 app.get('/analytics/efficiency/:routeId', async (req, res) => {
   try {
     if (!isDBConnected) {
@@ -1343,49 +1464,51 @@ app.get('/analytics/efficiency/:routeId', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Route not found' });
     }
 
-    // Get recent reports and scores
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const reports = await Report.find({
-      routeId: routeId,
-      createdAt: { $gte: thirtyDaysAgo }
-    });
-
-    // Calculate efficiency factors
-    const onTimeReports = reports.filter(r => r.reportType === 'reliability' && r.severity === 'low');
-    const reliabilityScore = reports.length > 0 ? (onTimeReports.length / reports.length) * 100 : 50;
-
-    const safetyReports = reports.filter(r => r.reportType === 'safety');
-    const safetyScore = safetyReports.length > 0
-      ? 100 - (safetyReports.reduce((sum, r) => sum + (r.severity === 'high' ? 30 : r.severity === 'medium' ? 15 : 5), 0) / safetyReports.length)
-      : 80;
-
-    const comfortReports = reports.filter(r => r.reportType === 'comfort');
-    const comfortScore = comfortReports.length > 0
-      ? comfortReports.reduce((sum, r) => sum + (r.severity === 'low' ? 90 : r.severity === 'medium' ? 70 : 50), 0) / comfortReports.length
-      : 70;
+    // Prefer Score doc
+    const score = await Score.findOne({ routeId }).lean();
+    let reliabilityScore = 0, safetyScore = 0, punctualityScore = 0, comfortScore = 0;
+    if (score) {
+      const toPct = (v) => Math.max(0, Math.min(100, (Number(v) || 0) * 20));
+      reliabilityScore = toPct(score.reliability);
+      safetyScore = toPct(score.safety);
+      punctualityScore = toPct(score.punctuality);
+      comfortScore = toPct(score.comfort);
+    } else {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const reports = await Report.find({ routeId, createdAt: { $gte: thirtyDaysAgo } });
+      const count = reports.length || 1;
+      const onTimeReports = reports.filter(r => r.reportType === 'reliability' && r.severity === 'low').length;
+      reliabilityScore = Math.round((onTimeReports / count) * 100);
+      const safetyIncidents = reports.filter(r => r.reportType === 'safety');
+      const safetyPenalty = safetyIncidents.reduce((sum, r) => sum + (r.severity === 'high' ? 30 : r.severity === 'medium' ? 15 : 5), 0);
+      safetyScore = Math.max(0, 100 - Math.round(safetyPenalty / count));
+      const punctualityIssues = reports.filter(r => r.reportType === 'delay');
+      const punctualityPenalty = Math.min(100, punctualityIssues.length * 10);
+      punctualityScore = Math.max(0, 100 - punctualityPenalty);
+      const comfortReports = reports.filter(r => r.reportType === 'comfort');
+      const comfortPenalty = comfortReports.reduce((sum, r) => sum + (r.severity === 'high' ? 25 : r.severity === 'medium' ? 12 : 5), 0);
+      comfortScore = Math.max(0, 100 - Math.round(comfortPenalty / count));
+    }
 
     const avgFare = route.fare || 50;
-    const costScore = Math.max(0, 100 - (avgFare - 30) * 2);
+    const costScore = Math.max(0, Math.min(100, 100 - Math.max(0, avgFare - 30) * 2));
+    const operatingHours = route.operatingHours ? (parseInt(route.operatingHours.end.split(':')[0]) - parseInt(route.operatingHours.start.split(':')[0])) : 12;
+    const frequencyScore = Math.max(0, Math.min(100, operatingHours * 2));
 
-    const operatingHours = route.operatingHours ? 
-      (parseInt(route.operatingHours.end.split(':')[0]) - parseInt(route.operatingHours.start.split(':')[0])) : 12;
-    const frequencyScore = Math.min(100, operatingHours * 2);
-
-    // Calculate overall efficiency score
-    const weights = { reliability: 0.25, safety: 0.25, comfort: 0.15, cost: 0.10, frequency: 0.05, speed: 0.20 };
-    const efficiencyScore = 
+    const weights = { reliability: 0.25, safety: 0.25, comfort: 0.15, cost: 0.10, frequency: 0.05, punctuality: 0.20 };
+    const efficiencyScore =
       (reliabilityScore * weights.reliability) +
       (safetyScore * weights.safety) +
       (comfortScore * weights.comfort) +
       (costScore * weights.cost) +
       (frequencyScore * weights.frequency) +
-      (70 * weights.speed); // Default speed score
+      (punctualityScore * weights.punctuality);
 
     const recommendations = [];
     if (reliabilityScore < 70) recommendations.push('Improve on-time performance through better scheduling');
     if (safetyScore < 80) recommendations.push('Address safety concerns and improve driver training');
-    if (comfortScore < 70) recommendations.push('Upgrade vehicles and improve passenger comfort');
-    if (costScore < 60) recommendations.push('Review fare structure for better value proposition');
+    if (comfortScore < 70) recommendations.push('Upgrade vehicles to improve passenger comfort');
+    if (costScore < 60) recommendations.push('Review fare structure for affordability');
     if (frequencyScore < 50) recommendations.push('Increase service frequency during peak hours');
 
     res.json({
@@ -1400,7 +1523,7 @@ app.get('/analytics/efficiency/:routeId', async (req, res) => {
           comfort: Math.round(comfortScore),
           cost: Math.round(costScore),
           frequency: Math.round(frequencyScore),
-          speed: 70
+          punctuality: Math.round(punctualityScore)
         },
         recommendations,
         lastUpdated: new Date().toISOString()
@@ -1732,45 +1855,30 @@ app.get('/analytics/recommendations/:userId', async (req, res) => {
 
     const { userId } = req.params;
     
-    // Get user's historical data
-    const userReports = await Report.find({ userId: userId });
-    
-    // Get all active routes
-    const routes = await Route.find({ isActive: true });
-    
-    const recommendations = [];
-    
-    for (const route of routes.slice(0, 10)) { // Limit to first 10 routes for performance
-      const efficiency = 70 + Math.random() * 20; // Mock efficiency
-      const score = efficiency + Math.random() * 10;
-      
-      if (score > 60) {
-        recommendations.push({
-          routeId: route._id.toString(),
-          routeName: route.name,
-          reason: efficiency > 85 ? 'High efficiency rating' : 'Good overall performance',
-          score: Math.round(score),
-          type: efficiency > 80 ? 'efficiency' : 'safety'
-        });
-      }
-    }
-    
-    // Sort by score and take top 5
-    const topRecommendations = recommendations
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
+    // Build recommendations from top Score docs
+    const scores = await Score.find({}).sort({ overall: -1 }).limit(20).lean();
+    const routeIds = scores.map(s => s.routeId);
+    const routes = await Route.find({ _id: { $in: routeIds }, isActive: true }).lean();
+    const recs = scores.map((s) => {
+      const r = routes.find(rt => String(rt._id) === String(s.routeId));
+      const reason = s.overall >= 4.5 ? 'Top-rated route overall' : s.safety >= 4.2 ? 'High safety rating' : 'Good performance';
+      const type = s.overall >= 4.5 ? 'efficiency' : (s.safety >= 4.2 ? 'safety' : 'convenience');
+      const score100 = Math.round(Math.min(100, Math.max(0, s.overall * 20)));
+      return {
+        routeId: String(s.routeId),
+        routeName: r ? r.name : `Route ${String(s.routeId)}`,
+        reason,
+        score: score100,
+        type
+      };
+    }).slice(0, 5);
 
     res.json({
       success: true,
       data: {
         userId,
-        recommendations: topRecommendations,
-        preferences: {
-          efficiency: 0.3,
-          safety: 0.3,
-          cost: 0.2,
-          convenience: 0.2
-        },
+        recommendations: recs,
+        preferences: { efficiency: 0.35, safety: 0.3, cost: 0.2, convenience: 0.15 },
         lastUpdated: new Date().toISOString()
       }
     });
@@ -1793,84 +1901,65 @@ app.get('/sacco/dashboard', async (req, res) => {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
-    // Get route performance data
-    const routes = await Route.find({ isActive: true });
-    const routePerformance = routes.map(route => ({
-      routeId: route._id,
-      routeName: route.name,
-      routeNumber: route.routeNumber,
-      efficiencyScore: Math.floor(Math.random() * 30) + 70,
-      revenue: Math.floor(Math.random() * 50000) + 20000,
-      passengerCount: Math.floor(Math.random() * 1000) + 200,
-      onTimePercentage: Math.floor(Math.random() * 30) + 70,
-      safetyScore: Math.floor(Math.random() * 20) + 80,
-      trend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)]
+    // Active routes
+    const routes = await Route.find({ isActive: true }).lean();
+    const routeIds = routes.map(r => r._id);
+    const scores = await Score.find({ routeId: { $in: routeIds } }).lean();
+    const scoreMap = new Map(scores.map(s => [String(s.routeId), s]));
+
+    // Route performance derived from existing data only
+    const routePerformance = routes.map(route => {
+      const s = scoreMap.get(String(route._id));
+      const efficiencyScore = s ? Math.round(Math.min(100, Math.max(0, (s.overall || 0) * 20))) : null;
+      const onTimePercentage = s ? Math.round(Math.min(100, Math.max(0, (s.punctuality || 0) * 20))) : null;
+      const safetyScore = s ? Math.round(Math.min(100, Math.max(0, (s.safety || 0) * 20))) : null;
+      return {
+        routeId: route._id,
+        routeName: route.name,
+        routeNumber: route.routeNumber,
+        efficiencyScore,
+        onTimePercentage,
+        safetyScore,
+        fare: route.fare || null,
+        operatingHours: route.operatingHours || null
+      };
+    });
+
+    // Drivers are not tracked yet – return empty list. Client should handle gracefully.
+    const driverPerformance = [];
+
+    // Customer feedback from recent reports (use description and type)
+    const recentReports = await Report.find({ createdAt: { $gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) } })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+    const routeById = new Map(routes.map(r => [String(r._id), r]));
+    const customerFeedback = recentReports.map(r => ({
+      id: String(r._id),
+      routeId: String(r.routeId),
+      routeName: routeById.get(String(r.routeId))?.name || 'Unknown Route',
+      category: r.reportType,
+      comment: r.description || '',
+      severity: r.severity,
+      createdAt: r.createdAt
     }));
 
-    // Get driver performance data (mock data)
-    const driverPerformance = [
-      {
-        driverId: '1',
-        driverName: 'John Mwangi',
-        safetyScore: 92,
-        onTimePercentage: 88,
-        customerRating: 4.5,
-        incidentCount: 1,
-        routes: ['Route 1', 'Route 2'],
-        status: 'active'
-      },
-      {
-        driverId: '2',
-        driverName: 'Mary Wanjiku',
-        safetyScore: 95,
-        onTimePercentage: 92,
-        customerRating: 4.8,
-        incidentCount: 0,
-        routes: ['Route 3', 'Route 4'],
-        status: 'active'
-      }
-    ];
-
-    // Get customer feedback (mock data)
-    const customerFeedback = [
-      {
-        id: '1',
-        routeId: '1',
-        routeName: 'Route 1 - CBD to Westlands',
-        rating: 4,
-        comment: 'Driver was very professional and punctual',
-        category: 'service',
-        status: 'resolved',
-        createdAt: new Date().toISOString(),
-        responseTime: 2
-      }
-    ];
-
-    // Get fleet status (mock data)
+    // Fleet status is not modeled; provide route-level aggregates only
     const fleetStatus = {
-      totalVehicles: 25,
-      activeVehicles: 23,
-      maintenanceDue: 3,
-      averageAge: 4.2,
-      utilizationRate: 87
+      totalRoutes: routes.length,
+      activeRoutes: routes.length,
+      maintenanceDue: 0,
+      utilizationRate: null
     };
 
     res.json({
       success: true,
-      data: {
-        routePerformance,
-        driverPerformance,
-        customerFeedback,
-        fleetStatus
-      }
+      data: { routePerformance, driverPerformance, customerFeedback, fleetStatus }
     });
 
   } catch (error) {
     console.error('SACCO dashboard error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to load SACCO dashboard data'
-    });
+    res.status(500).json({ success: false, message: 'Failed to load SACCO dashboard data' });
   }
 });
 
@@ -1881,86 +1970,69 @@ app.get('/authority/dashboard', async (req, res) => {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
-    // Get compliance data (mock data)
-    const complianceData = [
-      {
-        saccoId: '1',
-        saccoName: 'Nairobi City Sacco',
-        licenseStatus: 'valid',
-        safetyScore: 92,
-        incidentCount: 2,
-        lastInspection: '2025-09-15',
-        violations: 0,
-        status: 'compliant'
-      },
-      {
-        saccoId: '2',
-        saccoName: 'Eastlands Matatu Sacco',
-        licenseStatus: 'valid',
-        safetyScore: 78,
-        incidentCount: 5,
-        lastInspection: '2025-09-10',
-        violations: 2,
-        status: 'warning'
-      }
-    ];
+    // Base data
+    const routes = await Route.find({ isActive: true }).lean();
+    const routeIds = routes.map(r => r._id);
+    const scores = await Score.find({ routeId: { $in: routeIds } }).lean();
+    const scoreMap = new Map(scores.map(s => [String(s.routeId), s]));
 
-    // Get safety incidents (mock data)
-    const safetyIncidents = [
-      {
-        id: '1',
-        routeId: '1',
-        routeName: 'Route 1 - CBD to Westlands',
-        saccoName: 'Nairobi City Sacco',
-        type: 'accident',
-        severity: 'high',
-        description: 'Minor collision at roundabout',
-        location: 'Westlands Roundabout',
-        reportedAt: new Date().toISOString(),
-        status: 'investigating',
-        assignedTo: 'Inspector John Doe'
-      }
-    ];
+    // Compliance-like summary per route based on available data only
+    const complianceData = routes.map((r) => {
+      const s = scoreMap.get(String(r._id));
+      const safetyScore = s ? Math.round(Math.min(100, Math.max(0, (s.safety || 0) * 20))) : null;
+      return {
+        routeId: String(r._id),
+        routeName: r.name,
+        safetyScore,
+        licenseStatus: 'unknown',
+        status: safetyScore == null ? 'unknown' : (safetyScore >= 85 ? 'compliant' : safetyScore >= 70 ? 'warning' : 'attention'),
+        lastInspection: null,
+        violations: null
+      };
+    });
 
-    // Get system metrics (mock data)
+    // Safety incidents from Reports
+    const thirtyDays = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const safetyReports = await Report.find({ reportType: 'safety', createdAt: { $gte: thirtyDays } })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+    const routeById = new Map(routes.map(r => [String(r._id), r]));
+    const safetyIncidents = safetyReports.map((rep) => ({
+      id: String(rep._id),
+      routeId: String(rep.routeId),
+      routeName: routeById.get(String(rep.routeId))?.name || 'Unknown Route',
+      type: 'safety',
+      severity: rep.severity,
+      description: rep.description || '',
+      location: rep.location,
+      reportedAt: rep.createdAt,
+      status: rep.status
+    }));
+
+    // System metrics from live counts
+    const [totalUsers, activeReports, totalRoutes] = await Promise.all([
+      User.countDocuments({}),
+      Report.countDocuments({ createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
+      Route.countDocuments({ isActive: true })
+    ]);
+    const avgOverall = scores.length > 0 ? (scores.reduce((a, s) => a + (Number(s.overall) || 0), 0) / scores.length) : 0;
     const systemMetrics = {
-      totalUsers: 1250,
-      activeReports: 45,
-      totalRoutes: 25,
-      systemUptime: 99.8,
-      dataQuality: 94.5,
-      averageResponseTime: 1.2
+      totalUsers,
+      activeReports,
+      totalRoutes,
+      averageScore: Math.round(avgOverall * 10) / 10,
+      lastUpdated: new Date().toISOString()
     };
 
-    // Get audit logs (mock data)
-    const auditLogs = [
-      {
-        id: '1',
-        action: 'User Login',
-        user: 'admin@authority.ke',
-        timestamp: new Date().toISOString(),
-        details: 'Successful login from 192.168.1.100',
-        ipAddress: '192.168.1.100',
-        status: 'success'
-      }
-    ];
+    // No audit log model yet
+    const auditLogs = [];
 
-    res.json({
-      success: true,
-      data: {
-        complianceData,
-        safetyIncidents,
-        systemMetrics,
-        auditLogs
-      }
-    });
+    res.json({ success: true, data: { complianceData, safetyIncidents, systemMetrics, auditLogs } });
 
   } catch (error) {
     console.error('Authority dashboard error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to load authority dashboard data'
-    });
+    res.status(500).json({ success: false, message: 'Failed to load authority dashboard data' });
   }
 });
 
@@ -2170,6 +2242,108 @@ app.put('/admin/users/:userId/role', authMiddleware, async (req, res) => {
   }
 });
 
+// Update a route (admin only) - supports updating stops and basic fields
+app.put('/routes/:routeId', authMiddleware, requireRoles(['admin']), async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { routeId } = req.params;
+    const update = {};
+
+    if (Array.isArray(req.body?.stops)) {
+      const sanitizedStops = req.body.stops
+        .filter(s => s && typeof s.name === 'string')
+        .map(s => {
+          const coords = Array.isArray(s.coordinates) ? s.coordinates : [];
+          const lng = Number(coords[0]);
+          const lat = Number(coords[1]);
+          return { name: s.name.trim(), coordinates: [isNaN(lng) ? 0 : lng, isNaN(lat) ? 0 : lat] };
+        });
+      update.stops = sanitizedStops;
+    }
+
+    if (typeof req.body?.name === 'string') update.name = req.body.name.trim();
+    if (typeof req.body?.description === 'string') update.description = req.body.description.trim();
+    if (typeof req.body?.fare === 'number') update.fare = req.body.fare;
+    if (req.body?.operatingHours && req.body.operatingHours.start && req.body.operatingHours.end) {
+      update.operatingHours = { start: String(req.body.operatingHours.start), end: String(req.body.operatingHours.end) };
+    }
+    if (typeof req.body?.status === 'string') update.status = req.body.status;
+
+    update.updatedAt = new Date();
+
+    const updated = await Route.findByIdAndUpdate(routeId, update, { new: true });
+    if (!updated) return res.status(404).json({ success: false, message: 'Route not found' });
+    return res.json({ success: true, data: updated, message: 'Route updated' });
+  } catch (error) {
+    console.error('Update route error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update route' });
+  }
+});
+
+// Admin: create user
+app.post('/admin/users', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
+    if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin access required' });
+
+    const { email, displayName, password, role = 'user', organization } = req.body || {};
+    if (!email || !displayName || !password) {
+      return res.status(400).json({ success: false, message: 'email, displayName and password are required' });
+    }
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) return res.status(409).json({ success: false, message: 'User with this email already exists' });
+
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const validRoles = ['user', 'sacco', 'authority', 'moderator', 'admin'];
+    const finalRole = validRoles.includes(role) ? role : 'user';
+
+    const created = await User.create({
+      email: email.toLowerCase(),
+      displayName: displayName.trim(),
+      password: hashedPassword,
+      role: finalRole,
+      status: 'active',
+      organization: organization || undefined,
+      savedRoutes: []
+    });
+
+    return res.status(201).json({ success: true, data: { user: { _id: created._id, email: created.email, displayName: created.displayName, role: created.role, status: created.status, organization: created.organization, createdAt: created.createdAt } }, message: 'User created' });
+  } catch (error) {
+    console.error('Admin create user error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to create user' });
+  }
+});
+
+// Admin: update user details
+app.put('/admin/users/:userId', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
+    if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin access required' });
+    const { userId } = req.params;
+    const { displayName, email, role, status, organization } = req.body || {};
+
+    const update = {};
+    if (displayName) update.displayName = displayName;
+    if (email) update.email = email.toLowerCase();
+    if (organization !== undefined) update.organization = organization;
+    if (status && ['active','pending','suspended','rejected'].includes(status)) update.status = status;
+    if (role && ['user','sacco','authority','moderator','admin'].includes(role)) update.role = role;
+    update.updatedAt = new Date();
+
+    const updated = await User.findByIdAndUpdate(userId, update, { new: true });
+    if (!updated) return res.status(404).json({ success: false, message: 'User not found' });
+    return res.json({ success: true, data: { user: updated }, message: 'User updated' });
+  } catch (error) {
+    console.error('Admin update user error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update user' });
+  }
+});
+
 // Data export endpoints
 app.get('/export/compliance', async (req, res) => {
   try {
@@ -2177,34 +2351,44 @@ app.get('/export/compliance', async (req, res) => {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
-    // Get compliance data for export
-    const complianceData = [
-      {
-        saccoId: '1',
-        saccoName: 'Nairobi City Sacco',
-        licenseStatus: 'valid',
-        safetyScore: 92,
-        incidentCount: 2,
-        lastInspection: '2025-09-15',
-        violations: 0,
-        status: 'compliant'
-      }
-    ];
+    const { format = 'csv' } = req.query;
+    const routes = await Route.find({ isActive: true }).lean();
+    const routeIds = routes.map(r => r._id);
+    const scores = await Score.find({ routeId: { $in: routeIds } }).lean();
+    const scoreMap = new Map(scores.map(s => [String(s.routeId), s]));
 
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename=compliance-report.json');
-    res.json({
-      success: true,
-      data: complianceData,
-      exportedAt: new Date().toISOString()
+    const rows = routes.map(r => {
+      const s = scoreMap.get(String(r._id));
+      const safetyScore = s ? Math.round(Math.min(100, Math.max(0, (s.safety || 0) * 20))) : '';
+      const status = safetyScore === '' ? 'unknown' : (safetyScore >= 85 ? 'compliant' : safetyScore >= 70 ? 'warning' : 'attention');
+      return {
+        routeId: String(r._id),
+        routeName: r.name,
+        routeNumber: r.routeNumber || '',
+        safetyScore,
+        status
+      };
     });
+
+    const headers = Object.keys(rows[0] || { routeId: '', routeName: '', safetyScore: '', status: '' });
+    const csv = [headers.join(',')]
+      .concat(rows.map(row => headers.map(h => {
+        const v = row[h] ?? '';
+        const s = String(v).replace(/"/g, '""');
+        const needsQuotes = /[",\n\r]/.test(s);
+        return needsQuotes ? `"${s}"` : s;
+      }).join(',')))
+      .join('\n');
+
+    const filename = `compliance-${Date.now()}.${format === 'xls' ? 'xls' : 'csv'}`;
+    const contentType = format === 'xls' ? 'application/vnd.ms-excel' : 'text/csv; charset=utf-8';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    return res.send(csv);
 
   } catch (error) {
     console.error('Export compliance error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to export compliance data'
-    });
+    res.status(500).json({ success: false, message: 'Failed to export compliance data' });
   }
 });
 
@@ -2214,25 +2398,174 @@ app.get('/export/incidents', async (req, res) => {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
-    // Get incidents data for export
-    const incidents = await Report.find({ reportType: 'safety' }).limit(100);
-    
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename=safety-incidents.json');
-    res.json({
-      success: true,
-      data: incidents,
-      exportedAt: new Date().toISOString()
-    });
+    const { days = 30, format = 'csv' } = req.query;
+    const since = new Date(Date.now() - Number(days) * 24 * 60 * 60 * 1000);
+    const routes = await Route.find({ isActive: true }).lean();
+    const routeById = new Map(routes.map(r => [String(r._id), r]));
+    const incidents = await Report.find({ reportType: 'safety', createdAt: { $gte: since } }).sort({ createdAt: -1 }).limit(1000).lean();
+
+    const rows = incidents.map(i => ({
+      id: String(i._id),
+      routeName: routeById.get(String(i.routeId))?.name || '',
+      severity: i.severity,
+      description: i.description || '',
+      longitude: Array.isArray(i.location?.coordinates) ? i.location.coordinates[0] : '',
+      latitude: Array.isArray(i.location?.coordinates) ? i.location.coordinates[1] : '',
+      status: i.status,
+      createdAt: new Date(i.createdAt).toISOString()
+    }));
+
+    const headers = Object.keys(rows[0] || { id: '', routeName: '', severity: '', createdAt: '' });
+    const csv = [headers.join(',')]
+      .concat(rows.map(row => headers.map(h => {
+        const v = row[h] ?? '';
+        const s = String(v).replace(/"/g, '""');
+        const needsQuotes = /[",\n\r]/.test(s);
+        return needsQuotes ? `"${s}"` : s;
+      }).join(',')))
+      .join('\n');
+
+    const filename = `incidents-${Date.now()}.${format === 'xls' ? 'xls' : 'csv'}`;
+    const contentType = format === 'xls' ? 'application/vnd.ms-excel' : 'text/csv; charset=utf-8';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    return res.send(csv);
 
   } catch (error) {
     console.error('Export incidents error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to export incidents data'
-    });
+    res.status(500).json({ success: false, message: 'Failed to export incidents data' });
   }
 });
+
+// System analytics export (one-row CSV/XLS)
+app.get('/export/system', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { format = 'csv' } = req.query;
+    const [totalUsers, activeReports, totalRoutes] = await Promise.all([
+      User.countDocuments({}),
+      Report.countDocuments({ createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
+      Route.countDocuments({ isActive: true })
+    ]);
+    const scores = await Score.find({}).lean();
+    const avgOverall = scores.length > 0 ? (scores.reduce((a, s) => a + (Number(s.overall) || 0), 0) / scores.length) : 0;
+
+    const row = {
+      totalUsers,
+      activeReports,
+      totalRoutes,
+      averageScore: Math.round(avgOverall * 10) / 10,
+      exportedAt: new Date().toISOString()
+    };
+    const headers = Object.keys(row);
+    const csv = [headers.join(',')].concat([headers.map(h => String(row[h]).replace(/"/g, '""')).join(',')]).join('\n');
+
+    const filename = `system-analytics-${Date.now()}.${format === 'xls' ? 'xls' : 'csv'}`;
+    const contentType = format === 'xls' ? 'application/vnd.ms-excel' : 'text/csv; charset=utf-8';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    return res.send(csv);
+
+  } catch (error) {
+    console.error('Export system error:', error);
+    res.status(500).json({ success: false, message: 'Failed to export system analytics' });
+  }
+});
+
+// Reports export as CSV (works for .csv or .xls filename)
+app.get('/export/reports', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { days = 30, format = 'csv' } = req.query;
+    const since = new Date(Date.now() - Number(days) * 24 * 60 * 60 * 1000);
+    const reports = await Report.find({ createdAt: { $gte: since } })
+      .populate('routeId', 'name routeNumber')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Flatten data for export
+    const rows = reports.map(r => ({
+      id: String(r._id),
+      routeName: r.routeId?.name || '',
+      routeNumber: r.routeId?.routeNumber || '',
+      reportType: r.reportType,
+      severity: r.severity,
+      description: r.description || '',
+      longitude: Array.isArray(r.location?.coordinates) ? r.location.coordinates[0] : '',
+      latitude: Array.isArray(r.location?.coordinates) ? r.location.coordinates[1] : '',
+      status: r.status,
+      isAnonymous: r.isAnonymous ? 'yes' : 'no',
+      createdAt: new Date(r.createdAt).toISOString()
+    }));
+
+    const headers = Object.keys(rows[0] || { id: '', routeName: '', reportType: '', severity: '', createdAt: '' });
+    const csv = [headers.join(',')]
+      .concat(rows.map(row => headers.map(h => {
+        const v = row[h] ?? '';
+        const s = String(v).replace(/"/g, '""');
+        const needsQuotes = /[",\n\r]/.test(s);
+        return needsQuotes ? `"${s}"` : s;
+      }).join(',')))
+      .join('\n');
+
+    const filename = `reports-${Date.now()}.${format === 'xls' ? 'xls' : 'csv'}`;
+    const contentType = format === 'xls' ? 'application/vnd.ms-excel' : 'text/csv; charset=utf-8';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    return res.send(csv);
+  } catch (error) {
+    console.error('Export reports error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to export reports' });
+  }
+});
+
+// Admin seed endpoint (must be defined before 404 and export)
+app.post('/admin/seed/routes', authMiddleware, requireRoles(['admin']), async (req, res) => {
+  try {
+    const seeds = req.body?.routes || []
+    if (!Array.isArray(seeds) || seeds.length === 0) {
+      return res.status(400).json({ success: false, message: 'No routes provided' })
+    }
+
+    let created = 0
+    for (const r of seeds) {
+      if (!r.name) continue
+      const exists = await Route.findOne({ name: r.name }).lean()
+      if (exists) continue
+
+      const defaultStops = [
+        { name: 'Kencom', coordinates: [36.8219, -1.2921] },
+        { name: 'Terminus', coordinates: [36.8000, -1.3000] }
+      ]
+
+      await Route.create({
+        name: r.name,
+        routeNumber: r.routeNumber || '',
+        operator: r.operator || '',
+        operatingHours: { start: '05:00', end: '22:00' },
+        stops: r.stops && r.stops.length ? r.stops : defaultStops,
+        // path as [lng,lat] flat array (two-point polyline)
+        path: r.path && r.path.length ? r.path : [36.8219, -1.2921, 36.8000, -1.3000],
+        fare: r.fare || 50,
+        status: 'active',
+        isActive: true,
+        description: r.description || 'Seeded route'
+      })
+      created++
+    }
+
+    return res.json({ success: true, data: { created } })
+  } catch (err) {
+    console.error('Seed routes error:', err)
+    return res.status(500).json({ success: false, message: 'Internal server error' })
+  }
+})
 
 // 404 handler
 app.use('*', (req, res) => {

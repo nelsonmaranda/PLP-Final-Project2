@@ -11,8 +11,11 @@ import {
   Crown,
   RefreshCw,
   UserCheck,
-  UserX
+  UserX,
+  Plus,
+  Pencil
 } from 'lucide-react'
+import apiService from '../services/api'
 
 interface User {
   _id: string
@@ -35,6 +38,10 @@ export default function UserManagement() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [roleFilter, setRoleFilter] = useState('all')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
+  const [createForm, setCreateForm] = useState({ displayName: '', email: '', password: '', role: 'user', organization: '' })
+  const [editUserId, setEditUserId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ displayName: '', email: '', role: 'user', status: 'active', organization: '' })
 
   useEffect(() => {
     loadUsers()
@@ -211,13 +218,22 @@ export default function UserManagement() {
               <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
               <p className="text-gray-600 mt-1">Manage user roles and permissions</p>
             </div>
-            <button
+            <div className="flex items-center gap-2">
+              <button
               onClick={loadUsers}
               className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
             >
               <RefreshCw className="w-4 h-4" />
               <span>Refresh</span>
             </button>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add User</span>
+            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -356,9 +372,15 @@ export default function UserManagement() {
                           </button>
                         </div>
                       )}
-                      {user.status === 'active' && (
-                        <span className="text-green-600 text-xs">Active</span>
-                      )}
+                      <button
+                        onClick={() => {
+                          setEditUserId(user._id)
+                          setEditForm({ displayName: user.displayName, email: user.email, role: user.role, status: user.status, organization: user.organization || '' })
+                        }}
+                        className="inline-flex items-center px-3 py-1 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ml-2"
+                      >
+                        <Pencil className="w-3 h-3 mr-1" /> Edit
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -375,6 +397,73 @@ export default function UserManagement() {
           </div>
         )}
       </div>
+
+      {/* Create User Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold mb-4">Add User</h3>
+            <div className="space-y-3">
+              <input className="form-input w-full" placeholder="Full name" value={createForm.displayName} onChange={(e)=>setCreateForm({...createForm, displayName: e.target.value})} />
+              <input className="form-input w-full" placeholder="Email" value={createForm.email} onChange={(e)=>setCreateForm({...createForm, email: e.target.value})} />
+              <input className="form-input w-full" placeholder="Temporary password" type="password" value={createForm.password} onChange={(e)=>setCreateForm({...createForm, password: e.target.value})} />
+              <select className="form-select w-full" value={createForm.role} onChange={(e)=>setCreateForm({...createForm, role: e.target.value})}>
+                <option value="user">User</option>
+                <option value="sacco">SACCO</option>
+                <option value="authority">Authority</option>
+                <option value="moderator">Moderator</option>
+                <option value="admin">Admin</option>
+              </select>
+              <input className="form-input w-full" placeholder="Organization (optional)" value={createForm.organization} onChange={(e)=>setCreateForm({...createForm, organization: e.target.value})} />
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button className="btn btn-outline" onClick={()=>setShowCreate(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={async ()=>{
+                try {
+                  const resp = await apiService.adminCreateUser(createForm as any)
+                  if (resp.success) { setShowCreate(false); setCreateForm({ displayName:'', email:'', password:'', role:'user', organization:'' }); loadUsers() }
+                } catch (e) { alert('Failed to create user') }
+              }}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editUserId && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold mb-4">Edit User</h3>
+            <div className="space-y-3">
+              <input className="form-input w-full" placeholder="Full name" value={editForm.displayName} onChange={(e)=>setEditForm({...editForm, displayName: e.target.value})} />
+              <input className="form-input w-full" placeholder="Email" value={editForm.email} onChange={(e)=>setEditForm({...editForm, email: e.target.value})} />
+              <select className="form-select w-full" value={editForm.role} onChange={(e)=>setEditForm({...editForm, role: e.target.value})}>
+                <option value="user">User</option>
+                <option value="sacco">SACCO</option>
+                <option value="authority">Authority</option>
+                <option value="moderator">Moderator</option>
+                <option value="admin">Admin</option>
+              </select>
+              <select className="form-select w-full" value={editForm.status} onChange={(e)=>setEditForm({...editForm, status: e.target.value})}>
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="suspended">Suspended</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <input className="form-input w-full" placeholder="Organization (optional)" value={editForm.organization} onChange={(e)=>setEditForm({...editForm, organization: e.target.value})} />
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button className="btn btn-outline" onClick={()=>setEditUserId(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={async ()=>{
+                try {
+                  const resp = await apiService.adminUpdateUser(editUserId!, editForm as any)
+                  if (resp.success) { setEditUserId(null); loadUsers() }
+                } catch (e) { alert('Failed to update user') }
+              }}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

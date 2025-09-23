@@ -133,18 +133,18 @@ export default function AuthorityDashboard() {
     }
   }
 
-  const exportData = (type: string) => {
-    // Simulate data export
-    const data = type === 'compliance' ? complianceData : safetyIncidents
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${type}-report-${new Date().toISOString().split('T')[0]}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+  const exportData = async (type: 'compliance' | 'incidents' | 'analytics', format: 'csv' | 'xls') => {
+    const base = 'https://us-central1-smart-matwana-ke.cloudfunctions.net/api'
+    const endpoint = type === 'compliance' ? '/export/compliance'
+      : type === 'incidents' ? '/export/incidents'
+      : '/export/system'
+    const url = `${base}${endpoint}?format=${format}`
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${type}-${new Date().toISOString().split('T')[0]}.${format}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   if (loading) {
@@ -480,13 +480,16 @@ export default function AuthorityDashboard() {
                       <p className="text-sm text-gray-500">SACCO compliance data</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => exportData('compliance')}
-                    className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Export JSON</span>
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => exportData('compliance','csv')} className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                      <Download className="w-4 h-4" />
+                      <span>Export CSV</span>
+                    </button>
+                    <button onClick={() => exportData('compliance','xls')} className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                      <Download className="w-4 h-4" />
+                      <span>Export XLS</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="border border-gray-200 rounded-lg p-4">
@@ -497,13 +500,16 @@ export default function AuthorityDashboard() {
                       <p className="text-sm text-gray-500">Incident reports and data</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => exportData('incidents')}
-                    className="w-full flex items-center justify-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Export JSON</span>
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => exportData('incidents','csv')} className="w-full flex items-center justify-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                      <Download className="w-4 h-4" />
+                      <span>Export CSV</span>
+                    </button>
+                    <button onClick={() => exportData('incidents','xls')} className="w-full flex items-center justify-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                      <Download className="w-4 h-4" />
+                      <span>Export XLS</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="border border-gray-200 rounded-lg p-4">
@@ -514,13 +520,16 @@ export default function AuthorityDashboard() {
                       <p className="text-sm text-gray-500">Performance metrics</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => exportData('analytics')}
-                    className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Export JSON</span>
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => exportData('analytics','csv')} className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                      <Download className="w-4 h-4" />
+                      <span>Export CSV</span>
+                    </button>
+                    <button onClick={() => exportData('analytics','xls')} className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                      <Download className="w-4 h-4" />
+                      <span>Export XLS</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

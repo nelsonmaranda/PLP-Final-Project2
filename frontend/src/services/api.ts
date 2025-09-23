@@ -163,6 +163,15 @@ class ApiService {
     }
   }
 
+  async rateRoute(routeId: string, rating: Partial<{ reliability: number; safety: number; punctuality: number; comfort: number; overall: number }>): Promise<ApiResponse<{ score: any }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ score: any }>> = await this.api.post(`/routes/${routeId}/rate`, rating)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
   async createRoute(routeData: Partial<Route>): Promise<ApiResponse<Route>> {
     try {
       const response: AxiosResponse<ApiResponse<Route>> = await this.api.post('/routes', routeData)
@@ -296,6 +305,24 @@ class ApiService {
       const response: AxiosResponse<ApiResponse<PaginatedResponse<User>>> = await this.api.get(
         `/users?page=${page}&limit=${limit}`
       )
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async adminCreateUser(payload: { email: string; displayName: string; password: string; role?: User['role']; organization?: string }): Promise<ApiResponse<{ user: User }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ user: User }>> = await this.api.post('/admin/users', payload)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async adminUpdateUser(userId: string, payload: Partial<Pick<User, 'displayName' | 'email' | 'role' | 'status' | 'organization'>>): Promise<ApiResponse<{ user: User }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ user: User }>> = await this.api.put(`/admin/users/${userId}`, payload)
       return response.data
     } catch (error) {
       throw this.handleError(error)

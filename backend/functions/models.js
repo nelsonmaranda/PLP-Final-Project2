@@ -93,6 +93,17 @@ const scoreSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+// Rate limit Schema for device-based throttling per route
+const rateLimitSchema = new mongoose.Schema({
+  routeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Route', required: true },
+  fingerprint: { type: String, required: true },
+  lastRatedAt: { type: Date, default: Date.now },
+  count: { type: Number, default: 0 }
+});
+
+rateLimitSchema.index({ routeId: 1, fingerprint: 1 });
+rateLimitSchema.index({ lastRatedAt: 1 });
+
 // Create indexes for better performance
 routeSchema.index({ 'stops.coordinates': '2dsphere' });
 reportSchema.index({ location: '2dsphere' });
@@ -104,10 +115,12 @@ const User = mongoose.model('User', userSchema);
 const Route = mongoose.model('Route', routeSchema);
 const Report = mongoose.model('Report', reportSchema);
 const Score = mongoose.model('Score', scoreSchema);
+const RateLimit = mongoose.model('RateLimit', rateLimitSchema);
 
 module.exports = {
   User,
   Route,
   Report,
-  Score
+  Score,
+  RateLimit
 };

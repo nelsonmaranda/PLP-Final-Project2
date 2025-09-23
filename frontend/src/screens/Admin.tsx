@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, Users, MapPin, AlertTriangle, Plus, Edit, Trash2, Eye } from 'lucide-react'
+import { BarChart3, Users, MapPin, AlertTriangle, Plus, Edit, Trash2, Eye, Upload, Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import apiService from '../services/api'
 import { Route } from '../types'
+import { useApp } from '../contexts/AppContext'
 
 export default function Admin() {
+  const { state } = useApp()
+  const isAdmin = state.user?.role === 'admin'
   const [isLoading, setIsLoading] = useState(true)
   const [routes, setRoutes] = useState<Route[]>([])
   const [showAddRoute, setShowAddRoute] = useState(false)
@@ -11,6 +15,10 @@ export default function Admin() {
     name: '',
     description: '',
   })
+
+  // Seeding UI state
+  const [isSeeding, setIsSeeding] = useState(false)
+  const [seedResult, setSeedResult] = useState<string>('')
 
   useEffect(() => {
     const loadRoutes = async () => {
@@ -37,7 +45,7 @@ export default function Admin() {
     try {
       if (newRoute.name.trim()) {
         setIsLoading(true)
-        const created = await apiService.createRoute({ name: newRoute.name, description: newRoute.description })
+        const created = await apiService.createRoute({ name: newRoute.name, description: newRoute.description } as any)
         if (created.success && created.data) {
           const updated = await apiService.getRoutes({ page: 1, limit: 100, sort: 'createdAt', order: 'desc' })
           setRoutes(updated.success && updated.data ? (updated.data.routes as any) : [])
@@ -68,7 +76,7 @@ export default function Admin() {
   const handleToggleStatus = async (id: string) => {
     try {
       setIsLoading(true)
-      const route = routes.find(r => (r as any)._id === id || (r as any).id === id)
+      const route = (routes as any).find((r: any) => (r as any)._id === id || (r as any).id === id)
       if (!route) return
       const next = (route as any).status === 'active' ? 'inactive' : 'active'
       await apiService.updateRoute((route as any)._id || (route as any).id, { status: next } as any)
@@ -91,7 +99,7 @@ export default function Admin() {
     },
     {
       title: 'Active Routes',
-      value: routes.filter((r: any) => r.status === 'active').length,
+      value: (routes as any).filter((r: any) => r.status === 'active').length,
       icon: BarChart3,
       color: 'text-green-600',
       bgColor: 'bg-green-100'
@@ -112,6 +120,63 @@ export default function Admin() {
     }
   ]
 
+  const runSeed = async () => {
+    setIsSeeding(true)
+    setSeedResult('')
+    try {
+      let seeds: any[] = []
+      try {
+        const res = await fetch('/scripts/seed-routes.json')
+        if (res.ok) {
+          seeds = await res.json()
+        }
+      } catch {}
+      if (!seeds || seeds.length === 0) {
+        seeds = [
+          { name: 'Route 46 - CBD to Westlands', routeNumber: '46' },
+          { name: 'Route 44 - CBD to Kasarani', routeNumber: '44' },
+          { name: 'Route 58 - CBD to Embakasi', routeNumber: '58' }
+        ]
+      }
+
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setSeedResult('Missing auth token. Please login again.')
+        setIsSeeding(false)
+        return
+      }
+
+      let created = 0
+      for (let i = 0; i < seeds.length; i += 10) {
+        const chunk = seeds.slice(i, i + 10)
+        const resp = await fetch('https://us-central1-smart-matwana-ke.cloudfunctions.net/api/admin/seed/routes', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ routes: chunk })
+        })
+        const data = await resp.json()
+        if (data?.success && data?.data?.created >= 0) {
+          created += data.data.created
+          setSeedResult(prev => `${prev}\nChunk ${i}-${i + chunk.length - 1}: created ${data.data.created}`)
+        } else {
+          setSeedResult(prev => `${prev}\nChunk ${i}-${i + chunk.length - 1}: failed (${data?.message || 'unknown'})`)
+        }
+        await new Promise(r => setTimeout(r, 250))
+      }
+
+      const updated = await apiService.getRoutes({ page: 1, limit: 100, sort: 'createdAt', order: 'desc' })
+      setRoutes(updated.success && updated.data ? (updated.data.routes as any) : [])
+      setSeedResult(prev => `${prev}\nTotal created: ${created}`)
+    } catch (e: any) {
+      setSeedResult(`Seed failed: ${e?.message || e}`)
+    } finally {
+      setIsSeeding(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -126,13 +191,50 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container py-6">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600 mt-2">Manage routes, reports, and system settings</p>
         </div>
 
-        {/* Stats Grid */}
+        {isAdmin && (
+          <div className="card mb-6">
+            <div className="card-header">
+              <div className="flex items-center justify-between">
+                <h2 className="card-title">Seed Curated CBD Routes</h2>
+                <button onClick={runSeed} disabled={isSeeding} className="btn btn-primary btn-sm">
+                  {isSeeding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                  {isSeeding ? 'Seeding…' : 'Run Seed'}
+                </button>
+              </div>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-gray-600">Seeds about 50 CBD routes in small chunks. Requires admin login.</p>
+              {seedResult && (
+                <pre className="mt-3 whitespace-pre-wrap text-xs bg-gray-50 p-3 rounded border border-gray-200">{seedResult}</pre>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Quick Tools */}
+        {isAdmin && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Link to="/admin/routes" className="card hover:bg-gray-50">
+              <div className="card-content">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-lg bg-indigo-100">
+                    <MapPin className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Tools</p>
+                    <p className="text-lg font-semibold text-gray-900">Route Editor</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => {
             const Icon = stat.icon
@@ -271,9 +373,9 @@ export default function Admin() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          route.status === 'active' 
+                          (route.status || 'active') === 'active' 
                             ? 'bg-green-100 text-green-800'
-                            : route.status === 'maintenance'
+                            : (route.status || 'inactive') === 'maintenance'
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-red-100 text-red-800'
                         }`}>

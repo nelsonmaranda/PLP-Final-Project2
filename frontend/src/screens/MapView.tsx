@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
+import { useState, useCallback, useRef } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import { MapPin, Clock, Star, Users, Filter, List, AlertCircle } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 import apiService from '../services/api'
@@ -33,6 +33,18 @@ export default function MapView() {
     safeRoutes: true,
     lowFare: false
   })
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null)
+  const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  const [showOnlySelectedOnMap, setShowOnlySelectedOnMap] = useState(false)
+
+  // Helper component to capture map instance from react-leaflet
+  function MapInstanceSetter() {
+    const map = useMap()
+    if (mapInstance !== map) {
+      setMapInstance(map)
+    }
+    return null
+  }
 
   // Nairobi coordinates
   const nairobiCenter: [number, number] = [-1.2921, 36.8219]
@@ -103,6 +115,53 @@ export default function MapView() {
       return getScoreColor(route.score.overall)
     }
     return '#3b82f6' // default blue
+  }
+
+  const getRouteId = (route?: { _id?: any } | null): string => {
+    if (!route || route._id == null) return ''
+    return String(route._id)
+  }
+
+  const getRouteLatLngs = (route: RouteWithScores): [number, number][] => {
+    // Prefer path; fallback to stops
+    const latlngs: [number, number][] = []
+    if (route.path && Array.isArray(route.path) && route.path.length > 0) {
+      for (let i = 0; i < route.path.length; i += 2) {
+        if (i + 1 < route.path.length) {
+          const lat = route.path[i + 1]
+          const lng = route.path[i]
+          if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+            latlngs.push([lat, lng])
+          }
+        }
+      }
+    }
+    if (latlngs.length === 0 && route.stops && Array.isArray(route.stops)) {
+      for (const stop of route.stops) {
+        const c = stop?.coordinates
+        if (Array.isArray(c) && c.length === 2 && typeof c[0] === 'number' && typeof c[1] === 'number') {
+          // stored as [lng, lat]
+          latlngs.push([c[1], c[0]])
+        }
+      }
+    }
+    return latlngs
+  }
+
+  const focusRouteOnMap = (route: RouteWithScores) => {
+    setSelectedRoute(route)
+    // Ensure the main card is showing the map (not list)
+    setShowListView(false)
+    setShowOnlySelectedOnMap(true)
+    const latlngs = getRouteLatLngs(route)
+    if (mapInstance && latlngs.length > 0) {
+      const bounds = L.latLngBounds(latlngs.map(([lat, lng]) => L.latLng(lat, lng)))
+      mapInstance.fitBounds(bounds, { padding: [40, 40] })
+    }
+    // Scroll the map into view for better UX
+    try {
+      mapContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    } catch {}
   }
 
   if (isLoading) {
@@ -220,7 +279,7 @@ export default function MapView() {
                         <div 
                           key={route._id}
                           className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                            selectedRoute?._id === route._id 
+                            getRouteId(selectedRoute) === getRouteId(route)
                               ? 'border-primary-500 bg-primary-50' 
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
@@ -256,19 +315,22 @@ export default function MapView() {
                     </div>
                   </div>
                 ) : (
-                  <div className="map-container h-96" role="img" aria-label="Interactive map showing Nairobi matatu routes">
+                  <div ref={mapContainerRef} className="map-container h-96" role="img" aria-label="Interactive map showing Nairobi matatu routes">
                     <MapContainer
                       center={nairobiCenter}
                       zoom={11}
                       style={{ height: '100%', width: '100%' }}
                     >
+                    <MapInstanceSetter />
                     <TileLayer
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
                     
                     {/* Render routes */}
-                    {filteredRoutes.map((route) => {
+                    {filteredRoutes
+                      .filter((route) => !showOnlySelectedOnMap || getRouteId(selectedRoute) === getRouteId(route))
+                      .map((route) => {
                       try {
                         // Safely process route path - convert flattened array to coordinate pairs
                         const routePath: [number, number][] = []
@@ -292,8 +354,8 @@ export default function MapView() {
                               <Polyline
                                 positions={routePath}
                                 color={getRouteColor(route)}
-                                weight={selectedRoute?._id === route._id ? 6 : 4}
-                                opacity={selectedRoute?._id === route._id ? 0.8 : 0.6}
+                                weight={getRouteId(selectedRoute) === getRouteId(route) ? 7 : 4}
+                                opacity={getRouteId(selectedRoute) === getRouteId(route) ? 0.95 : 0.3}
                               />
                             )}
                         
@@ -467,67 +529,54 @@ export default function MapView() {
                           ></div>
                         </div>
                       </div>
+
+                      {/* Inline expandable details */}
+                      {getRouteId(selectedRoute) === getRouteId(route) && (
+                        <div className="mt-3 pt-3 border-t">
+                          <dl className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="flex justify-between"><dt className="text-gray-600">Fare</dt><dd className="font-medium">KES {route.fare}</dd></div>
+                            <div className="flex justify-between"><dt className="text-gray-600">Hours</dt><dd className="font-medium">{route.operatingHours.start} - {route.operatingHours.end}</dd></div>
+                            <div className="flex justify-between"><dt className="text-gray-600">Stops</dt><dd className="font-medium">{route.stops?.length || 0}</dd></div>
+                            <div className="flex justify-between"><dt className="text-gray-600">Route No.</dt><dd className="font-medium">{route.routeNumber || '—'}</dd></div>
+                          </dl>
+                          <div className="mt-3 flex gap-2 items-center flex-wrap">
+                            <button className="btn btn-sm btn-primary" onClick={(e) => { e.stopPropagation(); focusRouteOnMap(route) }}>
+                              <MapPin className="w-4 h-4 mr-1" /> View on Map
+                            </button>
+                            {/* Quick rating: 1-5 overall */}
+                            <div className="flex items-center gap-1">
+                              {[1,2,3,4,5].map((v) => (
+                                <button
+                                  key={v}
+                                  className="p-1"
+                                  title={`Rate ${v}`}
+                                  onClick={async (e) => {
+                                    e.stopPropagation()
+                                    try {
+                                      await apiService.rateRoute(route._id, { overall: v })
+                                      // Optimistically update UI
+                                      setSelectedRoute(prev => prev && prev._id === route._id ? { ...prev, score: { ...(prev.score || {}), overall: ((prev.score?.overall || 0) + v) / 2 } } as any : prev)
+                                      refetch()
+                                    } catch (err) {
+                                      console.error('Rating failed', err)
+                                      alert('Failed to submit rating')
+                                    }
+                                  }}
+                                >
+                              <Star className={`w-5 h-5 ${(Number(selectedRoute?.score?.overall) >= v) ? 'text-yellow-500' : 'text-gray-300'}`} />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Selected Route Details */}
-            {selectedRoute && (
-              <div className="card mt-4" role="region" aria-labelledby="route-details-heading">
-                <div className="card-header">
-                  <h3 id="route-details-heading" className="text-lg font-semibold">Route Details</h3>
-                </div>
-                <div className="card-content">
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium text-gray-900">{selectedRoute.name}</h4>
-                      <p className="text-sm text-gray-600">{selectedRoute.operator}</p>
-                      <p className="text-xs text-gray-500 mt-1">Real-time updates available</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-primary-600" aria-label={`Reliability score: ${selectedRoute.score?.reliability?.toFixed(1) || 'N/A'} out of 5`}>
-                          {selectedRoute.score?.reliability?.toFixed(1) || 'N/A'}
-                        </div>
-                        <div className="text-sm text-gray-600">Reliability</div>
-                      </div>
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-secondary-600" aria-label={`Safety score: ${selectedRoute.score?.safety?.toFixed(1) || 'N/A'} out of 5`}>
-                          {selectedRoute.score?.safety?.toFixed(1) || 'N/A'}
-                        </div>
-                        <div className="text-sm text-gray-600">Safety</div>
-                      </div>
-                    </div>
-                    
-                    <dl className="space-y-2">
-                      <div className="flex justify-between">
-                        <dt className="text-gray-600">Fare:</dt>
-                        <dd className="font-medium">KES {selectedRoute.fare}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-gray-600">Operating Hours:</dt>
-                        <dd className="font-medium">{selectedRoute.operatingHours.start} - {selectedRoute.operatingHours.end}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-gray-600">Stops:</dt>
-                        <dd className="font-medium">{selectedRoute.stops.length} stops</dd>
-                      </div>
-                    </dl>
-                    
-                    <button 
-                      className="btn btn-primary w-full"
-                      aria-label="View selected route on map"
-                    >
-                      <MapPin className="w-4 h-4 mr-2" aria-hidden="true" />
-                      View on Map
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Inline details are shown within each route item; footer panel removed */}
           </div>
         </div>
       </div>
