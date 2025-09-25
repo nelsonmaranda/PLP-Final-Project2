@@ -118,17 +118,30 @@ reportSchema.index({ sacco: 1 });
 reportSchema.index({ deviceFingerprint: 1, createdAt: -1 });
 scoreSchema.index({ routeId: 1 });
 
+// Traffic cache for congestion info per route
+const trafficCacheSchema = new mongoose.Schema({
+  routeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Route', required: true },
+  congestionIndex: { type: Number, default: 0 }, // 0-100
+  trafficFactor: { type: Number, default: 1.0 }, // multiplier ~ [0.8, 1.6]
+  provider: { type: String, default: 'none' },
+  meta: { type: Object },
+  updatedAt: { type: Date, default: Date.now }
+});
+trafficCacheSchema.index({ routeId: 1 }, { unique: true });
+
 // Create models
 const User = mongoose.model('User', userSchema);
 const Route = mongoose.model('Route', routeSchema);
 const Report = mongoose.model('Report', reportSchema);
 const Score = mongoose.model('Score', scoreSchema);
 const RateLimit = mongoose.model('RateLimit', rateLimitSchema);
+const TrafficCache = mongoose.model('TrafficCache', trafficCacheSchema);
 
 module.exports = {
   User,
   Route,
   Report,
   Score,
-  RateLimit
+  RateLimit,
+  TrafficCache
 };

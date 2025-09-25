@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User, Route, Report, Score, RateLimit } = require('./models');
+const { User, Route, Report, Score, RateLimit, TrafficCache } = require('./models');
 
 // Create Express app
 const app = express();
@@ -1591,7 +1591,14 @@ app.post('/analytics/travel-time/predict', async (req, res) => {
       if (hour >= 22 || hour <= 5) timeMultiplier = 0.8; // Night time
     }
 
-    const predictedTime = Math.round(baseTime * timeMultiplier);
+    // Apply traffic factor if available
+    let trafficFactor = 1.0;
+    const tc = await TrafficCache.findOne({ routeId: route._id }).lean();
+    if (tc && typeof tc.trafficFactor === 'number' && tc.trafficFactor > 0) {
+      trafficFactor = tc.trafficFactor;
+    }
+
+    const predictedTime = Math.round(baseTime * timeMultiplier * trafficFactor);
     const confidence = 75; // Default confidence
 
     res.json({
@@ -1606,7 +1613,7 @@ app.post('/analytics/travel-time/predict', async (req, res) => {
           timeOfDay: timeMultiplier,
           dayOfWeek: 1.0,
           weather: 1.1,
-          traffic: timeMultiplier,
+          traffic: trafficFactor,
           historical: 1.0
         },
         alternativeTimes: {
@@ -1699,6 +1706,73 @@ app.post('/analytics/routes/alternatives', async (req, res) => {
       success: false,
       message: 'Failed to find alternative routes'
     });
+  }
+});
+
+// ==================== TRAFFIC SERVICE ====================
+// Simple pluggable traffic fetcher (HERE adapter placeholder)
+async function fetchTrafficFactorForRoute(route) {
+  try {
+    // If HERE API key configured, attempt fetch (placeholder logic; skipped without key)
+    const hereKey = functions.config().here?.api_key || process.env.HERE_API_KEY;
+    if (!hereKey) {
+      // Fallback: derive from reports density (crowding+delay) over last 2 hours
+      const since = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      const reports = await Report.find({ routeId: route._id, createdAt: { $gte: since }, reportType: { $in: ['crowding', 'delay'] } }).lean();
+      const n = reports.length;
+      // Map report count to factor [1.0 .. 1.5]
+      const factor = Math.min(1.5, 1.0 + (n / 20));
+      const congestionIndex = Math.min(100, Math.round((factor - 1.0) / 0.5 * 100));
+      return { factor, congestionIndex, provider: 'reports' };
+    }
+    // Here: normally we would map route.path polyline to segments and call flow API.
+    // For now, return neutral factor to avoid external dependency until key is set.
+    return { factor: 1.0, congestionIndex: 0, provider: 'here' };
+  } catch (e) {
+    return { factor: 1.0, congestionIndex: 0, provider: 'none' };
+  }
+}
+
+// Refresh traffic data for active routes
+app.post('/traffic/refresh', async (req, res) => {
+  try {
+    if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
+    const routes = await Route.find({ isActive: true }).select('_id name path stops').lean();
+    let updated = 0;
+    for (const r of routes) {
+      const { factor, congestionIndex, provider } = await fetchTrafficFactorForRoute(r);
+      await TrafficCache.findOneAndUpdate(
+        { routeId: r._id },
+        { trafficFactor: factor, congestionIndex, provider, updatedAt: new Date() },
+        { upsert: true }
+      );
+      updated++;
+    }
+    return res.json({ success: true, data: { updated } });
+  } catch (error) {
+    console.error('Traffic refresh error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to refresh traffic' });
+  }
+});
+
+// Traffic summary
+app.get('/traffic/summary', async (req, res) => {
+  try {
+    if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
+    const caches = await TrafficCache.find({}).populate('routeId', 'name routeNumber').sort({ updatedAt: -1 }).lean();
+    const items = caches.map(c => ({
+      routeId: String(c.routeId?._id || c.routeId),
+      routeName: c.routeId?.name || 'Unknown',
+      routeNumber: c.routeId?.routeNumber || '',
+      congestionIndex: c.congestionIndex,
+      trafficFactor: c.trafficFactor,
+      provider: c.provider,
+      updatedAt: c.updatedAt
+    }));
+    return res.json({ success: true, data: { items, count: items.length } });
+  } catch (error) {
+    console.error('Traffic summary error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to load traffic summary' });
   }
 });
 
