@@ -1159,6 +1159,7 @@ app.get('/weather', async (req, res) => {
       sunset: new Date(weatherData.sys.sunset * 1000).toISOString()
     };
 
+    res.set('Cache-Control', 'no-store, max-age=0');
     res.json({
       success: true,
       data: transformedData
@@ -1179,6 +1180,7 @@ app.get('/weather', async (req, res) => {
       timestamp: new Date().toISOString()
     };
 
+    res.set('Cache-Control', 'no-store, max-age=0');
     res.json({
       success: true,
       data: fallbackData,
@@ -1195,29 +1197,40 @@ app.get('/insights/routes', async (req, res) => {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
-    // Get top 5 routes with most reports
-    const routes = await Route.find({ isActive: true }).limit(5);
+    const limit = Math.max(1, Math.min(Number(req.query.limit) || 10, 50));
+    const days = Math.max(1, Math.min(Number(req.query.days) || 14, 90));
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    // Pick routes by most reports in the period
+    const topRouteIdsAgg = await Report.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      { $group: { _id: '$routeId', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: limit }
+    ]);
+    const routeIds = topRouteIdsAgg.map(r => r._id);
+    const routes = await Route.find({ _id: { $in: routeIds }, isActive: true });
     const insights = [];
 
     for (const route of routes) {
       // Get recent reports for this route
       const recentReports = await Report.find({ 
         routeId: route._id,
-        createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+        createdAt: { $gte: since }
       });
 
-      // Calculate fare prediction (simple algorithm)
-      const fares = recentReports.map(r => r.fare).filter(f => f > 0);
-      const avgFare = fares.length > 0 ? fares.reduce((a, b) => a + b, 0) / fares.length : route.fare;
+      // Calculate fare insights based on actual report fares; fallback to route fare
+      const fares = recentReports.map(r => r.fare).filter(f => typeof f === 'number' && f > 0);
+      const avgFare = fares.length > 0 ? fares.reduce((a, b) => a + b, 0) / fares.length : (route.fare || 0);
       const fareVariance = fares.length > 1 ? Math.sqrt(fares.reduce((a, b) => a + Math.pow(b - avgFare, 2), 0) / fares.length) : 0;
       
       const farePrediction = {
         predictedFare: Math.round(avgFare),
-        confidence: Math.min(0.9, 0.5 + (fares.length / 10)),
+        confidence: Math.min(0.95, 0.5 + (fares.length / 10)),
         minFare: Math.round(avgFare - fareVariance),
         maxFare: Math.round(avgFare + fareVariance),
         trend: fares.length > 3 ? (fares[fares.length - 1] > fares[0] ? 'increasing' : 'decreasing') : 'stable',
-        factors: ['Historical data', 'Time of day', 'Weather conditions'],
+        factors: ['Reported fares', 'Time of day'],
         lastUpdated: new Date().toISOString()
       };
 
@@ -1225,37 +1238,36 @@ app.get('/insights/routes', async (req, res) => {
       const safetyReports = recentReports.filter(r => r.reportType === 'safety');
       const safetyScore = {
         overallScore: safetyReports.length > 0 
-          ? safetyReports.reduce((sum, r) => {
-              const severityScore = r.severity === 'low' ? 5 : r.severity === 'medium' ? 3 : 1;
-              return sum + severityScore;
-            }, 0) / safetyReports.length 
-          : 4.2,
-        reliabilityScore: 4.0 + Math.random() * 0.8,
-        incidentScore: 4.5 - (safetyReports.length * 0.1),
-        driverScore: 4.0 + Math.random() * 0.6,
-        vehicleScore: 3.8 + Math.random() * 0.8,
-        factors: ['Incident reports', 'User feedback', 'Route history'],
+          ? Math.max(1, Math.min(5, 5 - (safetyReports.reduce((sum, r) => sum + (r.severity === 'high' ? 2 : r.severity === 'medium' ? 1 : 0), 0) / Math.max(1, safetyReports.length))))
+          : 4.5,
+        incidentScore: Math.max(1, Math.min(5, 5 - (safetyReports.length * 0.1))),
+        factors: ['Safety reports in period'],
         lastUpdated: new Date().toISOString()
       };
 
-      // Calculate crowd density
+      // Calculate crowd density using crowding reports
       const currentHour = new Date().getHours();
       const isPeakTime = (currentHour >= 7 && currentHour <= 9) || (currentHour >= 17 && currentHour <= 19);
-      const crowdLevel = isPeakTime ? 'high' : currentHour >= 10 && currentHour <= 16 ? 'medium' : 'low';
+      const crowdReports = recentReports.filter(r => r.reportType === 'crowding');
+      const crowdLevel = crowdReports.length > 0
+        ? (crowdReports.filter(r => r.severity === 'high').length / crowdReports.length) > 0.5 ? 'high'
+          : (crowdReports.filter(r => r.severity === 'medium').length / crowdReports.length) > 0.5 ? 'medium'
+          : 'low'
+        : (isPeakTime ? 'high' : (currentHour >= 10 && currentHour <= 16 ? 'medium' : 'low'));
       
       const crowdDensity = {
         level: crowdLevel,
-        percentage: isPeakTime ? 80 + Math.floor(Math.random() * 20) : 30 + Math.floor(Math.random() * 40),
+        percentage: crowdLevel === 'high' ? 85 : crowdLevel === 'medium' ? 60 : 30,
         predictedPeak: isPeakTime ? 'Now' : '7:00 AM - 9:00 AM',
-        recommendedTime: isPeakTime ? '10:00 AM - 4:00 PM' : 'Now',
+        recommendedTime: crowdLevel === 'high' ? '10:00 AM - 4:00 PM' : 'Now',
         lastUpdated: new Date().toISOString()
       };
 
-      // Calculate travel time (mock)
-      const baseTime = 25 + Math.floor(Math.random() * 20);
-      const weatherFactor = Math.random() > 0.7 ? 1.2 : 1.0;
-      const peakFactor = isPeakTime ? 1.5 : 1.0;
-      const travelTime = Math.round(baseTime * weatherFactor * peakFactor);
+      // Estimate travel time from stop count and peak factor (fallback)
+      const stopCount = Math.max(1, (route.stops || []).length - 1);
+      const baseTime = stopCount * 3; // 3 minutes per segment baseline
+      const peakFactor = isPeakTime ? 1.4 : 1.0;
+      const travelTime = Math.round(baseTime * peakFactor);
 
       insights.push({
         routeId: route._id,
@@ -1264,9 +1276,9 @@ app.get('/insights/routes', async (req, res) => {
         safetyScore,
         crowdDensity,
         travelTime,
-        recommendedTime: isPeakTime ? '10:00 AM - 4:00 PM' : 'Now',
+        recommendedTime: crowdLevel === 'high' ? '10:00 AM - 4:00 PM' : 'Now',
         alternativeRoutes: [],
-        weatherImpact: 'Minimal impact on travel time',
+        weatherImpact: 'N/A',
         lastUpdated: new Date().toISOString()
       });
     }
@@ -1858,9 +1870,10 @@ app.get('/analytics/recommendations/:userId', async (req, res) => {
     }
 
     const { userId } = req.params;
+    const limit = Math.max(1, Math.min(Number(req.query.limit) || 10, 50));
     
     // Build recommendations from top Score docs
-    const scores = await Score.find({}).sort({ overall: -1 }).limit(20).lean();
+    const scores = await Score.find({}).sort({ overall: -1 }).limit(limit).lean();
     const routeIds = scores.map(s => s.routeId);
     const routes = await Route.find({ _id: { $in: routeIds }, isActive: true }).lean();
     const recs = scores.map((s) => {
@@ -1875,7 +1888,7 @@ app.get('/analytics/recommendations/:userId', async (req, res) => {
         score: score100,
         type
       };
-    }).slice(0, 5);
+    });
 
     res.json({
       success: true,

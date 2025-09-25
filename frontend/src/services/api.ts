@@ -518,9 +518,12 @@ class ApiService {
     }
   }
 
-  async getRouteInsights(): Promise<ApiResponse<{ insights: RouteInsight[] }>> {
+  async getRouteInsights(options?: { limit?: number; days?: number }): Promise<ApiResponse<{ insights: RouteInsight[] }>> {
     try {
-      const response: AxiosResponse<ApiResponse<{ insights: RouteInsight[] }>> = await this.api.get('/insights/routes')
+      const params: any = {}
+      if (options?.limit) params.limit = options.limit
+      if (options?.days) params.days = options.days
+      const response: AxiosResponse<ApiResponse<{ insights: RouteInsight[] }>> = await this.api.get('/insights/routes', { params })
       return response.data
     } catch (error) {
       throw this.handleError(error)
@@ -624,9 +627,11 @@ class ApiService {
   }
 
   // User recommendations
-  async getUserRecommendations(userId: string): Promise<ApiResponse<UserRecommendation>> {
+  async getUserRecommendations(userId: string, options?: { limit?: number }): Promise<ApiResponse<UserRecommendation>> {
     try {
-      const response: AxiosResponse<ApiResponse<UserRecommendation>> = await this.api.get(`/analytics/recommendations/${userId}`)
+      const params: any = {}
+      if (options?.limit) params.limit = options.limit
+      const response: AxiosResponse<ApiResponse<UserRecommendation>> = await this.api.get(`/analytics/recommendations/${userId}`, { params })
       return response.data
     } catch (error) {
       throw this.handleError(error)
