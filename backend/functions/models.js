@@ -65,6 +65,10 @@ const reportSchema = new mongoose.Schema({
     enum: ['low', 'medium', 'high', 'critical'], 
     default: 'medium' 
   },
+  // Optional metadata to support SACCO analytics and fare calculations
+  sacco: { type: String },
+  direction: { type: String, enum: ['from_cbd', 'to_cbd', 'along_route'] },
+  fare: { type: Number },
   location: {
     type: { type: String, enum: ['Point'], default: 'Point' },
     coordinates: { type: [Number], required: true } // [lng, lat]
@@ -75,6 +79,8 @@ const reportSchema = new mongoose.Schema({
     default: 'pending' 
   },
   isAnonymous: { type: Boolean, default: false },
+  // Device fingerprint (IP + UA) for de-duplicating rider actions
+  deviceFingerprint: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -108,6 +114,8 @@ rateLimitSchema.index({ lastRatedAt: 1 });
 routeSchema.index({ 'stops.coordinates': '2dsphere' });
 reportSchema.index({ location: '2dsphere' });
 reportSchema.index({ routeId: 1, createdAt: -1 });
+reportSchema.index({ sacco: 1 });
+reportSchema.index({ deviceFingerprint: 1, createdAt: -1 });
 scoreSchema.index({ routeId: 1 });
 
 // Create models

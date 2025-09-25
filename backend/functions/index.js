@@ -430,7 +430,7 @@ app.get('/scores/worst/:limit', async (req, res) => {
 // Reports endpoint (database-backed)
 app.post('/reports', async (req, res) => {
   try {
-    const { routeId, reportType, description, severity, location, isAnonymous } = req.body;
+    const { routeId, reportType, description, severity, location, isAnonymous, sacco, direction, fare } = req.body;
     if (!routeId || !reportType) {
       return res.status(400).json({ success: false, message: 'Route ID and report type are required' });
     }
@@ -439,7 +439,7 @@ app.post('/reports', async (req, res) => {
     }
     
     // Generate device fingerprint from IP and user agent
-    const deviceFingerprint = `${req.ip || 'unknown'}-${req.get('User-Agent') || 'unknown'}`.slice(0, 100);
+    const deviceFingerprint = `${req.ip || 'unknown'}-${req.get('User-Agent') || 'unknown'}`.slice(0, 150);
     
     const report = await Report.create({
       routeId,
@@ -452,6 +452,10 @@ app.post('/reports', async (req, res) => {
       },
       status: 'pending',
       isAnonymous: Boolean(isAnonymous),
+      // Optional analytics metadata
+      sacco: sacco || undefined,
+      direction: direction || undefined,
+      fare: typeof fare === 'number' ? fare : undefined,
       deviceFingerprint
     });
     return res.status(201).json({ success: true, data: report, message: 'Report submitted successfully' });
@@ -1925,6 +1929,22 @@ app.get('/sacco/dashboard', async (req, res) => {
       };
     });
 
+    // Estimate revenue per route for last 7 days based on unique devices * fare
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const deviceAgg = await Report.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      { $group: { _id: { routeId: '$routeId', device: '$deviceFingerprint' }, count: { $sum: 1 } } },
+      { $group: { _id: '$_id.routeId', uniqueDevices: { $sum: 1 } } }
+    ]);
+    const uniqueDevicesByRoute = new Map(deviceAgg.map(d => [String(d._id), d.uniqueDevices]));
+
+    const routePerformanceWithRevenue = routePerformance.map(rp => {
+      const uniques = uniqueDevicesByRoute.get(String(rp.routeId)) || 0;
+      const fare = routes.find(rt => String(rt._id) === String(rp.routeId))?.fare || 0;
+      const revenue7d = Math.round(uniques * fare);
+      return { ...rp, revenue7d };
+    });
+
     // Drivers are not tracked yet – return empty list. Client should handle gracefully.
     const driverPerformance = [];
 
@@ -1954,7 +1974,7 @@ app.get('/sacco/dashboard', async (req, res) => {
 
     res.json({
       success: true,
-      data: { routePerformance, driverPerformance, customerFeedback, fleetStatus }
+      data: { routePerformance: routePerformanceWithRevenue, driverPerformance, customerFeedback, fleetStatus }
     });
 
   } catch (error) {
