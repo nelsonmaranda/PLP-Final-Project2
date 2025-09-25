@@ -17,7 +17,9 @@ interface RoutePerformance {
   routeName: string
   routeNumber: string
   efficiencyScore: number
-  revenue: number
+  revenue?: number
+  revenue7d?: number
+  fare?: number
   passengerCount: number
   onTimePercentage: number
   safetyScore: number
@@ -64,6 +66,11 @@ export default function SaccoDashboard() {
   const [fleetStatus, setFleetStatus] = useState<FleetStatus | null>(null)
   const [dateRange, setDateRange] = useState('30d')
   const [filterStatus, setFilterStatus] = useState('all')
+
+  const formatKshCompact = (value: number | undefined | null) => {
+    const n = typeof value === 'number' ? value : 0
+    return new Intl.NumberFormat('en-KE', { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 }).format(n)
+  }
 
   useEffect(() => {
     loadDashboardData()
@@ -227,9 +234,15 @@ export default function SaccoDashboard() {
                     <DollarSign className="w-6 h-6 text-yellow-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-sm font-medium text-gray-600">Total Revenue (7d)</p>
+                      <span
+                        title="Estimated: unique devices reporting on each route in the last 7 days × route fare. This is a directional proxy, not audited revenue."
+                        className="inline-flex items-center justify-center w-4 h-4 text-xs bg-gray-100 text-gray-600 rounded-full cursor-help"
+                      >i</span>
+                    </div>
                     <p className="text-2xl font-bold text-gray-900">
-                      KSh {routePerformance.reduce((sum, route) => sum + (route.revenue || 0), 0).toLocaleString()}
+                      KSh {formatKshCompact(routePerformance.reduce((sum, route) => sum + (route.revenue7d || 0), 0))}
                     </p>
                   </div>
                 </div>
@@ -291,7 +304,7 @@ export default function SaccoDashboard() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Efficiency</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue (7d)</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Passengers</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">On-Time %</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Safety</th>
@@ -319,7 +332,13 @@ export default function SaccoDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        KSh {(route.revenue || 0).toLocaleString()}
+                        <div className="flex items-center space-x-2">
+                          <span>KSh {formatKshCompact(route.revenue7d || 0)}</span>
+                          <span
+                            title={`Estimated over last 7 days: unique devices × fare (fare: KSh ${route.fare ?? 0})`}
+                            className="inline-flex items-center justify-center w-4 h-4 text-xs bg-gray-100 text-gray-600 rounded-full cursor-help"
+                          >i</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {route.passengerCount}
