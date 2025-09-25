@@ -5,9 +5,11 @@ import apiService from '../services/api'
 import { SignupFormData } from '../types'
 import { useApp } from '../contexts/AppContext'
 import RoleSelector from '../components/RoleSelector'
+import { useTranslation } from '../hooks/useTranslation'
 
 export default function Signup() {
   const { setUser, state } = useApp()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -178,7 +180,7 @@ export default function Signup() {
               {/* Display Name */}
               <div className="form-group">
                 <label htmlFor="displayName" className="form-label">
-                  Display Name
+                  {t('auth.displayName')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -206,7 +208,7 @@ export default function Signup() {
               {/* Email */}
               <div className="form-group">
                 <label htmlFor="email" className="form-label">
-                  Email address
+                  {t('auth.email')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -234,7 +236,7 @@ export default function Signup() {
               {/* Password */}
               <div className="form-group">
                 <label htmlFor="password" className="form-label">
-                  Password
+                  {t('auth.password')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

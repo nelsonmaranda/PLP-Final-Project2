@@ -25,6 +25,7 @@ const userSchema = new mongoose.Schema({
   approvedAt: { type: Date },
   rejectionReason: { type: String },
   savedRoutes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Route' }],
+  avatarUrl: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

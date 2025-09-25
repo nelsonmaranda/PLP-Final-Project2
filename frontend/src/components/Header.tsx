@@ -2,30 +2,27 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X, MapPin, BarChart3, User, LogOut } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
+import { useTranslation } from '../hooks/useTranslation'
 
-interface HeaderProps {
-  language: 'en' | 'sw'
-  setLanguage: (lang: 'en' | 'sw') => void
-}
-
-export default function Header({ language, setLanguage }: HeaderProps) {
+export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const location = useLocation()
-  const { state, logout } = useApp()
+  const { state, logout, setLanguage } = useApp()
+  const { t, language } = useTranslation()
 
   const navigation = [
-    { name: 'Home', href: '/', icon: MapPin },
-    { name: 'Map', href: '/map', icon: MapPin },
-    { name: 'Report', href: '/report', icon: BarChart3 },
+    { name: t('navigation.home'), href: '/', icon: MapPin },
+    { name: t('navigation.map'), href: '/map', icon: MapPin },
+    { name: t('navigation.report'), href: '/report', icon: BarChart3 },
   ]
 
   const authNavigation = state.isAuthenticated 
     ? [
-        { name: 'Profile', href: '/profile', icon: User },
-        { name: 'Logout', href: '#', icon: LogOut, action: logout }
+        { name: t('navigation.profile'), href: '/profile', icon: User },
+        { name: t('navigation.logout'), href: '#', icon: LogOut, action: logout }
       ]
     : [
-        { name: 'Login', href: '/login', icon: User }
+        { name: t('navigation.login'), href: '/login', icon: User }
       ]
 
   const isActive = (path: string) => location.pathname === path
@@ -111,7 +108,7 @@ export default function Header({ language, setLanguage }: HeaderProps) {
               className="btn btn-ghost btn-sm"
               aria-label={`Switch to ${language === 'en' ? 'Swahili' : 'English'}`}
             >
-              {language === 'en' ? 'SW' : 'EN'}
+              {language === 'en' ? 'EN' : 'SW'}
             </button>
 
             {/* Mobile Menu Button */}

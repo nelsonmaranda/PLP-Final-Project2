@@ -5,9 +5,11 @@ import apiService from '../services/api'
 import { Route, CreateReportData } from '../types'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { MATATU_SACCOS, stripSaccoFromRouteName } from '../utils/constants'
+import { useTranslation } from '../hooks/useTranslation'
 
 export default function ReportForm() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [routes, setRoutes] = useState<Route[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -88,7 +90,7 @@ export default function ReportForm() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto bg-white shadow rounded-lg p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Submit a Report</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('report.title')}</h1>
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 text-red-700 rounded border border-red-200">{error}</div>
@@ -169,10 +171,9 @@ export default function ReportForm() {
                 className="w-full border rounded px-3 py-2"
               >
                 <option value="delay">Delay</option>
-                <option value="overcrowding">Overcrowding</option>
+                <option value="crowding">Overcrowding</option>
                 <option value="breakdown">Breakdown</option>
-                <option value="accident">Accident</option>
-                <option value="harassment">Harassment</option>
+                <option value="safety">Safety issue</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -218,7 +219,7 @@ export default function ReportForm() {
             disabled={isSubmitting}
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />} 
-            Submit Report
+{t('report.submit')}
           </button>
         </form>
       </div>

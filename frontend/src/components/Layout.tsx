@@ -10,7 +10,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { state, setLanguage } = useApp()
+  const { state } = useApp()
 
   // Show loading screen during initial authentication check
   if (state.isLoading) {
@@ -28,10 +28,7 @@ export default function Layout({ children }: LayoutProps) {
   if (state.isAuthenticated) {
     return (
       <div className="min-h-screen flex">
-        <RoleBasedNavigation 
-          language={state.language} 
-          setLanguage={setLanguage}
-        />
+        <RoleBasedNavigation />
         <div className="flex-1 flex flex-col lg:ml-0">
           <main className="flex-1">
             {children}
@@ -45,10 +42,7 @@ export default function Layout({ children }: LayoutProps) {
   // For non-authenticated users, use header layout
   return (
     <div className="min-h-screen flex flex-col">
-      <Header 
-        language={state.language} 
-        setLanguage={setLanguage}
-      />
+      <Header />
       <main className="flex-1">
         {children}
       </main>

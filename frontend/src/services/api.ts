@@ -299,6 +299,15 @@ class ApiService {
     }
   }
 
+  async getHomepageAnalytics(): Promise<ApiResponse<AnalyticsData & { recentReports: any[] }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<AnalyticsData & { recentReports: any[] }>> = await this.api.get('/analytics/homepage')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
   // Users
   async getUsers(page = 1, limit = 10): Promise<ApiResponse<PaginatedResponse<User>>> {
     try {
@@ -430,7 +439,7 @@ class ApiService {
   }
 
   // User Profile Management
-  async updateProfile(userId: string, profileData: { displayName: string; email: string }): Promise<ApiResponse<{ user: User }>> {
+  async updateProfile(userId: string, profileData: { displayName: string; email: string; avatarUrl?: string }): Promise<ApiResponse<{ user: User }>> {
     try {
       const response: AxiosResponse<ApiResponse<{ user: User }>> = await this.api.put(`/users/${userId}`, profileData)
       return response.data

@@ -20,6 +20,7 @@ import {
 import { useApp } from '../contexts/AppContext'
 import apiService from '../services/api'
 import { Route, Report, WeatherData, FarePrediction, SafetyScore } from '../types'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface DashboardStats {
   totalRoutes: number
@@ -53,6 +54,7 @@ interface RouteInsight {
 
 export default function Dashboard() {
   const { state } = useApp()
+  const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -61,7 +63,7 @@ export default function Dashboard() {
   const [favoriteRoutes, setFavoriteRoutes] = useState<Route[]>([])
   const [recentReports, setRecentReports] = useState<Report[]>([])
   // Controls for insights limits
-  const [insightsLimit, setInsightsLimit] = useState<number>(10)
+  const [insightsLimit] = useState<number>(10)
   const insightsDays = 7
 
   // Load dashboard data
@@ -187,7 +189,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Welcome back, {state.user?.displayName}!
+                {t('dashboard.welcome')}, {state.user?.displayName}!
               </h1>
               <p className="text-gray-600 mt-1">
                 Here's your personalized matatu insights for today
@@ -268,7 +270,7 @@ export default function Dashboard() {
 
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Safety Rating</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.safetyRating')}</h3>
                   <Shield className="w-6 h-6 text-blue-500" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
@@ -287,7 +289,7 @@ export default function Dashboard() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">Smart Route Insights</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t('dashboard.smartRouteInsights')}</h2>
                   <Link to="/map" className="btn btn-ghost btn-sm">
                     View All Routes
                   </Link>
@@ -297,18 +299,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="p-6">
-                <div className="flex items-center justify-end space-x-3 mb-4">
-                  <label className="text-sm text-gray-600">Routes</label>
-                  <select
-                    value={insightsLimit}
-                    onChange={(e) => setInsightsLimit(Number(e.target.value))}
-                    className="form-select"
-                  >
-                    {[5,10,15,20,30,50].map(n => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
-                </div>
+                <div className="mb-4"></div>
                 {routeInsights.length === 0 ? (
                   <div className="text-center py-8">
                     <Navigation className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -389,13 +380,13 @@ export default function Dashboard() {
             {/* Favorite Routes */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Your Favorites</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.favoriteRoutes')}</h3>
               </div>
               <div className="p-6">
                 {favoriteRoutes.length === 0 ? (
                   <div className="text-center py-4">
                     <Star className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500 mb-3">No favorite routes yet</p>
+                    <p className="text-sm text-gray-500 mb-3">{t('dashboard.noFavorites')}</p>
                     <Link to="/map" className="btn btn-ghost btn-sm">
                       Add Favorites
                     </Link>
@@ -426,13 +417,13 @@ export default function Dashboard() {
             {/* Recent Reports */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Reports</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.recentReports')}</h3>
               </div>
               <div className="p-6">
                 {recentReports.length === 0 ? (
                   <div className="text-center py-4">
                     <BarChart3 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500 mb-3">No reports submitted</p>
+                    <p className="text-sm text-gray-500 mb-3">{t('dashboard.noReports')}</p>
                     <Link to="/report" className="btn btn-ghost btn-sm">
                       Submit Report
                     </Link>

@@ -493,6 +493,48 @@ app.get('/analytics/summary', async (req, res) => {
   }
 });
 
+// Consolidated analytics endpoint for homepage with retry-friendly caching
+app.get('/analytics/homepage', async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    // Fetch all data in parallel for better performance
+    const [totalRoutes, totalReports, totalUsers, scores, recentReports] = await Promise.all([
+      Route.countDocuments({ isActive: true }),
+      Report.countDocuments({}),
+      User.countDocuments({ status: 'active' }),
+      Score.aggregate([{ $group: { _id: null, avgOverall: { $avg: '$overall' } } }]),
+      Report.find({}).sort({ createdAt: -1 }).limit(5).populate('routeId', 'name routeNumber').lean()
+    ]);
+
+    const averageScore = scores.length > 0 ? scores[0].avgOverall : 0;
+
+    res.json({
+      success: true,
+      data: {
+        totalRoutes,
+        totalReports,
+        totalUsers,
+        averageScore: Math.round(averageScore * 10) / 10,
+        recentReports: recentReports.map(report => ({
+          _id: report._id,
+          reportType: report.reportType,
+          description: report.description,
+          severity: report.severity,
+          createdAt: report.createdAt,
+          routeName: report.routeId?.name || 'Unknown Route'
+        })),
+        lastUpdated: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching homepage analytics:', error);
+    res.status(500).json({ success: false, message: 'Error fetching homepage analytics' });
+  }
+});
+
 // Auth middleware and profile endpoint (for frontend current user)
 const authMiddleware = (req, res, next) => {
   try {
@@ -537,6 +579,7 @@ app.get('/auth/profile', authMiddleware, async (req, res) => {
           email: user.email, 
           displayName: user.displayName, 
           role: user.role,
+          avatarUrl: user.avatarUrl,
           requestedRole: user.requestedRole,
           status: user.status,
           organization: user.organization,
@@ -758,7 +801,7 @@ app.put('/users/:userId', async (req, res) => {
     }
 
     const { userId } = req.params;
-    const { displayName, email } = req.body;
+    const { displayName, email, avatarUrl } = req.body;
 
     // Validate input
     if (!displayName || !email) {
@@ -771,7 +814,7 @@ app.put('/users/:userId', async (req, res) => {
     // Update user
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { displayName, email, updatedAt: new Date() },
+      { displayName, email, avatarUrl: avatarUrl || undefined, updatedAt: new Date() },
       { new: true, runValidators: true }
     );
 
@@ -1040,13 +1083,16 @@ app.get('/dashboard/stats', async (req, res) => {
       createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } 
     });
     
-    // Calculate average fare from recent reports
-    const recentReports = await Report.find({ 
-      createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } 
-    });
-    const averageFare = recentReports.length > 0 
-      ? recentReports.reduce((sum, report) => sum + (report.fare || 0), 0) / recentReports.length 
-      : 50;
+    // Calculate average fare from recent reports (7 days); fallback to route fares
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentReports = await Report.find({ createdAt: { $gte: since }, fare: { $gte: 0 } }).select('fare');
+    let averageFare = 0;
+    if (recentReports.length > 0) {
+      averageFare = recentReports.reduce((sum, r) => sum + (Number(r.fare) || 0), 0) / recentReports.length;
+    } else {
+      const rf = await Route.find({ isActive: true }).select('fare');
+      averageFare = rf.length ? rf.reduce((s, r) => s + (Number(r.fare) || 0), 0) / rf.length : 0;
+    }
 
     // Calculate safety rating
     const safetyReports = await Report.find({ 
@@ -1159,7 +1205,7 @@ app.get('/weather', async (req, res) => {
       sunset: new Date(weatherData.sys.sunset * 1000).toISOString()
     };
 
-    res.set('Cache-Control', 'no-store, max-age=0');
+    res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.json({
       success: true,
       data: transformedData
@@ -1180,7 +1226,7 @@ app.get('/weather', async (req, res) => {
       timestamp: new Date().toISOString()
     };
 
-    res.set('Cache-Control', 'no-store, max-age=0');
+    res.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.json({
       success: true,
       data: fallbackData,
@@ -1208,7 +1254,16 @@ app.get('/insights/routes', async (req, res) => {
       { $sort: { count: -1 } },
       { $limit: limit }
     ]);
-    const routeIds = topRouteIdsAgg.map(r => r._id);
+    let routeIds = topRouteIdsAgg.map(r => r._id);
+    // Fallback: if fewer than requested, fill with active routes not already included
+    if (routeIds.length < limit) {
+      const remaining = limit - routeIds.length;
+      const fillers = await Route.find({ _id: { $nin: routeIds }, isActive: true })
+        .sort({ createdAt: -1 })
+        .limit(remaining)
+        .select('_id');
+      routeIds = routeIds.concat(fillers.map(f => f._id));
+    }
     const routes = await Route.find({ _id: { $in: routeIds }, isActive: true });
     const insights = [];
 
@@ -1263,11 +1318,37 @@ app.get('/insights/routes', async (req, res) => {
         lastUpdated: new Date().toISOString()
       };
 
-      // Estimate travel time from stop count and peak factor (fallback)
-      const stopCount = Math.max(1, (route.stops || []).length - 1);
-      const baseTime = stopCount * 3; // 3 minutes per segment baseline
-      const peakFactor = isPeakTime ? 1.4 : 1.0;
-      const travelTime = Math.round(baseTime * peakFactor);
+      // Estimate travel time using polyline distance and traffic factor
+      // compute distance (km) from route.path flat [lng,lat,...]
+      const toRad = (d) => (d * Math.PI) / 180;
+      const R = 6371; // km
+      let distKm = 0;
+      if (Array.isArray(route.path) && route.path.length >= 4) {
+        for (let i = 0; i < route.path.length - 3; i += 2) {
+          const lng1 = Number(route.path[i]);
+          const lat1 = Number(route.path[i + 1]);
+          const lng2 = Number(route.path[i + 2]);
+          const lat2 = Number(route.path[i + 3]);
+          if ([lng1, lat1, lng2, lat2].some(v => Number.isNaN(v))) continue;
+          const dLat = toRad(lat2 - lat1);
+          const dLng = toRad(lng2 - lng1);
+          const a = Math.sin(dLat/2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2) ** 2;
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          distKm += R * c;
+        }
+      }
+      if (distKm === 0) {
+        // fallback to stop count distance approx 0.8km per segment
+        const stopCount = Math.max(1, (route.stops || []).length - 1);
+        distKm = stopCount * 0.8;
+      }
+      const baseSpeedKmh = isPeakTime ? 18 : 24; // slower at peak
+      // trafficFactor from cache
+      let tf = 1.0;
+      const tc = await TrafficCache.findOne({ routeId: route._id }).lean();
+      if (tc && typeof tc.trafficFactor === 'number' && tc.trafficFactor > 0) tf = tc.trafficFactor;
+      const effectiveSpeed = Math.max(8, baseSpeedKmh / tf);
+      const travelTime = Math.round((distKm / effectiveSpeed) * 60);
 
       insights.push({
         routeId: route._id,
@@ -1576,11 +1657,33 @@ app.post('/analytics/travel-time/predict', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Route not found' });
     }
 
-    // Calculate base travel time (simplified)
+    // Compute distance for the selected segment using path polyline
     const fromIndex = route.stops.findIndex(s => s.name === fromStop);
     const toIndex = route.stops.findIndex(s => s.name === toStop);
-    const stopCount = toIndex - fromIndex;
-    const baseTime = Math.max(5, stopCount * 3);
+    let distKm = 0;
+    const toRad = (d) => (d * Math.PI) / 180;
+    const R = 6371;
+    if (Array.isArray(route.path) && route.path.length >= 4) {
+      const totalSegments = Math.floor(route.path.length / 2) - 1;
+      const startIdx = Math.max(0, Math.min(totalSegments - 1, Math.floor((fromIndex / Math.max(1, route.stops.length - 1)) * totalSegments)));
+      const endIdx = Math.max(startIdx + 1, Math.min(totalSegments, Math.ceil((toIndex / Math.max(1, route.stops.length - 1)) * totalSegments)));
+      for (let i = startIdx * 2; i < endIdx * 2; i += 2) {
+        const lng1 = Number(route.path[i]);
+        const lat1 = Number(route.path[i + 1]);
+        const lng2 = Number(route.path[i + 2]);
+        const lat2 = Number(route.path[i + 3]);
+        if ([lng1, lat1, lng2, lat2].some(v => Number.isNaN(v))) continue;
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+        const a = Math.sin(dLat/2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        distKm += R * c;
+      }
+    }
+    if (distKm === 0) {
+      const stopCount = Math.max(1, toIndex - fromIndex);
+      distKm = stopCount * 0.8; // fallback distance
+    }
 
     // Apply time-of-day multiplier
     let timeMultiplier = 1.0;
@@ -1598,8 +1701,10 @@ app.post('/analytics/travel-time/predict', async (req, res) => {
       trafficFactor = tc.trafficFactor;
     }
 
-    const predictedTime = Math.round(baseTime * timeMultiplier * trafficFactor);
-    const confidence = 75; // Default confidence
+    const baseSpeedKmh = timeOfDay ? (parseInt(timeOfDay.split(':')[0]) >= 7 && parseInt(timeOfDay.split(':')[0]) <= 9 ? 18 : 24) : 24;
+    const effectiveSpeed = Math.max(8, baseSpeedKmh / trafficFactor) * timeMultiplier;
+    const predictedTime = Math.max(3, Math.round((distKm / effectiveSpeed) * 60));
+    const confidence = Math.max(50, Math.min(95, 90 - (trafficFactor - 1) * 20));
 
     res.json({
       success: true,
@@ -1725,9 +1830,53 @@ async function fetchTrafficFactorForRoute(route) {
       const congestionIndex = Math.min(100, Math.round((factor - 1.0) / 0.5 * 100));
       return { factor, congestionIndex, provider: 'reports' };
     }
-    // Here: normally we would map route.path polyline to segments and call flow API.
-    // For now, return neutral factor to avoid external dependency until key is set.
-    return { factor: 1.0, congestionIndex: 0, provider: 'here' };
+    // Compute a simple bbox from route geometry
+    const coords = [];
+    if (Array.isArray(route.stops) && route.stops.length) {
+      for (const s of route.stops) {
+        if (Array.isArray(s.coordinates) && s.coordinates.length >= 2) {
+          const lng = Number(s.coordinates[0]);
+          const lat = Number(s.coordinates[1]);
+          if (!Number.isNaN(lat) && !Number.isNaN(lng)) coords.push([lat, lng]);
+        }
+      }
+    }
+    if (Array.isArray(route.path) && route.path.length >= 4) {
+      for (let i = 0; i < route.path.length - 1; i += 2) {
+        const lng = Number(route.path[i]);
+        const lat = Number(route.path[i + 1]);
+        if (!Number.isNaN(lat) && !Number.isNaN(lng)) coords.push([lat, lng]);
+      }
+    }
+    if (coords.length === 0) {
+      return { factor: 1.0, congestionIndex: 0, provider: 'here' };
+    }
+    let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+    for (const [lat, lng] of coords) {
+      minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
+      minLng = Math.min(minLng, lng); maxLng = Math.max(maxLng, lng);
+    }
+    // Expand bbox slightly
+    const pad = 0.005;
+    minLat -= pad; maxLat += pad; minLng -= pad; maxLng += pad;
+
+    const url = `https://data.traffic.hereapi.com/v7/flow?in=bbox:${minLat},${minLng},${maxLat},${maxLng}&locationReferencing=shape&apiKey=${hereKey}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      return { factor: 1.0, congestionIndex: 0, provider: 'here' };
+    }
+    const data = await resp.json();
+    const items = Array.isArray(data.results) ? data.results : [];
+    const jamValues = [];
+    for (const it of items) {
+      const jf = Number(it?.flow?.jamFactor);
+      if (!Number.isNaN(jf)) jamValues.push(jf);
+    }
+    const avgJam = jamValues.length ? jamValues.reduce((a, b) => a + b, 0) / jamValues.length : 0;
+    // Map HERE jamFactor (0..10) to multiplier ~ [1.0..1.5]
+    const factor = Math.max(0.8, Math.min(1.5, 1.0 + (avgJam / 10) * 0.5));
+    const congestionIndex = Math.round(Math.max(0, Math.min(100, (avgJam / 10) * 100)));
+    return { factor, congestionIndex, provider: 'here' };
   } catch (e) {
     return { factor: 1.0, congestionIndex: 0, provider: 'none' };
   }
@@ -1845,10 +1994,10 @@ app.get('/analytics/trends/:routeId', async (req, res) => {
             trend: ridershipChange > 5 ? 'increasing' : ridershipChange < -5 ? 'decreasing' : 'stable'
           },
           efficiency: {
-            current: 75,
-            previous: 70,
-            change: 7.14,
-            trend: 'improving'
+            current: Math.max(0, 100 - (currentReports.filter(r => r.reportType === 'delay').length * 5)),
+            previous: Math.max(0, 100 - (previousReports.filter(r => r.reportType === 'delay').length * 5)),
+            change: 0,
+            trend: 'stable'
           },
           safety: {
             current: currentSafety,
@@ -2629,6 +2778,18 @@ app.get('/export/reports', async (req, res) => {
   } catch (error) {
     console.error('Export reports error:', error);
     return res.status(500).json({ success: false, message: 'Failed to export reports' });
+  }
+});
+
+// Reports count (simple metric for dashboards)
+app.get('/reports/count', async (req, res) => {
+  try {
+    if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
+    const count = await Report.countDocuments({});
+    return res.json({ success: true, data: { count } });
+  } catch (error) {
+    console.error('Reports count error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to count reports' });
   }
 });
 

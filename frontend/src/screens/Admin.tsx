@@ -10,6 +10,7 @@ export default function Admin() {
   const isAdmin = state.user?.role === 'admin'
   const [isLoading, setIsLoading] = useState(true)
   const [routes, setRoutes] = useState<Route[]>([])
+  const [reportsCount, setReportsCount] = useState<number>(0)
   const [showAddRoute, setShowAddRoute] = useState(false)
   const [newRoute, setNewRoute] = useState({
     name: '',
@@ -37,8 +38,17 @@ export default function Admin() {
         setIsLoading(false)
       }
     }
-
+    const loadReportsCount = async () => {
+      try {
+        const resp = await fetch('https://us-central1-smart-matwana-ke.cloudfunctions.net/api/reports/count')
+        const data = await resp.json()
+        if (data?.success && typeof data?.data?.count === 'number') {
+          setReportsCount(data.data.count)
+        }
+      } catch {}
+    }
     loadRoutes()
+    loadReportsCount()
   }, [])
 
   const handleAddRoute = async () => {
@@ -99,14 +109,14 @@ export default function Admin() {
     },
     {
       title: 'Active Routes',
-      value: (routes as any).filter((r: any) => r.status === 'active').length,
+      value: routes.length,
       icon: BarChart3,
       color: 'text-green-600',
       bgColor: 'bg-green-100'
     },
     {
       title: 'Total Reports',
-      value: (routes as any).reduce((sum: number, r: any) => sum + (r.reports || 0), 0),
+      value: reportsCount,
       icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'

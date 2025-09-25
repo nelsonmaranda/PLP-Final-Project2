@@ -2,15 +2,24 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, BarChart3, Shield, Users, Clock, Star, ArrowRight } from 'lucide-react'
 import apiService from '../services/api'
+import { useTranslation } from '../hooks/useTranslation'
+import { useSWR } from '../hooks/useSWR'
 
 export default function Home() {
+  const { t } = useTranslation()
   const [apiStatus, setApiStatus] = useState<'loading' | 'online' | 'offline'>('loading')
-  const [statsData, setStatsData] = useState({
-    totalRoutes: 0,
-    totalReports: 0,
-    averageScore: 0,
-    totalUsers: 0
-  })
+
+  // Use SWR for analytics data with retry and caching
+  const { data: analyticsData } = useSWR(
+    'homepage-analytics',
+    () => apiService.getHomepageAnalytics(),
+    {
+      retryCount: 3,
+      retryDelay: 1000,
+      refreshInterval: 30000, // Refresh every 30 seconds
+      onError: (error) => console.warn('Analytics fetch failed:', error)
+    }
+  )
 
   useEffect(() => {
     const checkApiStatus = async () => {
@@ -24,51 +33,39 @@ export default function Home() {
     checkApiStatus()
   }, [])
 
-  useEffect(() => {
-    const loadAnalytics = async () => {
-      try {
-        const res = await apiService.getAnalytics()
-        if (res.success && res.data) {
-          setStatsData({
-            totalRoutes: res.data.totalRoutes ?? 0,
-            totalReports: res.data.totalReports ?? 0,
-            averageScore: Number(res.data.averageScore ?? 0),
-            totalUsers: res.data.totalUsers ?? 0
-          })
-        }
-      } catch {
-        // leave defaults
-      }
-    }
-    loadAnalytics()
-  }, [])
+  const statsData = analyticsData?.data || {
+    totalRoutes: 0,
+    totalReports: 0,
+    averageScore: 0,
+    totalUsers: 0
+  }
 
   const stats = [
-    { label: 'Active Routes', value: statsData.totalRoutes.toLocaleString(), icon: MapPin },
-    { label: 'Reports Today', value: statsData.totalReports.toLocaleString(), icon: BarChart3 },
-    { label: 'Safety Rating', value: `${statsData.averageScore.toFixed(1)}★`, icon: Shield },
-    { label: 'Active Users', value: statsData.totalUsers.toLocaleString(), icon: Users },
+    { label: t('home.activeRoutes'), value: statsData.totalRoutes.toLocaleString(), icon: MapPin },
+    { label: t('home.reportsToday'), value: statsData.totalReports.toLocaleString(), icon: BarChart3 },
+    { label: t('home.safetyRating'), value: `${(statsData.averageScore || 0).toFixed(1)}★`, icon: Shield },
+    { label: t('home.activeUsers'), value: statsData.totalUsers.toLocaleString(), icon: Users },
   ]
 
   const features = [
     {
-      title: 'Real-time Route Tracking',
-      description: 'Get live updates on matatu locations, delays, and availability.',
+      title: t('home.realTimeTracking'),
+      description: t('home.realTimeTrackingDesc'),
       icon: Clock,
     },
     {
-      title: 'Safety Reports',
-      description: 'Report and view safety incidents to help keep everyone safe.',
+      title: t('home.safetyReports'),
+      description: t('home.safetyReportsDesc'),
       icon: Shield,
     },
     {
-      title: 'Reliability Scores',
-      description: 'See which routes are most reliable based on community data.',
+      title: t('home.reliabilityScores'),
+      description: t('home.reliabilityScoresDesc'),
       icon: Star,
     },
     {
-      title: 'Community Insights',
-      description: 'Share experiences and help others make informed transport decisions.',
+      title: t('home.communityInsights'),
+      description: t('home.communityInsightsDesc'),
       icon: Users,
     },
   ]
@@ -80,12 +77,10 @@ export default function Home() {
         <div className="hero-content">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-              Welcome to{' '}
-              <span className="text-primary-600">Smart Matatu</span>
+              {t('home.title')}
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Find reliable and safe matatu routes across Nairobi with real-time updates, 
-              community insights, and safety information.
+              {t('home.subtitle')}
             </p>
             
             {/* API Status */}
@@ -93,28 +88,28 @@ export default function Home() {
               {apiStatus === 'loading' && (
                 <div className="inline-flex items-center px-4 py-2 rounded-full bg-yellow-100 text-yellow-800">
                   <div className="loading-spinner mr-2" aria-hidden="true"></div>
-                  Checking system status...
+                  {t('home.checkingStatus')}
                 </div>
               )}
               {apiStatus === 'online' && (
                 <div className="status-online">
-                  System Online - All services operational
+                  {t('home.systemOnline')}
                 </div>
               )}
               {apiStatus === 'offline' && (
                 <div className="status-offline">
-                  System Offline - Limited functionality
+                  {t('home.systemOffline')}
                 </div>
               )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/map" className="btn btn-primary btn-lg">
-                View Map
+                {t('home.viewMap')}
                 <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
               </Link>
               <Link to="/report" className="btn btn-outline btn-lg">
-                Report Trip
+                {t('home.reportTrip')}
               </Link>
             </div>
           </div>
@@ -147,11 +142,10 @@ export default function Home() {
         <div className="container">
           <div className="text-center mb-12">
             <h2 id="features-heading" className="text-3xl font-bold text-gray-900 mb-4">
-              How Smart Matatu Works
+              {t('home.howItWorks')}
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Our platform combines community insights with real-time data to make 
-              Nairobi's transport system more reliable and safe.
+              {t('home.howItWorksDesc')}
             </p>
           </div>
 
@@ -182,18 +176,17 @@ export default function Home() {
       <section className="section bg-primary-600" aria-labelledby="cta-heading">
         <div className="container text-center">
           <h2 id="cta-heading" className="text-3xl font-bold text-white mb-4">
-            Ready to Get Started?
+            {t('home.readyToStart')}
           </h2>
           <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of Nairobi commuters who are already using Smart Matatu 
-            to make their daily journeys safer and more reliable.
+            {t('home.readyToStartDesc')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup" className="btn btn-secondary btn-lg">
-              Sign Up Now
+              {t('home.signUpNow')}
             </Link>
             <Link to="/map" className="btn btn-outline btn-lg text-white border-white hover:bg-white hover:text-primary-600">
-              Explore Map
+              {t('home.exploreMap')}
             </Link>
           </div>
         </div>

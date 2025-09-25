@@ -31,6 +31,8 @@ export default function Profile() {
     displayName: state.user?.displayName || '',
     email: state.user?.email || ''
   })
+  const [uploading, setUploading] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(state.user?.avatarUrl || null)
   
   // Reports state
   const [reports, setReports] = useState<Report[]>([])
@@ -133,6 +135,26 @@ export default function Profile() {
     }
   }
 
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+    const file = e.target.files[0]
+    try {
+      setUploading(true)
+      const resp = await apiService.uploadFile(file, 'profile')
+      if ((resp as any)?.success && (resp as any)?.data?.url) {
+        const url = (resp as any).data.url
+        setAvatarUrl(url)
+        // Persist avatar to user profile
+        await apiService.updateProfile(state.user!._id, { displayName: state.user!.displayName, email: state.user!.email, avatarUrl: url })
+        setUser({ ...(state.user as any), avatarUrl: url })
+      }
+    } catch (err) {
+      console.error('Upload failed', err)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -198,8 +220,12 @@ export default function Profile() {
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center">
-              <User className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 rounded-full overflow-hidden bg-primary-500 flex items-center justify-center">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-16 h-16 object-cover" />
+              ) : (
+                <User className="w-8 h-8 text-white" />
+              )}
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900">{state.user.displayName}</h1>
@@ -213,6 +239,12 @@ export default function Profile() {
               <Edit3 className="w-4 h-4 mr-2" />
               {isEditing ? 'Cancel' : 'Edit Profile'}
             </button>
+            <div className="ml-4">
+              <label className="btn btn-outline btn-sm cursor-pointer">
+                {uploading ? 'Uploading…' : 'Upload Photo'}
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+              </label>
+            </div>
           </div>
         </div>
 

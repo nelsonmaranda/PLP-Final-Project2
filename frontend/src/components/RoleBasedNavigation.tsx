@@ -20,16 +20,14 @@ import {
   Users
 } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
+import { useTranslation } from '../hooks/useTranslation'
 
-interface RoleBasedNavigationProps {
-  language: 'en' | 'sw'
-  setLanguage: (lang: 'en' | 'sw') => void
-}
-
-export default function RoleBasedNavigation({ language, setLanguage }: RoleBasedNavigationProps) {
+export default function RoleBasedNavigation() {
   const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
-  const { state, logout } = useApp()
+  const { state, logout, setLanguage } = useApp()
+  const { t } = useTranslation()
+  const language = state.language
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -40,9 +38,9 @@ export default function RoleBasedNavigation({ language, setLanguage }: RoleBased
 
     // Base navigation for all users
     const baseNavigation = [
-      { name: 'Dashboard', href: '/', icon: Home },
-      { name: 'Map', href: '/map', icon: MapPin },
-      { name: 'Report', href: '/report', icon: BarChart3 },
+      { name: t('navigation.dashboard'), href: '/', icon: Home },
+      { name: t('navigation.map'), href: '/map', icon: MapPin },
+      { name: t('navigation.report'), href: '/report', icon: BarChart3 },
     ]
 
     // Role-specific navigation
@@ -50,43 +48,43 @@ export default function RoleBasedNavigation({ language, setLanguage }: RoleBased
       case 'admin':
         return [
           ...baseNavigation,
-          { name: 'Analytics', href: '/analytics', icon: TrendingUp },
-          { name: 'SACCO Dashboard', href: '/sacco', icon: Building2 },
-          { name: 'Authority Dashboard', href: '/authority', icon: Gavel },
-          { name: 'User Management', href: '/users', icon: Users },
-          { name: 'Admin Panel', href: '/admin', icon: Settings },
-          { name: 'Profile', href: '/profile', icon: User },
+          { name: t('navigation.analytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.saccoDashboard'), href: '/sacco', icon: Building2 },
+          { name: t('navigation.authorityDashboard'), href: '/authority', icon: Gavel },
+          { name: t('navigation.userManagement'), href: '/users', icon: Users },
+          { name: t('navigation.adminPanel'), href: '/admin', icon: Settings },
+          { name: t('navigation.profile'), href: '/profile', icon: User },
         ]
       
       case 'sacco':
         return [
           ...baseNavigation,
-          { name: 'SACCO Dashboard', href: '/sacco', icon: Building2 },
-          { name: 'Analytics', href: '/analytics', icon: TrendingUp },
-          { name: 'Profile', href: '/profile', icon: User },
+          { name: t('navigation.saccoDashboard'), href: '/sacco', icon: Building2 },
+          { name: t('navigation.analytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.profile'), href: '/profile', icon: User },
         ]
       
       case 'authority':
         return [
           ...baseNavigation,
-          { name: 'Authority Dashboard', href: '/authority', icon: Gavel },
-          { name: 'Analytics', href: '/analytics', icon: TrendingUp },
-          { name: 'Profile', href: '/profile', icon: User },
+          { name: t('navigation.authorityDashboard'), href: '/authority', icon: Gavel },
+          { name: t('navigation.analytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.profile'), href: '/profile', icon: User },
         ]
       
       case 'moderator':
         return [
           ...baseNavigation,
-          { name: 'Analytics', href: '/analytics', icon: TrendingUp },
-          { name: 'Admin Panel', href: '/admin', icon: Settings },
-          { name: 'Profile', href: '/profile', icon: User },
+          { name: t('navigation.analytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.adminPanel'), href: '/admin', icon: Settings },
+          { name: t('navigation.profile'), href: '/profile', icon: User },
         ]
       
       default: // Regular users
         return [
           ...baseNavigation,
-          { name: 'Analytics', href: '/analytics', icon: TrendingUp },
-          { name: 'Profile', href: '/profile', icon: User },
+          { name: t('navigation.analytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.profile'), href: '/profile', icon: User },
         ]
     }
   }

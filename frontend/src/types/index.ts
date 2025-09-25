@@ -3,6 +3,7 @@ export interface User {
   _id: string
   email: string
   displayName: string
+  avatarUrl?: string
   role: 'user' | 'moderator' | 'admin' | 'sacco' | 'authority'
   requestedRole?: 'user' | 'moderator' | 'admin' | 'sacco' | 'authority'
   status?: 'active' | 'pending' | 'suspended' | 'rejected'
@@ -247,6 +248,12 @@ export interface LanguageStrings {
     admin: string
     profile: string
     settings: string
+    dashboard: string
+    analytics: string
+    saccoDashboard: string
+    authorityDashboard: string
+    userManagement: string
+    adminPanel: string
   }
   auth: {
     login: string
@@ -261,6 +268,30 @@ export interface LanguageStrings {
     createAccount: string
     alreadyHaveAccount: string
     dontHaveAccount: string
+    loginTitle: string
+    loginSubtitle: string
+    signupTitle: string
+    signupSubtitle: string
+    emailPlaceholder: string
+    passwordPlaceholder: string
+    displayNamePlaceholder: string
+    confirmPasswordPlaceholder: string
+    organizationPlaceholder: string
+    selectRole: string
+    signIn: string
+    signUp: string
+    creatingAccount: string
+    signingIn: string
+    loginSuccess: string
+    signupSuccess: string
+    loginError: string
+    signupError: string
+    emailRequired: string
+    passwordRequired: string
+    displayNameRequired: string
+    passwordTooShort: string
+    emailInvalid: string
+    passwordsDoNotMatch: string
   }
   map: {
     title: string
@@ -295,6 +326,83 @@ export interface LanguageStrings {
     addRoute: string
     editRoute: string
     deleteRoute: string
+  }
+  home: {
+    title: string
+    subtitle: string
+    viewMap: string
+    reportTrip: string
+    systemOnline: string
+    systemOffline: string
+    checkingStatus: string
+    activeRoutes: string
+    reportsToday: string
+    safetyRating: string
+    activeUsers: string
+    howItWorks: string
+    howItWorksDesc: string
+    realTimeTracking: string
+    realTimeTrackingDesc: string
+    safetyReports: string
+    safetyReportsDesc: string
+    reliabilityScores: string
+    reliabilityScoresDesc: string
+    communityInsights: string
+    communityInsightsDesc: string
+    readyToStart: string
+    readyToStartDesc: string
+    signUpNow: string
+    exploreMap: string
+  }
+  dashboard: {
+    title: string
+    welcome: string
+    smartRouteInsights: string
+    weatherConditions: string
+    favoriteRoutes: string
+    recentReports: string
+    viewAllReports: string
+    noReports: string
+    noFavorites: string
+    addFavorites: string
+    loading: string
+    totalRoutes: string
+    activeReports: string
+    averageFare: string
+    safetyRating: string
+    temperature: string
+    humidity: string
+    windSpeed: string
+    routeName: string
+    farePrediction: string
+    safetyScore: string
+    crowdDensity: string
+    travelTime: string
+    recommendedTime: string
+    alternativeRoutes: string
+    weatherImpact: string
+    lastUpdated: string
+    low: string
+    medium: string
+    high: string
+    excellent: string
+    good: string
+    average: string
+    poor: string
+    veryPoor: string
+  }
+  footer: {
+    description: string
+    quickLinks: string
+    services: string
+    contact: string
+    routePlanning: string
+    safetyReports: string
+    realTimeUpdates: string
+    analytics: string
+    privacyPolicy: string
+    termsOfService: string
+    allRightsReserved: string
   }
 }
 
