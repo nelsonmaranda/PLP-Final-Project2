@@ -47,6 +47,7 @@ export default function AnalyticsDashboard() {
   const [trendAnalysis, setTrendAnalysis] = useState<TrendAnalysis[]>([])
   const [demandForecasts, setDemandForecasts] = useState<DemandForecast[]>([])
   const [userRecommendations, setUserRecommendations] = useState<UserRecommendation | null>(null)
+  const [recsLimit, setRecsLimit] = useState<number>(10)
 
   // Route and filter states
   const [routes, setRoutes] = useState<SimpleRoute[]>([])
@@ -103,7 +104,7 @@ export default function AnalyticsDashboard() {
 
     try {
       // Fetch recommendations
-      const recommendationsResponse = await apiService.getUserRecommendations(state.user._id)
+      const recommendationsResponse = await apiService.getUserRecommendations(state.user._id, { limit: recsLimit })
       if (recommendationsResponse.success && recommendationsResponse.data) {
         setUserRecommendations(recommendationsResponse.data)
       } else {
@@ -137,7 +138,7 @@ export default function AnalyticsDashboard() {
     } finally {
       setIsLoading(false)
     }
-  }, [state.user?._id, selectedRoute, period, timeSlot])
+  }, [state.user?._id, selectedRoute, period, timeSlot, recsLimit])
 
   useEffect(() => {
     loadAnalyticsData()
@@ -612,10 +613,22 @@ export default function AnalyticsDashboard() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900">Personalized Recommendations</h2>
-                <button className="btn btn-primary" onClick={loadAnalyticsData}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh
-                </button>
+                <div className="flex items-center space-x-3">
+                  <label className="text-sm text-gray-600">Routes</label>
+                  <select
+                    value={recsLimit}
+                    onChange={(e) => setRecsLimit(Number(e.target.value))}
+                    className="form-select"
+                  >
+                    {[5,10,15,20,30,50].map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                  <button className="btn btn-primary" onClick={loadAnalyticsData}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </button>
+                </div>
               </div>
 
               {userRecommendations && (

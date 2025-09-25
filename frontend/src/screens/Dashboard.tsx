@@ -60,6 +60,9 @@ export default function Dashboard() {
   const [routeInsights, setRouteInsights] = useState<RouteInsight[]>([])
   const [favoriteRoutes, setFavoriteRoutes] = useState<Route[]>([])
   const [recentReports, setRecentReports] = useState<Report[]>([])
+  // Controls for insights limits
+  const [insightsLimit, setInsightsLimit] = useState<number>(10)
+  const [insightsDays, setInsightsDays] = useState<number>(7)
 
   // Load dashboard data
   const loadDashboardData = useCallback(async () => {
@@ -79,7 +82,7 @@ export default function Dashboard() {
       ] = await Promise.all([
         apiService.getDashboardStats(),
         apiService.getWeatherData(),
-        apiService.getRouteInsights(),
+        apiService.getRouteInsights({ limit: insightsLimit, days: insightsDays }),
         apiService.getFavoriteRoutes(state.user._id),
         apiService.getUserReports(state.user._id)
       ])
@@ -115,7 +118,7 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false)
     }
-  }, [state.user])
+  }, [state.user, insightsLimit, insightsDays])
 
   useEffect(() => {
     loadDashboardData()
@@ -294,6 +297,28 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="p-6">
+                <div className="flex items-center justify-end space-x-3 mb-4">
+                  <label className="text-sm text-gray-600">Days</label>
+                  <select
+                    value={insightsDays}
+                    onChange={(e) => setInsightsDays(Number(e.target.value))}
+                    className="form-select"
+                  >
+                    {[7,14,30,60,90].map(d => (
+                      <option key={d} value={d}>{d}d</option>
+                    ))}
+                  </select>
+                  <label className="text-sm text-gray-600">Routes</label>
+                  <select
+                    value={insightsLimit}
+                    onChange={(e) => setInsightsLimit(Number(e.target.value))}
+                    className="form-select"
+                  >
+                    {[5,10,15,20,30,50].map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
                 {routeInsights.length === 0 ? (
                   <div className="text-center py-8">
                     <Navigation className="w-12 h-12 text-gray-400 mx-auto mb-4" />
