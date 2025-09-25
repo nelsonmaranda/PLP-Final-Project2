@@ -62,7 +62,7 @@ export default function Dashboard() {
   const [recentReports, setRecentReports] = useState<Report[]>([])
   // Controls for insights limits
   const [insightsLimit, setInsightsLimit] = useState<number>(10)
-  const [insightsDays, setInsightsDays] = useState<number>(7)
+  const insightsDays = 7
 
   // Load dashboard data
   const loadDashboardData = useCallback(async () => {
@@ -118,7 +118,7 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false)
     }
-  }, [state.user, insightsLimit, insightsDays])
+  }, [state.user, insightsLimit])
 
   useEffect(() => {
     loadDashboardData()
@@ -298,16 +298,6 @@ export default function Dashboard() {
               </div>
               <div className="p-6">
                 <div className="flex items-center justify-end space-x-3 mb-4">
-                  <label className="text-sm text-gray-600">Days</label>
-                  <select
-                    value={insightsDays}
-                    onChange={(e) => setInsightsDays(Number(e.target.value))}
-                    className="form-select"
-                  >
-                    {[7,14,30,60,90].map(d => (
-                      <option key={d} value={d}>{d}d</option>
-                    ))}
-                  </select>
                   <label className="text-sm text-gray-600">Routes</label>
                   <select
                     value={insightsLimit}

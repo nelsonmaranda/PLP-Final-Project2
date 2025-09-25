@@ -27,6 +27,7 @@ export default function ReportForm() {
 
   const [selectedSacco, setSelectedSacco] = useState<string>('')
   const [direction, setDirection] = useState<'from_cbd' | 'to_cbd' | 'along_route'>('along_route')
+  const [fareKsh, setFareKsh] = useState<string>('')
 
   useEffect(() => {
     const loadRoutes = async () => {
@@ -56,7 +57,8 @@ export default function ReportForm() {
       const payload = {
         ...formData,
         sacco: selectedSacco || undefined,
-        direction
+        direction,
+        fare: fareKsh ? Number(fareKsh) : undefined
       }
       const res = await apiService.createReport(payload as any)
       if (res.success) {
@@ -143,6 +145,19 @@ export default function ReportForm() {
                 <span>Along this route</span>
               </label>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fare (KSh)</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={fareKsh}
+              onChange={(e) => setFareKsh(e.target.value)}
+              className="w-full border rounded px-3 py-2"
+              placeholder="e.g., 80"
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
