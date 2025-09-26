@@ -352,7 +352,7 @@ export default function AnalyticsDashboard() {
                       {/* Recommendations */}
                       {score.recommendations.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">Recommendations</h4>
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">{t('analytics.recommendations')}</h4>
                           <ul className="space-y-1">
                             {score.recommendations.map((rec, index) => (
                               <li key={index} className="flex items-start space-x-2 text-sm text-gray-600">
@@ -614,9 +614,9 @@ export default function AnalyticsDashboard() {
           {activeTab === 'recommendations' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">{t('analytics.personalizedRecommendations')}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('analytics.recommendationsTitle')}</h2>
                 <div className="flex items-center space-x-3">
-                  <label className="text-sm text-gray-600">{t('analytics.routes')}</label>
+                  <label className="text-sm text-gray-600">{t('analytics.recommendedRoutes')}</label>
                   <select
                     value={recsLimit}
                     onChange={(e) => setRecsLimit(Number(e.target.value))}
@@ -628,7 +628,7 @@ export default function AnalyticsDashboard() {
                   </select>
                   <button className="btn btn-primary" onClick={loadAnalyticsData}>
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    Refresh
+                    {t('analytics.refresh')}
                   </button>
                 </div>
               </div>
@@ -637,11 +637,16 @@ export default function AnalyticsDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* User Preferences */}
                   <div className="card p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('analytics.userPreferences')}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('analytics.yourPreferences')}</h3>
                     <div className="space-y-3">
                       {Object.entries(userRecommendations.preferences).map(([key, value]) => (
                         <div key={key} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 capitalize">{key}</span>
+                          <span className="text-sm text-gray-600 capitalize">
+                            {key === 'efficiency' && t('analytics.prefEfficiency')}
+                            {key === 'safety' && t('analytics.prefSafety')}
+                            {key === 'cost' && t('analytics.prefCost')}
+                            {key === 'convenience' && t('analytics.prefConvenience')}
+                          </span>
                           <div className="flex items-center space-x-2">
                             <div className="w-20 bg-gray-200 rounded-full h-2">
                               <div 
@@ -695,10 +700,10 @@ export default function AnalyticsDashboard() {
                     {demandForecasts.map((forecast, index) => (
                       <div key={index} className="card p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-gray-900">Time Slot: {forecast.timeSlot}</h4>
+                          <h4 className="font-semibold text-gray-900">{t('analytics.timeSlot')}: {forecast.timeSlot}</h4>
                           <div className="text-right">
                             <div className="text-lg font-bold text-primary-600">{forecast.predictedDemand}%</div>
-                            <div className="text-sm text-gray-500">{forecast.confidence}% confidence</div>
+                            <div className="text-sm text-gray-500">{forecast.confidence}% {t('analytics.confidence')}</div>
                           </div>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2 mb-2">

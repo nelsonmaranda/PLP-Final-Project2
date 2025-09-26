@@ -457,6 +457,11 @@ export interface LanguageStrings {
     previous: string
     insights: string
     demandForecastsTitle: string
+    prefEfficiency?: string
+    prefSafety?: string
+    prefCost?: string
+    prefConvenience?: string
+    goodPerformance?: string
   }
   home: {
     title: string
@@ -515,6 +520,9 @@ export interface LanguageStrings {
     exploreRoutes: string
     routeIdLabel: string
     crowdSuffix: string
+    crowdLow: string
+    crowdMedium: string
+    crowdHigh: string
     predictedFareLabel: string
     safetyScoreLabel: string
     travelTimeLabel: string

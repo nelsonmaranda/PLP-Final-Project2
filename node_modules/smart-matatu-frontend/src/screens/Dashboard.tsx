@@ -145,6 +145,19 @@ export default function Dashboard() {
     }
   }
 
+  const getCrowdLabel = (level: 'low' | 'medium' | 'high') => {
+    switch (level) {
+      case 'low':
+        return t('dashboard.crowdLow')
+      case 'medium':
+        return t('dashboard.crowdMedium')
+      case 'high':
+        return t('dashboard.crowdHigh')
+      default:
+        return `${level} ${t('dashboard.crowdSuffix')}`
+    }
+  }
+
   // Get safety score color
   const getSafetyScoreColor = (score: number) => {
     if (score >= 4) return 'text-green-600'
@@ -321,7 +334,7 @@ export default function Dashboard() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <span className={`px-2 py-1 text-xs rounded-full ${getCrowdLevelColor(insight.crowdDensity.level)}`}>
-                              {insight.crowdDensity.level} {t('dashboard.crowdSuffix')}
+                              {getCrowdLabel(insight.crowdDensity.level)}
                             </span>
                           </div>
                         </div>
@@ -425,7 +438,7 @@ export default function Dashboard() {
                     <BarChart3 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500 mb-3">{t('dashboard.noReports')}</p>
                     <Link to="/report" className="btn btn-ghost btn-sm">
-                      Submit Report
+                      {t('dashboard.submitReportBtn')}
                     </Link>
                   </div>
                 ) : (
