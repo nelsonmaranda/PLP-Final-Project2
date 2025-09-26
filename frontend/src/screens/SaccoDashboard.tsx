@@ -11,6 +11,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import apiService from '../services/api'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface RoutePerformance {
   routeId: string
@@ -58,6 +59,7 @@ interface FleetStatus {
 }
 
 export default function SaccoDashboard() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview')
   const [loading, setLoading] = useState(true)
   const [routePerformance, setRoutePerformance] = useState<RoutePerformance[]>([])
@@ -130,7 +132,7 @@ export default function SaccoDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading SACCO Dashboard...</p>
+          <p className="text-gray-600">{t('sacco.loading')}</p>
         </div>
       </div>
     )
@@ -143,8 +145,8 @@ export default function SaccoDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">SACCO Dashboard</h1>
-              <p className="text-gray-600 mt-1">Manage your fleet, drivers, and routes</p>
+              <h1 className="text-3xl font-bold text-gray-900">{t('sacco.title')}</h1>
+              <p className="text-gray-600 mt-1">{t('sacco.subtitle')}</p>
             </div>
             <div className="flex items-center space-x-4">
               <select
@@ -152,16 +154,16 @@ export default function SaccoDashboard() {
                 onChange={(e) => setDateRange(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
               >
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
+                <option value="7d">{t('sacco.date7d')}</option>
+                <option value="30d">{t('sacco.date30d')}</option>
+                <option value="90d">{t('sacco.date90d')}</option>
               </select>
               <button
                 onClick={loadDashboardData}
                 className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>Refresh</span>
+                <span>{t('sacco.refresh')}</span>
               </button>
             </div>
           </div>
@@ -173,11 +175,11 @@ export default function SaccoDashboard() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             {[
-              { id: 'overview', name: 'Overview', icon: BarChart3 },
-              { id: 'routes', name: 'Route Performance', icon: MapPin },
-              { id: 'drivers', name: 'Driver Management', icon: Users },
-              { id: 'feedback', name: 'Customer Feedback', icon: MessageSquare },
-              { id: 'fleet', name: 'Fleet Management', icon: Activity }
+              { id: 'overview', name: t('sacco.tabs.overview'), icon: BarChart3 },
+              { id: 'routes', name: t('sacco.tabs.routes'), icon: MapPin },
+              { id: 'drivers', name: t('sacco.tabs.drivers'), icon: Users },
+              { id: 'feedback', name: t('sacco.tabs.feedback'), icon: MessageSquare },
+              { id: 'fleet', name: t('sacco.tabs.fleet'), icon: Activity }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -208,7 +210,7 @@ export default function SaccoDashboard() {
                     <MapPin className="w-6 h-6 text-blue-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Active Routes</p>
+                    <p className="text-sm font-medium text-gray-600">{t('sacco.metrics.activeRoutes')}</p>
                     <p className="text-2xl font-bold text-gray-900">{routePerformance.length}</p>
                   </div>
                 </div>
@@ -220,7 +222,7 @@ export default function SaccoDashboard() {
                     <Users className="w-6 h-6 text-green-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Active Drivers</p>
+                    <p className="text-sm font-medium text-gray-600">{t('sacco.metrics.activeDrivers')}</p>
                     <p className="text-2xl font-bold text-gray-900">
                       {driverPerformance.filter(d => d.status === 'active').length}
                     </p>
@@ -235,9 +237,9 @@ export default function SaccoDashboard() {
                   </div>
                   <div className="ml-4">
                     <div className="flex items-center space-x-2">
-                      <p className="text-sm font-medium text-gray-600">Total Revenue (7d)</p>
+                      <p className="text-sm font-medium text-gray-600">{t('sacco.metrics.totalRevenue7d')}</p>
                       <span
-                        title="Estimated: unique devices reporting on each route in the last 7 days × route fare. This is a directional proxy, not audited revenue."
+                        title={t('sacco.revenueTooltip')}
                         className="inline-flex items-center justify-center w-4 h-4 text-xs bg-gray-100 text-gray-600 rounded-full cursor-help"
                       >i</span>
                     </div>
@@ -254,7 +256,7 @@ export default function SaccoDashboard() {
                     <Star className="w-6 h-6 text-purple-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Avg Rating</p>
+                    <p className="text-sm font-medium text-gray-600">{t('sacco.metrics.avgRating')}</p>
                     <p className="text-2xl font-bold text-gray-900">
                       {driverPerformance.length > 0 
                         ? (
@@ -270,22 +272,22 @@ export default function SaccoDashboard() {
             {/* Fleet Status */}
             {fleetStatus && (
               <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Fleet Status</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('sacco.fleetStatus')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center">
                     <p className="text-3xl font-bold text-blue-600">{fleetStatus.activeVehicles}</p>
-                    <p className="text-sm text-gray-600">Active Vehicles</p>
-                    <p className="text-xs text-gray-500">of {fleetStatus.totalVehicles} total</p>
+                    <p className="text-sm text-gray-600">{t('sacco.activeVehicles')}</p>
+                    <p className="text-xs text-gray-500">{t('sacco.ofTotal').replace('{total}', String(fleetStatus.totalVehicles))}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-3xl font-bold text-yellow-600">{fleetStatus.maintenanceDue}</p>
-                    <p className="text-sm text-gray-600">Maintenance Due</p>
-                    <p className="text-xs text-gray-500">vehicles need service</p>
+                    <p className="text-sm text-gray-600">{t('sacco.maintenanceDue')}</p>
+                    <p className="text-xs text-gray-500">{t('sacco.vehiclesNeedService')}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-3xl font-bold text-green-600">{fleetStatus.utilizationRate}%</p>
-                    <p className="text-sm text-gray-600">Utilization Rate</p>
-                    <p className="text-xs text-gray-500">average fleet usage</p>
+                    <p className="text-sm text-gray-600">{t('sacco.utilizationRate')}</p>
+                    <p className="text-xs text-gray-500">{t('sacco.averageFleetUsage')}</p>
                   </div>
                 </div>
               </div>
@@ -296,19 +298,19 @@ export default function SaccoDashboard() {
         {activeTab === 'routes' && (
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Route Performance</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('sacco.routePerformance')}</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Efficiency</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue (7d)</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Passengers</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">On-Time %</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Safety</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trend</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.route')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.efficiency')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.revenue7d')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.passengers')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.onTime')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.safety')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.trend')}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -363,19 +365,19 @@ export default function SaccoDashboard() {
         {activeTab === 'drivers' && (
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Driver Performance</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('sacco.driverPerformance')}</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Safety Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">On-Time %</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Incidents</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Routes</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.driver')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.safetyScore')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.onTime')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.rating')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.incidents')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.status')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.routes')}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -428,16 +430,16 @@ export default function SaccoDashboard() {
             <div className="bg-white rounded-lg shadow">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-900">Customer Feedback</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('sacco.customerFeedback')}</h3>
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   >
-                    <option value="all">All Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
+                    <option value="all">{t('sacco.filters.allStatus')}</option>
+                    <option value="pending">{t('sacco.filters.pending')}</option>
+                    <option value="in_progress">{t('sacco.filters.inProgress')}</option>
+                    <option value="resolved">{t('sacco.filters.resolved')}</option>
                   </select>
                 </div>
               </div>
@@ -469,7 +471,7 @@ export default function SaccoDashboard() {
                             {feedback.responseTime && (
                               <>
                                 <span>•</span>
-                                <span>Resolved in {feedback.responseTime} days</span>
+                                <span>{t('sacco.resolvedInDays').replace('{days}', String(feedback.responseTime))}</span>
                               </>
                             )}
                           </div>
@@ -489,29 +491,29 @@ export default function SaccoDashboard() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Fleet Overview</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('sacco.fleetOverview')}</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Total Vehicles</span>
+                    <span className="text-sm text-gray-600">{t('sacco.totalVehicles')}</span>
                     <span className="text-lg font-semibold">{fleetStatus.totalVehicles}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Active Vehicles</span>
+                    <span className="text-sm text-gray-600">{t('sacco.activeVehicles')}</span>
                     <span className="text-lg font-semibold text-green-600">{fleetStatus.activeVehicles}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Maintenance Due</span>
+                    <span className="text-sm text-gray-600">{t('sacco.maintenanceDue')}</span>
                     <span className="text-lg font-semibold text-yellow-600">{fleetStatus.maintenanceDue}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Average Age</span>
-                    <span className="text-lg font-semibold">{fleetStatus.averageAge} years</span>
+                    <span className="text-sm text-gray-600">{t('sacco.averageAge')}</span>
+                    <span className="text-lg font-semibold">{fleetStatus.averageAge} {t('sacco.years')}</span>
                   </div>
                 </div>
               </div>
 
               <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Utilization Rate</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('sacco.utilizationRate')}</h3>
                 <div className="text-center">
                   <div className="relative w-32 h-32 mx-auto mb-4">
                     <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
@@ -535,7 +537,7 @@ export default function SaccoDashboard() {
                       <span className="text-2xl font-bold text-gray-900">{fleetStatus.utilizationRate}%</span>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">Fleet Utilization</p>
+                  <p className="text-sm text-gray-600">{t('sacco.fleetUtilization')}</p>
                 </div>
               </div>
             </div>

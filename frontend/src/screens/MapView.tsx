@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import { MapPin, Clock, Star, Users, Filter, List, AlertCircle } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
+import { useTranslation } from '../hooks/useTranslation'
 import apiService from '../services/api'
 import { RouteWithScores } from '../types'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -25,6 +26,7 @@ if (typeof L !== 'undefined' && L.Marker) {
 }
 
 export default function MapView() {
+  const { t } = useTranslation()
   const [selectedRoute, setSelectedRoute] = useState<RouteWithScores | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [showListView, setShowListView] = useState(false)
@@ -169,7 +171,7 @@ export default function MapView() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner />
-          <p className="text-gray-600 mt-4">Loading routes...</p>
+          <p className="text-gray-600 mt-4">{t('map.loading')}</p>
         </div>
       </div>
     )
@@ -180,12 +182,12 @@ export default function MapView() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 mb-4">{error?.message || 'An error occurred'}</p>
+          <p className="text-red-600 mb-4">{error?.message || t('map.genericError')}</p>
           <button
             onClick={refetch}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
-            Try Again
+            {t('map.tryAgain')}
           </button>
         </div>
       </div>
@@ -201,25 +203,25 @@ export default function MapView() {
             <div className="card">
               <div className="card-header">
                 <div className="flex justify-between items-center">
-                  <h2 className="card-title">Nairobi Matatu Routes</h2>
+                  <h2 className="card-title">{t('map.title')}</h2>
                   <div className="flex space-x-2">
                     <button 
                       className={`btn btn-sm ${showFilters ? 'btn-primary' : 'btn-outline'}`}
                       onClick={() => setShowFilters(!showFilters)}
-                      aria-label="Toggle filter panel"
+                      aria-label={t('map.toggleFilters')}
                       aria-pressed={showFilters}
                     >
                       <Filter className="w-4 h-4 mr-2" aria-hidden="true" />
-                      Filter
+                      {t('map.filter')}
                     </button>
                     <button 
                       className={`btn btn-sm ${showListView ? 'btn-primary' : 'btn-outline'}`}
                       onClick={() => setShowListView(!showListView)}
-                      aria-label="Toggle list view"
+                      aria-label={t('map.toggleListView')}
                       aria-pressed={showListView}
                     >
                       <List className="w-4 h-4 mr-2" aria-hidden="true" />
-                      List
+                      {t('common.view')}
                     </button>
                   </div>
                 </div>
@@ -231,11 +233,11 @@ export default function MapView() {
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2">
                         <Filter className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                        <span className="text-sm font-medium text-gray-700">Quick Filters</span>
+                        <span className="text-sm font-medium text-gray-700">{t('map.quickFilters')}</span>
                       </div>
                       
                       <fieldset className="flex flex-wrap gap-4">
-                        <legend className="sr-only">Route filters</legend>
+                        <legend className="sr-only">{t('map.routeFilters')}</legend>
                         <label className="flex items-center">
                           <input 
                             type="checkbox" 
@@ -243,7 +245,7 @@ export default function MapView() {
                             checked={filters.highReliability}
                             onChange={(e) => setFilters(prev => ({ ...prev, highReliability: e.target.checked }))}
                           />
-                          <span className="ml-2 text-sm text-gray-600">High Reliability (4+ stars)</span>
+                          <span className="ml-2 text-sm text-gray-600">{t('map.highReliability')}</span>
                         </label>
                         <label className="flex items-center">
                           <input 
@@ -252,7 +254,7 @@ export default function MapView() {
                             checked={filters.safeRoutes}
                             onChange={(e) => setFilters(prev => ({ ...prev, safeRoutes: e.target.checked }))}
                           />
-                          <span className="ml-2 text-sm text-gray-600">Safe Routes (4+ stars)</span>
+                          <span className="ml-2 text-sm text-gray-600">{t('map.safeRoutes')}</span>
                         </label>
                         <label className="flex items-center">
                           <input 
@@ -261,7 +263,7 @@ export default function MapView() {
                             checked={filters.lowFare}
                             onChange={(e) => setFilters(prev => ({ ...prev, lowFare: e.target.checked }))}
                           />
-                          <span className="ml-2 text-sm text-gray-600">Low Fare (Under 50 KES)</span>
+                          <span className="ml-2 text-sm text-gray-600">{t('map.lowFare')}</span>
                         </label>
                       </fieldset>
                     </div>
@@ -273,7 +275,7 @@ export default function MapView() {
                   <div className="p-4">
                     <div className="space-y-4">
                       <div className="text-sm text-gray-600 mb-4">
-                        {filteredRoutes.length} of {routes?.length || 0} routes
+                        {t('map.ofRoutes').replace('{current}', String(filteredRoutes.length)).replace('{total}', String(routes?.length || 0))}
                       </div>
                       {filteredRoutes.map((route) => (
                         <div 
@@ -315,7 +317,7 @@ export default function MapView() {
                     </div>
                   </div>
                 ) : (
-                  <div ref={mapContainerRef} className="map-container h-96" role="img" aria-label="Interactive map showing Nairobi matatu routes">
+                  <div ref={mapContainerRef} className="map-container h-96" role="img" aria-label={t('map.mapAria')}>
                     <MapContainer
                       center={nairobiCenter}
                       zoom={11}
@@ -423,9 +425,9 @@ export default function MapView() {
           <div className="w-full lg:w-80">
             <div className="card">
               <div className="card-header">
-                <h3 className="text-lg font-semibold">Available Routes</h3>
+                <h3 className="text-lg font-semibold">{t('map.availableRoutes')}</h3>
                 <p className="text-sm text-gray-600">
-                  {filteredRoutes.length} of {routes?.length || 0} routes
+                  {t('map.ofRoutes').replace('{current}', String(filteredRoutes.length)).replace('{total}', String(routes?.length || 0))}
                 </p>
               </div>
               
@@ -438,7 +440,7 @@ export default function MapView() {
                   </div>
                   
                   <fieldset className="space-y-2">
-                    <legend className="sr-only">Route filters</legend>
+                    <legend className="sr-only">{t('map.routeFilters')}</legend>
                     <label className="flex items-center">
                       <input 
                         type="checkbox" 
@@ -447,7 +449,7 @@ export default function MapView() {
                         onChange={(e) => setFilters(prev => ({ ...prev, highReliability: e.target.checked }))}
                         aria-describedby="high-reliability-desc"
                       />
-                      <span className="ml-2 text-sm text-gray-600">High Reliability (4+ stars)</span>
+                      <span className="ml-2 text-sm text-gray-600">{t('map.highReliability')}</span>
                     </label>
                     <label className="flex items-center">
                       <input 
@@ -457,7 +459,7 @@ export default function MapView() {
                         onChange={(e) => setFilters(prev => ({ ...prev, safeRoutes: e.target.checked }))}
                         aria-describedby="safe-routes-desc"
                       />
-                      <span className="ml-2 text-sm text-gray-600">Safe Routes (4+ stars)</span>
+                      <span className="ml-2 text-sm text-gray-600">{t('map.safeRoutes')}</span>
                     </label>
                     <label className="flex items-center">
                       <input 
@@ -467,7 +469,7 @@ export default function MapView() {
                         onChange={(e) => setFilters(prev => ({ ...prev, lowFare: e.target.checked }))}
                         aria-describedby="low-fare-desc"
                       />
-                      <span className="ml-2 text-sm text-gray-600">Low Fare (Under 50 KES)</span>
+                      <span className="ml-2 text-sm text-gray-600">{t('map.lowFare')}</span>
                     </label>
                   </fieldset>
                 </div>
@@ -534,14 +536,14 @@ export default function MapView() {
                       {getRouteId(selectedRoute) === getRouteId(route) && (
                         <div className="mt-3 pt-3 border-t">
                           <dl className="grid grid-cols-2 gap-3 text-sm">
-                            <div className="flex justify-between"><dt className="text-gray-600">Fare</dt><dd className="font-medium">KES {route.fare}</dd></div>
-                            <div className="flex justify-between"><dt className="text-gray-600">Hours</dt><dd className="font-medium">{route.operatingHours.start} - {route.operatingHours.end}</dd></div>
-                            <div className="flex justify-between"><dt className="text-gray-600">Stops</dt><dd className="font-medium">{route.stops?.length || 0}</dd></div>
-                            <div className="flex justify-between"><dt className="text-gray-600">Route No.</dt><dd className="font-medium">{route.routeNumber || '—'}</dd></div>
+                            <div className="flex justify-between"><dt className="text-gray-600">{t('map.fare')}</dt><dd className="font-medium">KES {route.fare}</dd></div>
+                            <div className="flex justify-between"><dt className="text-gray-600">{t('map.hours')}</dt><dd className="font-medium">{route.operatingHours.start} - {route.operatingHours.end}</dd></div>
+                            <div className="flex justify-between"><dt className="text-gray-600">{t('map.stops')}</dt><dd className="font-medium">{route.stops?.length || 0}</dd></div>
+                            <div className="flex justify-between"><dt className="text-gray-600">{t('map.routeNo')}</dt><dd className="font-medium">{route.routeNumber || '—'}</dd></div>
                           </dl>
                           <div className="mt-3 flex gap-2 items-center flex-wrap">
                             <button className="btn btn-sm btn-primary" onClick={(e) => { e.stopPropagation(); focusRouteOnMap(route) }}>
-                              <MapPin className="w-4 h-4 mr-1" /> View on Map
+                              <MapPin className="w-4 h-4 mr-1" /> {t('map.viewOnMap')}
                             </button>
                             {/* Quick rating: 1-5 overall */}
                             <div className="flex items-center gap-1">
@@ -549,7 +551,7 @@ export default function MapView() {
                                 <button
                                   key={v}
                                   className="p-1"
-                                  title={`Rate ${v}`}
+                                  title={`${t('map.rate')} ${v}`}
                                   onClick={async (e) => {
                                     e.stopPropagation()
                                     try {

@@ -17,8 +17,10 @@ import {
 import { useApp } from '../contexts/AppContext'
 import apiService from '../services/api'
 import { Report, Route } from '../types'
+import { useTranslation } from '../hooks/useTranslation'
 
 export default function Profile() {
+  const { t } = useTranslation()
   const { state, setUser } = useApp()
   const [activeTab, setActiveTab] = useState<'profile' | 'reports' | 'favorites' | 'analytics'>('profile')
   const [isEditing, setIsEditing] = useState(false)
@@ -237,11 +239,11 @@ export default function Profile() {
               className="btn btn-ghost btn-sm"
             >
               <Edit3 className="w-4 h-4 mr-2" />
-              {isEditing ? 'Cancel' : 'Edit Profile'}
+              {isEditing ? t('common.cancel') : t('profile.personalInfo.editProfile')}
             </button>
             <div className="ml-4">
               <label className="btn btn-outline btn-sm cursor-pointer">
-                {uploading ? 'Uploading…' : 'Upload Photo'}
+                {uploading ? t('profile.personalInfo.uploading') : t('profile.personalInfo.uploadPhoto')}
                 <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
               </label>
             </div>
@@ -253,10 +255,10 @@ export default function Profile() {
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               {[
-                { id: 'profile', name: 'Profile', icon: User },
-                { id: 'reports', name: 'My Reports', icon: History },
-                { id: 'favorites', name: 'Favorites', icon: Heart },
-                { id: 'analytics', name: 'Analytics', icon: BarChart3 }
+                { id: 'profile', name: t('profile.tabs.personal'), icon: User },
+                { id: 'reports', name: t('profile.tabs.reports'), icon: History },
+                { id: 'favorites', name: t('profile.tabs.favorites'), icon: Heart },
+                { id: 'analytics', name: t('profile.tabs.analytics'), icon: BarChart3 }
               ].map((tab) => {
                 const Icon = tab.icon
                 return (

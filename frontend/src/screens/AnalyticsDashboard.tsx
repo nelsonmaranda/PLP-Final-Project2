@@ -17,6 +17,7 @@ import {
   Star
 } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
+import { useTranslation } from '../hooks/useTranslation'
 import apiService from '../services/api'
 import { 
   RouteEfficiencyScore, 
@@ -36,6 +37,7 @@ interface SimpleRoute {
 
 export default function AnalyticsDashboard() {
   const { state } = useApp()
+  const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'efficiency' | 'predictions' | 'trends' | 'recommendations'>('efficiency')
@@ -94,7 +96,7 @@ export default function AnalyticsDashboard() {
 
   const loadAnalyticsData = useCallback(async () => {
     if (!state.user?._id) {
-      setError('User not authenticated.')
+      setError(t('common.error'))
       setIsLoading(false)
       return
     }
@@ -134,7 +136,7 @@ export default function AnalyticsDashboard() {
 
     } catch (error) {
       console.error('Error loading analytics data:', error)
-      setError('Failed to load analytics data. Please try again.')
+      setError(t('analytics.errorTitle'))
     } finally {
       setIsLoading(false)
     }
@@ -147,7 +149,7 @@ export default function AnalyticsDashboard() {
   const handlePredictTravel = async () => {
     try {
       if (!selectedRoute || !fromStop || !toStop) {
-        setError('Please select a route, From stop, and To stop.')
+      setError(t('analytics.selectRoute'))
         return
       }
       setIsLoading(true)
@@ -156,7 +158,7 @@ export default function AnalyticsDashboard() {
       setTravelPredictions(resp.success && resp.data ? [resp.data] : [])
     } catch (e) {
       console.error(e)
-      setError('Failed to predict travel time.')
+      setError(t('common.error'))
     } finally {
       setIsLoading(false)
     }
@@ -165,7 +167,7 @@ export default function AnalyticsDashboard() {
   const handleFindAlternatives = async () => {
     try {
       if (!fromStop || !toStop) {
-        setError('Please select From and To stops to find alternatives.')
+      setError(t('common.error'))
         return
       }
       setIsLoading(true)
@@ -174,7 +176,7 @@ export default function AnalyticsDashboard() {
       setAlternativeRoutes(resp.success && resp.data ? resp.data.alternatives : [])
     } catch (e) {
       console.error(e)
-      setError('Failed to fetch alternative routes.')
+      setError(t('common.error'))
     } finally {
       setIsLoading(false)
     }
@@ -227,7 +229,7 @@ export default function AnalyticsDashboard() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <Loader2 className="h-10 w-10 text-primary-500 animate-spin" />
-          <p className="text-gray-600 mt-4">Loading Advanced Analytics...</p>
+          <p className="text-gray-600 mt-4">{t('analytics.loading')}</p>
         </div>
       </div>
     )
@@ -238,14 +240,14 @@ export default function AnalyticsDashboard() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center p-6 bg-white rounded-lg shadow-md">
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Analytics</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">{t('analytics.errorTitle')}</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button 
             onClick={loadAnalyticsData} 
             className="btn btn-primary"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Retry
+            {t('analytics.retry')}
           </button>
         </div>
       </div>
@@ -257,8 +259,8 @@ export default function AnalyticsDashboard() {
       <div className="px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Advanced Analytics</h1>
-          <p className="text-gray-600">Comprehensive insights and predictions for route optimization</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('analytics.headerTitle')}</h1>
+          <p className="text-gray-600">{t('analytics.headerSubtitle')}</p>
         </div>
 
         {/* Tab Navigation */}
@@ -266,10 +268,10 @@ export default function AnalyticsDashboard() {
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
               {[
-                { id: 'efficiency', name: 'Route Efficiency', icon: Target },
-                { id: 'predictions', name: 'Travel Predictions', icon: Clock },
-                { id: 'trends', name: 'Trend Analysis', icon: TrendingUp },
-                { id: 'recommendations', name: 'Recommendations', icon: Star }
+                { id: 'efficiency', name: t('analytics.tabs.efficiency'), icon: Target },
+                { id: 'predictions', name: t('analytics.tabs.predictions'), icon: Clock },
+                { id: 'trends', name: t('analytics.tabs.trends'), icon: TrendingUp },
+                { id: 'recommendations', name: t('analytics.tabs.recommendations'), icon: Star }
               ].map((tab) => {
                 const Icon = tab.icon
                 return (
@@ -297,14 +299,14 @@ export default function AnalyticsDashboard() {
           {activeTab === 'efficiency' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Route Efficiency Scores</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('analytics.efficiencyTitle')}</h2>
                 <div className="flex items-center space-x-4">
                   <select
                     value={selectedRoute}
                     onChange={(e) => setSelectedRoute(e.target.value)}
                     className="form-select"
                   >
-                    <option value="">Select a route</option>
+                    <option value="">{t('analytics.selectRoute')}</option>
                     {routes.map(r => (
                       <option key={r._id} value={r._id}>
                         {r.routeNumber ? `${r.routeNumber} - ${r.name}` : r.name}
@@ -313,7 +315,7 @@ export default function AnalyticsDashboard() {
                   </select>
                   <button className="btn btn-outline" onClick={loadAnalyticsData} disabled={!selectedRoute}>
                     <Filter className="w-4 h-4 mr-2" />
-                    Refresh
+                    {t('analytics.refresh')}
                   </button>
                 </div>
               </div>
@@ -372,14 +374,14 @@ export default function AnalyticsDashboard() {
           {activeTab === 'predictions' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Travel Time Predictions</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('analytics.travelPredictionsTitle')}</h2>
                 <div className="flex items-center space-x-4">
                   <select
                     value={selectedRoute}
                     onChange={(e) => setSelectedRoute(e.target.value)}
                     className="form-select"
                   >
-                    <option value="">Select route</option>
+                    <option value="">{t('analytics.selectRoute')}</option>
                     {routes.map(r => (
                       <option key={r._id} value={r._id}>
                         {r.routeNumber ? `${r.routeNumber} - ${r.name}` : r.name}
@@ -392,7 +394,7 @@ export default function AnalyticsDashboard() {
                     className="form-select"
                     disabled={!selectedRoute}
                   >
-                    <option value="">From stop</option>
+                    <option value="">{t('analytics.fromStop')}</option>
                     {availableStops.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
@@ -403,7 +405,7 @@ export default function AnalyticsDashboard() {
                     className="form-select"
                     disabled={!selectedRoute}
                   >
-                    <option value="">To stop</option>
+                    <option value="">{t('analytics.toStop')}</option>
                     {availableStops.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
@@ -416,7 +418,7 @@ export default function AnalyticsDashboard() {
                   />
                   <button className="btn btn-primary" onClick={handlePredictTravel} disabled={!selectedRoute || !fromStop || !toStop}>
                     <Zap className="w-4 h-4 mr-2" />
-                    Predict
+                    {t('analytics.predict')}
                   </button>
                 </div>
               </div>
@@ -429,8 +431,8 @@ export default function AnalyticsDashboard() {
                         {prediction.fromStop} → {prediction.toStop}
                       </h3>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-primary-600">{prediction.predictedTime} min</div>
-                        <div className="text-sm text-gray-500">{prediction.confidence}% confidence</div>
+                        <div className="text-2xl font-bold text-primary-600">{prediction.predictedTime} {t('analytics.minutesShort')}</div>
+                        <div className="text-sm text-gray-500">{prediction.confidence}% {t('analytics.confidence')}</div>
                       </div>
                     </div>
 
@@ -438,22 +440,22 @@ export default function AnalyticsDashboard() {
                       {/* Alternative Times */}
                       <div className="grid grid-cols-3 gap-4">
                         <div className="text-center p-3 bg-green-50 rounded-lg">
-                          <div className="text-lg font-semibold text-green-600">{prediction.alternativeTimes.optimistic} min</div>
-                          <div className="text-xs text-green-600">Optimistic</div>
+                          <div className="text-lg font-semibold text-green-600">{prediction.alternativeTimes.optimistic} {t('analytics.minutesShort')}</div>
+                          <div className="text-xs text-green-600">{t('analytics.optimistic')}</div>
                         </div>
                         <div className="text-center p-3 bg-blue-50 rounded-lg">
-                          <div className="text-lg font-semibold text-blue-600">{prediction.alternativeTimes.realistic} min</div>
-                          <div className="text-xs text-blue-600">Realistic</div>
+                          <div className="text-lg font-semibold text-blue-600">{prediction.alternativeTimes.realistic} {t('analytics.minutesShort')}</div>
+                          <div className="text-xs text-blue-600">{t('analytics.realistic')}</div>
                         </div>
                         <div className="text-center p-3 bg-red-50 rounded-lg">
-                          <div className="text-lg font-semibold text-red-600">{prediction.alternativeTimes.pessimistic} min</div>
-                          <div className="text-xs text-red-600">Pessimistic</div>
+                          <div className="text-lg font-semibold text-red-600">{prediction.alternativeTimes.pessimistic} {t('analytics.minutesShort')}</div>
+                          <div className="text-xs text-red-600">{t('analytics.pessimistic')}</div>
                         </div>
                       </div>
 
                       {/* Factors */}
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Factors</h4>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">{t('analytics.factors')}</h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           {Object.entries(prediction.factors).map(([key, value]) => (
                             <div key={key} className="flex justify-between">
@@ -471,7 +473,7 @@ export default function AnalyticsDashboard() {
               {/* Alternative Routes */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900">Alternative Routes</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">{t('analytics.alternativeRoutesTitle')}</h3>
                   <div className="flex items-center space-x-3">
                     <select
                       value={fromStop}
@@ -479,7 +481,7 @@ export default function AnalyticsDashboard() {
                       className="form-select"
                       disabled={!selectedRoute}
                     >
-                      <option value="">From stop</option>
+                      <option value="">{t('analytics.fromStop')}</option>
                       {availableStops.map(s => (
                         <option key={s} value={s}>{s}</option>
                       ))}
@@ -490,14 +492,14 @@ export default function AnalyticsDashboard() {
                       className="form-select"
                       disabled={!selectedRoute}
                     >
-                      <option value="">To stop</option>
+                      <option value="">{t('analytics.toStop')}</option>
                       {availableStops.map(s => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
                     <button className="btn btn-outline" onClick={handleFindAlternatives} disabled={!fromStop || !toStop}>
                       <Filter className="w-4 h-4 mr-2" />
-                      Find
+                      {t('analytics.find')}
                     </button>
                   </div>
                 </div>
@@ -520,7 +522,7 @@ export default function AnalyticsDashboard() {
                           </div>
                         </div>
                         <div className="mt-2">
-                          <div className="text-xs text-gray-500">Reasons: {route.reasons.join(', ')}</div>
+                          <div className="text-xs text-gray-500">{t('analytics.reasons')}: {route.reasons.join(', ')}</div>
                         </div>
                       </div>
                     ))}
@@ -534,14 +536,14 @@ export default function AnalyticsDashboard() {
           {activeTab === 'trends' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Trend Analysis</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('analytics.trendAnalysisTitle')}</h2>
                 <div className="flex items-center space-x-4">
                   <select
                     value={selectedRoute}
                     onChange={(e) => setSelectedRoute(e.target.value)}
                     className="form-select"
                   >
-                    <option value="">Select route</option>
+                    <option value="">{t('analytics.selectRoute')}</option>
                     {routes.map(r => (
                       <option key={r._id} value={r._id}>
                         {r.routeNumber ? `${r.routeNumber} - ${r.name}` : r.name}
@@ -553,13 +555,13 @@ export default function AnalyticsDashboard() {
                     onChange={(e) => setPeriod(e.target.value as any)}
                     className="form-select"
                   >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
+                    <option value="daily">{t('analytics.periodDaily')}</option>
+                    <option value="weekly">{t('analytics.periodWeekly')}</option>
+                    <option value="monthly">{t('analytics.periodMonthly')}</option>
                   </select>
                   <button className="btn btn-outline" onClick={loadAnalyticsData} disabled={!selectedRoute}>
                     <Calendar className="w-4 h-4 mr-2" />
-                    Update
+                    {t('analytics.update')}
                   </button>
                 </div>
               </div>
@@ -567,7 +569,7 @@ export default function AnalyticsDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {trendAnalysis.map((trend, index) => (
                   <div key={index} className="card p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Route Trends ({trend.period})</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('analytics.routeTrends')} ({trend.period})</h3>
                     
                     <div className="space-y-4">
                       {Object.entries(trend.trends).map(([key, data]) => (
@@ -582,8 +584,8 @@ export default function AnalyticsDashboard() {
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-sm text-gray-600">
-                            <span>Current: {data.current}</span>
-                            <span>Previous: {data.previous}</span>
+                            <span>{t('analytics.current')}: {data.current}</span>
+                            <span>{t('analytics.previous')}: {data.previous}</span>
                           </div>
                         </div>
                       ))}
@@ -591,7 +593,7 @@ export default function AnalyticsDashboard() {
 
                     {trend.insights.length > 0 && (
                       <div className="mt-4">
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Insights</h4>
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">{t('analytics.insights')}</h4>
                         <ul className="space-y-1">
                           {trend.insights.map((insight, idx) => (
                             <li key={idx} className="flex items-start space-x-2 text-sm text-gray-600">
@@ -612,9 +614,9 @@ export default function AnalyticsDashboard() {
           {activeTab === 'recommendations' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Personalized Recommendations</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('analytics.personalizedRecommendations')}</h2>
                 <div className="flex items-center space-x-3">
-                  <label className="text-sm text-gray-600">Routes</label>
+                  <label className="text-sm text-gray-600">{t('analytics.routes')}</label>
                   <select
                     value={recsLimit}
                     onChange={(e) => setRecsLimit(Number(e.target.value))}
@@ -635,7 +637,7 @@ export default function AnalyticsDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* User Preferences */}
                   <div className="card p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Preferences</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('analytics.userPreferences')}</h3>
                     <div className="space-y-3">
                       {Object.entries(userRecommendations.preferences).map(([key, value]) => (
                         <div key={key} className="flex items-center justify-between">
@@ -656,7 +658,7 @@ export default function AnalyticsDashboard() {
 
                   {/* Recommendations */}
                   <div className="card p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Recommended Routes</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('analytics.recommendedRoutes')}</h3>
                     <div className="space-y-3">
                       {userRecommendations.recommendations.map((rec, index) => (
                         <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
@@ -688,7 +690,7 @@ export default function AnalyticsDashboard() {
               {/* Demand Forecasts */}
               {demandForecasts.length > 0 && (
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Demand Forecasts</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('analytics.demandForecastsTitle')}</h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {demandForecasts.map((forecast, index) => (
                       <div key={index} className="card p-4">

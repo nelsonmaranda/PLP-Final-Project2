@@ -302,30 +302,161 @@ export interface LanguageStrings {
     reportTrip: string
     filter: string
     sort: string
+    toggleFilters: string
+    toggleListView: string
+    quickFilters: string
+    highReliability: string
+    safeRoutes: string
+    lowFare: string
+    ofRoutes: string
+    availableRoutes: string
+    filters: string
+    routeFilters: string
+    fare: string
+    hours: string
+    stops: string
+    routeNo: string
+    viewOnMap: string
+    rate: string
+    tryAgain: string
+    genericError: string
+    mapAria: string
   }
   report: {
     title: string
     route: string
+    selectRoute: string
+    saccoOptional: string
+    selectSacco: string
+    direction: string
+    fromCBD: string
+    toCBD: string
+    alongRoute: string
     fare: string
-    waitTime: string
-    crowding: string
-    incident: string
+    farePlaceholder: string
+    reportType: string
+    delay: string
+    overcrowding: string
+    breakdown: string
+    safety: string
+    other: string
+    severity: string
+    low: string
+    medium: string
+    high: string
+    critical: string
+    anonymous: string
     description: string
-    location: string
-    photo: string
+    descriptionPlaceholder: string
+    loading: string
     submit: string
     success: string
   }
-  admin: {
+  sacco: {
+    loading: string
     title: string
-    routes: string
-    reports: string
-    users: string
-    analytics: string
-    settings: string
-    addRoute: string
-    editRoute: string
-    deleteRoute: string
+    subtitle: string
+    date7d: string
+    date30d: string
+    date90d: string
+    refresh: string
+    tabs: {
+      overview: string
+      routes: string
+      drivers: string
+      feedback: string
+      fleet: string
+    }
+    metrics: {
+      activeRoutes: string
+      activeDrivers: string
+      totalRevenue7d: string
+      avgRating: string
+    }
+    revenueTooltip: string
+    fleetStatus: string
+    activeVehicles: string
+    ofTotal: string
+    maintenanceDue: string
+    vehiclesNeedService: string
+    utilizationRate: string
+    averageFleetUsage: string
+    routePerformance: string
+    table: {
+      route: string
+      efficiency: string
+      revenue7d: string
+      passengers: string
+      onTime: string
+      safety: string
+      trend: string
+    }
+    driverPerformance: string
+    driversTable: {
+      driver: string
+      safetyScore: string
+      onTime: string
+      rating: string
+      incidents: string
+      status: string
+      routes: string
+    }
+    customerFeedback: string
+    filters: {
+      allStatus: string
+      pending: string
+      inProgress: string
+      resolved: string
+    }
+    resolvedInDays: string
+    fleetOverview: string
+    totalVehicles: string
+    averageAge: string
+    years: string
+    fleetUtilization: string
+  }
+  analytics: {
+    loading: string
+    errorTitle: string
+    retry: string
+    headerTitle: string
+    headerSubtitle: string
+    tabs: {
+      efficiency: string
+      predictions: string
+      trends: string
+      recommendations: string
+    }
+    efficiencyTitle: string
+    selectRoute: string
+    refresh: string
+    recommendationsTitle: string
+    yourPreferences: string
+    recommendedRoutes: string
+    travelPredictionsTitle: string
+    predict: string
+    fromStop: string
+    toStop: string
+    timeSlot: string
+    minutesShort: string
+    confidence: string
+    optimistic: string
+    realistic: string
+    pessimistic: string
+    factors: string
+    alternativeRoutesTitle: string
+    find: string
+    reasons: string
+    trendAnalysisTitle: string
+    periodDaily: string
+    periodWeekly: string
+    periodMonthly: string
+    update: string
+    routeTrends: string
+    current: string
+    previous: string
+    insights: string
+    demandForecastsTitle: string
   }
   home: {
     title: string
@@ -366,6 +497,35 @@ export interface LanguageStrings {
     noFavorites: string
     addFavorites: string
     loading: string
+    loadingYourDashboard: string
+    errorTitle: string
+    tryAgain: string
+    headerSubtitle: string
+    currentWeather: string
+    humidityLabel: string
+    windSpeedLabel: string
+    activeRoutesTitle: string
+    routesMonitored: string
+    avgFareTitle: string
+    currentAverage: string
+    overallSafety: string
+    viewAllRoutesBtn: string
+    aiRecommendations: string
+    noInsights: string
+    exploreRoutes: string
+    routeIdLabel: string
+    crowdSuffix: string
+    predictedFareLabel: string
+    safetyScoreLabel: string
+    travelTimeLabel: string
+    bestTimeLabel: string
+    routeLabel: string
+    viewLabel: string
+    submitReportBtn: string
+    quickActions: string
+    quickViewMap: string
+    quickSubmitReport: string
+    quickViewProfile: string
     totalRoutes: string
     activeReports: string
     averageFare: string
@@ -403,6 +563,179 @@ export interface LanguageStrings {
     privacyPolicy: string
     termsOfService: string
     allRightsReserved: string
+  }
+  authority: {
+    title: string
+    subtitle: string
+    loading: string
+    tabs: {
+      compliance: string
+      incidents: string
+      metrics: string
+      reports: string
+      audit: string
+      system: string
+    }
+    complianceTable: {
+      sacco: string
+      licenseStatus: string
+      safetyScore: string
+      incidentCount: string
+      lastInspection: string
+      violations: string
+      status: string
+    }
+    complianceStatus: {
+      compliant: string
+      warning: string
+      nonCompliant: string
+    }
+    incidentsTable: {
+      route: string
+      type: string
+      severity: string
+      description: string
+      location: string
+      reportedAt: string
+      assignedTo: string
+      resolution: string
+      resolvedAt: string
+    }
+    systemMetrics: {
+      totalUsers: string
+      activeReports: string
+      totalRoutes: string
+      systemUptime: string
+      dataQuality: string
+      averageResponseTime: string
+    }
+    auditTable: {
+      action: string
+      user: string
+      timestamp: string
+      details: string
+      ipAddress: string
+    }
+  }
+  userManagement: {
+    title: string
+    subtitle: string
+    loading: string
+    tabs: {
+      users: string
+      roles: string
+    }
+    table: {
+      displayName: string
+      email: string
+      role: string
+      status: string
+      actions: string
+    }
+    actions: {
+      editUser: string
+      deleteUser: string
+      viewProfile: string
+    }
+    status: {
+      active: string
+      pending: string
+      suspended: string
+      rejected: string
+    }
+    roles: {
+      admin: string
+      moderator: string
+      sacco: string
+      authority: string
+      user: string
+    }
+    deleteConfirm: {
+      title: string
+      message: string
+      cancel: string
+      delete: string
+    }
+    messages: {
+      userDeleted: string
+      userUpdated: string
+      deleteError: string
+      updateError: string
+    }
+    filters: {
+      searchUsers: string
+      filterByRole: string
+      filterByStatus: string
+      allRoles: string
+      allStatus: string
+      applyFilters: string
+      clearFilters: string
+    }
+    noUsers: string
+  }
+  admin: {
+    title: string
+    subtitle: string
+    loading: string
+    stats: {
+      totalUsers: string
+      activeRoutes: string
+      totalReports: string
+      systemUptime: string
+    }
+    quickActions: {
+      title: string
+      addRoute: string
+      manageUsers: string
+      viewReports: string
+      systemSettings: string
+    }
+    recentActivity: {
+      title: string
+      noActivity: string
+    }
+  }
+  profile: {
+    title: string
+    subtitle: string
+    loading: string
+    tabs: {
+      personal: string
+      security: string
+      reports: string
+      favorites: string
+      analytics: string
+    }
+    personalInfo: {
+      displayName: string
+      email: string
+      role: string
+      organization: string
+      uploadPhoto: string
+      editProfile: string
+      uploading: string
+      saveChanges: string
+    }
+    security: {
+      changePassword: string
+      oldPassword: string
+      newPassword: string
+      confirmNewPassword: string
+      updatePassword: string
+    }
+    messages: {
+      profileUpdated: string
+      profileError: string
+      passwordUpdated: string
+      passwordError: string
+      passwordMismatch: string
+      passwordTooShort: string
+      currentPasswordIncorrect: string
+      newPasswordSameAsOld: string
+      uploadingImage: string
+      imageUploadError: string
+      avatarUpdateError: string
+    }
   }
 }
 

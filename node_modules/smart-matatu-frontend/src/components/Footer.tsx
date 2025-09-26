@@ -1,6 +1,8 @@
 import { MapPin, Mail, Phone, Globe } from 'lucide-react'
+import { useTranslation } from '../hooks/useTranslation'
 
 export default function Footer() {
+  const { t } = useTranslation()
   return (
     <footer className="bg-gray-900 text-white" role="contentinfo">
       <div className="container py-12">
@@ -14,7 +16,7 @@ export default function Footer() {
               <span className="text-xl font-bold">Smart Matatu</span>
             </div>
             <p className="text-gray-400 text-sm">
-              Making Nairobi's transport system more reliable, safe, and accessible for everyone.
+              {t('footer.description')}
             </p>
             <div className="flex space-x-4">
               <a 
@@ -36,33 +38,33 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('footer.quickLinks')}</h3>
             <nav aria-label="Footer navigation">
               <ul className="space-y-2">
-                <li><a href="/" className="text-gray-400 hover:text-white transition-colors">Home</a></li>
-                <li><a href="/map" className="text-gray-400 hover:text-white transition-colors">Map</a></li>
-                <li><a href="/report" className="text-gray-400 hover:text-white transition-colors">Report</a></li>
-                <li><a href="/login" className="text-gray-400 hover:text-white transition-colors">Login</a></li>
+                <li><a href="/" className="text-gray-400 hover:text-white transition-colors">{t('navigation.home')}</a></li>
+                <li><a href="/map" className="text-gray-400 hover:text-white transition-colors">{t('navigation.map')}</a></li>
+                <li><a href="/report" className="text-gray-400 hover:text-white transition-colors">{t('navigation.report')}</a></li>
+                <li><a href="/login" className="text-gray-400 hover:text-white transition-colors">{t('navigation.login')}</a></li>
               </ul>
             </nav>
           </div>
 
           {/* Services */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Services</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('footer.services')}</h3>
             <nav aria-label="Services navigation">
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Route Planning</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Safety Reports</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Real-time Updates</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Analytics</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">{t('footer.routePlanning')}</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">{t('footer.safetyReports')}</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">{t('footer.realTimeUpdates')}</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">{t('footer.analytics')}</a></li>
               </ul>
             </nav>
           </div>
 
           {/* Contact */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Contact</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('footer.contact')}</h3>
             <address className="not-italic">
               <ul className="space-y-2">
                 <li className="flex items-center space-x-2">
@@ -98,11 +100,11 @@ export default function Footer() {
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © 2024 Smart Matatu. All rights reserved.
+              © 2024 Smart Matatu. {t('footer.allRightsReserved')}
             </p>
             <nav className="flex space-x-6 mt-4 md:mt-0" aria-label="Legal links">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">Privacy Policy</a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">Terms of Service</a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">{t('footer.privacyPolicy')}</a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">{t('footer.termsOfService')}</a>
             </nav>
           </div>
         </div>

@@ -13,6 +13,7 @@ import {
   Settings
 } from 'lucide-react'
 import apiService from '../services/api'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface ComplianceData {
   saccoId: string
@@ -61,6 +62,7 @@ interface AuditLog {
 }
 
 export default function AuthorityDashboard() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview')
   const [loading, setLoading] = useState(true)
   const [complianceData, setComplianceData] = useState<ComplianceData[]>([])
@@ -152,7 +154,7 @@ export default function AuthorityDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading Authority Dashboard...</p>
+          <p className="text-gray-600">{t('authority.loading')}</p>
         </div>
       </div>
     )
@@ -165,8 +167,8 @@ export default function AuthorityDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Transport Authority Dashboard</h1>
-              <p className="text-gray-600 mt-1">Monitor compliance, safety, and system oversight</p>
+              <h1 className="text-3xl font-bold text-gray-900">{t('authority.title')}</h1>
+              <p className="text-gray-600 mt-1">{t('authority.subtitle')}</p>
             </div>
             <div className="flex items-center space-x-4">
               <select
@@ -195,12 +197,12 @@ export default function AuthorityDashboard() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             {[
-              { id: 'overview', name: 'Overview', icon: BarChart3 },
-              { id: 'compliance', name: 'Compliance', icon: Shield },
-              { id: 'incidents', name: 'Safety Incidents', icon: AlertTriangle },
-              { id: 'reports', name: 'Reports & Export', icon: FileText },
-              { id: 'audit', name: 'Audit Logs', icon: Eye },
-              { id: 'system', name: 'System Health', icon: Settings }
+              { id: 'overview', name: t('authority.tabs.metrics'), icon: BarChart3 },
+              { id: 'compliance', name: t('authority.tabs.compliance'), icon: Shield },
+              { id: 'incidents', name: t('authority.tabs.incidents'), icon: AlertTriangle },
+              { id: 'reports', name: t('authority.tabs.reports'), icon: FileText },
+              { id: 'audit', name: t('authority.tabs.audit'), icon: Eye },
+              { id: 'system', name: t('authority.tabs.system'), icon: Settings }
             ].map((tab) => (
               <button
                 key={tab.id}

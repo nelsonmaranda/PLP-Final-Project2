@@ -4,8 +4,10 @@ import { Link } from 'react-router-dom'
 import apiService from '../services/api'
 import { Route } from '../types'
 import { useApp } from '../contexts/AppContext'
+import { useTranslation } from '../hooks/useTranslation'
 
 export default function Admin() {
+  const { t } = useTranslation()
   const { state } = useApp()
   const isAdmin = state.user?.role === 'admin'
   const [isLoading, setIsLoading] = useState(true)
@@ -192,7 +194,7 @@ export default function Admin() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="loading-spinner mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading admin dashboard...</p>
+          <p className="text-gray-600">{t('admin.loading')}</p>
         </div>
       </div>
     )
@@ -202,8 +204,8 @@ export default function Admin() {
     <div className="min-h-screen bg-gray-50">
       <div className="container py-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2">Manage routes, reports, and system settings</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('admin.title')}</h1>
+          <p className="text-gray-600 mt-2">{t('admin.subtitle')}</p>
         </div>
 
         {isAdmin && (

@@ -157,7 +157,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your smart dashboard...</p>
+          <p className="text-gray-600">{t('dashboard.loadingYourDashboard')}</p>
         </div>
       </div>
     )
@@ -168,13 +168,13 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Error</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('dashboard.errorTitle')}</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={loadDashboardData}
             className="btn btn-primary"
           >
-            Try Again
+            {t('dashboard.tryAgain')}
           </button>
         </div>
       </div>
@@ -192,7 +192,7 @@ export default function Dashboard() {
                 {t('dashboard.welcome')}, {state.user?.displayName}!
               </h1>
               <p className="text-gray-600 mt-1">
-                Here's your personalized matatu insights for today
+                {t('dashboard.headerSubtitle')}
               </p>
             </div>
             <div className="text-right">
@@ -222,7 +222,7 @@ export default function Dashboard() {
           {weather && (
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Current Weather</h3>
+                <h3 className="text-lg font-semibold">{t('dashboard.currentWeather')}</h3>
                 {getWeatherIcon(weather.condition)}
               </div>
               <div className="space-y-2">
@@ -232,11 +232,11 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Droplets className="w-4 h-4" />
-                  <span>{weather.humidity}% humidity</span>
+                  <span>{weather.humidity}% {t('dashboard.humidityLabel')}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Wind className="w-4 h-4" />
-                  <span>{weather.windSpeed} km/h</span>
+                  <span>{weather.windSpeed} {t('dashboard.windSpeedLabel')}</span>
                 </div>
                 <p className="text-sm opacity-90">{weather.condition}</p>
               </div>
@@ -248,24 +248,24 @@ export default function Dashboard() {
             <>
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Active Routes</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.activeRoutesTitle')}</h3>
                   <MapPin className="w-6 h-6 text-primary-500" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   {stats.totalRoutes}
                 </div>
-                <p className="text-sm text-gray-600">Routes monitored</p>
+                <p className="text-sm text-gray-600">{t('dashboard.routesMonitored')}</p>
               </div>
 
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Avg Fare</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.avgFareTitle')}</h3>
                   <TrendingUp className="w-6 h-6 text-green-500" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   KES {stats.averageFare}
                 </div>
-                <p className="text-sm text-gray-600">Current average</p>
+                <p className="text-sm text-gray-600">{t('dashboard.currentAverage')}</p>
               </div>
 
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -276,7 +276,7 @@ export default function Dashboard() {
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   {stats.safetyRating.toFixed(1)}/5
                 </div>
-                <p className="text-sm text-gray-600">Overall safety</p>
+                <p className="text-sm text-gray-600">{t('dashboard.overallSafety')}</p>
               </div>
             </>
           )}
@@ -291,11 +291,11 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-gray-900">{t('dashboard.smartRouteInsights')}</h2>
                   <Link to="/map" className="btn btn-ghost btn-sm">
-                    View All Routes
+                    {t('dashboard.viewAllRoutesBtn')}
                   </Link>
                 </div>
                 <p className="text-gray-600 mt-1">
-                  AI-powered recommendations for your daily commute
+                  {t('dashboard.aiRecommendations')}
                 </p>
               </div>
               <div className="p-6">
@@ -303,9 +303,9 @@ export default function Dashboard() {
                 {routeInsights.length === 0 ? (
                   <div className="text-center py-8">
                     <Navigation className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-4">No route insights available</p>
+                    <p className="text-gray-500 mb-4">{t('dashboard.noInsights')}</p>
                     <Link to="/map" className="btn btn-primary">
-                      Explore Routes
+                      {t('dashboard.exploreRoutes')}
                     </Link>
                   </div>
                 ) : (
@@ -317,11 +317,11 @@ export default function Dashboard() {
                             <h3 className="font-semibold text-gray-900">
                               {insight.routeName}
                             </h3>
-                            <p className="text-sm text-gray-600">Route ID: {insight.routeId}</p>
+                            <p className="text-sm text-gray-600">{t('dashboard.routeIdLabel')}: {insight.routeId}</p>
                           </div>
                           <div className="flex items-center space-x-2">
                             <span className={`px-2 py-1 text-xs rounded-full ${getCrowdLevelColor(insight.crowdDensity.level)}`}>
-                              {insight.crowdDensity.level} crowd
+                              {insight.crowdDensity.level} {t('dashboard.crowdSuffix')}
                             </span>
                           </div>
                         </div>
@@ -333,7 +333,7 @@ export default function Dashboard() {
                               <div className="font-medium text-gray-900">
                                 KES {insight.farePrediction.predictedFare}
                               </div>
-                              <div className="text-xs text-gray-500">Predicted fare</div>
+                              <div className="text-xs text-gray-500">{t('dashboard.predictedFareLabel')}</div>
                             </div>
                           </div>
                           
@@ -343,7 +343,7 @@ export default function Dashboard() {
                               <div className={`font-medium ${getSafetyScoreColor(insight.safetyScore.overallScore)}`}>
                                 {insight.safetyScore.overallScore.toFixed(1)}/5
                               </div>
-                              <div className="text-xs text-gray-500">Safety score</div>
+                              <div className="text-xs text-gray-500">{t('dashboard.safetyScoreLabel')}</div>
                             </div>
                           </div>
                           
@@ -353,7 +353,7 @@ export default function Dashboard() {
                               <div className="font-medium text-gray-900">
                                 {insight.travelTime} min
                               </div>
-                              <div className="text-xs text-gray-500">Travel time</div>
+                              <div className="text-xs text-gray-500">{t('dashboard.travelTimeLabel')}</div>
                             </div>
                           </div>
                           
@@ -363,7 +363,7 @@ export default function Dashboard() {
                               <div className="font-medium text-gray-900">
                                 {insight.recommendedTime}
                               </div>
-                              <div className="text-xs text-gray-500">Best time</div>
+                              <div className="text-xs text-gray-500">{t('dashboard.bestTimeLabel')}</div>
                             </div>
                           </div>
                         </div>
@@ -388,7 +388,7 @@ export default function Dashboard() {
                     <Star className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500 mb-3">{t('dashboard.noFavorites')}</p>
                     <Link to="/map" className="btn btn-ghost btn-sm">
-                      Add Favorites
+                      {t('dashboard.viewAllRoutesBtn')}
                     </Link>
                   </div>
                 ) : (
@@ -397,7 +397,7 @@ export default function Dashboard() {
                       <div key={route._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div>
                           <div className="font-medium text-gray-900">
-                            Route {route.routeNumber}
+                            {t('dashboard.routeLabel')} {route.routeNumber}
                           </div>
                           <div className="text-sm text-gray-600">{route.name}</div>
                         </div>
@@ -405,7 +405,7 @@ export default function Dashboard() {
                           to={`/map?route=${route._id}`}
                           className="btn btn-ghost btn-sm"
                         >
-                          View
+                          {t('dashboard.viewLabel')}
                         </Link>
                       </div>
                     ))}
@@ -451,20 +451,20 @@ export default function Dashboard() {
             {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.quickActions')}</h3>
               </div>
               <div className="p-6 space-y-3">
                 <Link to="/map" className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                   <MapPin className="w-5 h-5 text-primary-500" />
-                  <span className="text-gray-900">View Map</span>
+                  <span className="text-gray-900">{t('dashboard.quickViewMap')}</span>
                 </Link>
                 <Link to="/report" className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                   <BarChart3 className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-900">Submit Report</span>
+                  <span className="text-gray-900">{t('dashboard.quickSubmitReport')}</span>
                 </Link>
                 <Link to="/profile" className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                   <Eye className="w-5 h-5 text-blue-500" />
-                  <span className="text-gray-900">View Profile</span>
+                  <span className="text-gray-900">{t('dashboard.quickViewProfile')}</span>
                 </Link>
               </div>
             </div>

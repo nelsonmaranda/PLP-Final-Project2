@@ -147,12 +147,12 @@ export default function Login() {
                     value={formData.email}
                     onChange={handleInputChange}
                     className="form-input pl-10"
-                    placeholder="Enter your email"
+                    placeholder={t('auth.emailPlaceholder')}
                     required
                     aria-describedby="email-help"
                   />
                 </div>
-                <p id="email-help" className="sr-only">Enter your email address to sign in</p>
+                <p id="email-help" className="sr-only">{t('auth.emailPlaceholder')}</p>
               </div>
 
               {/* Password */}
@@ -172,7 +172,7 @@ export default function Login() {
                     value={formData.password}
                     onChange={handleInputChange}
                     className="form-input pl-10 pr-10"
-                    placeholder="Enter your password"
+                    placeholder={t('auth.passwordPlaceholder')}
                     required
                     aria-describedby="password-help"
                   />
@@ -189,14 +189,14 @@ export default function Login() {
                     )}
                   </button>
                 </div>
-                <p id="password-help" className="sr-only">Enter your password to sign in</p>
+                <p id="password-help" className="sr-only">{t('auth.passwordPlaceholder')}</p>
               </div>
 
               {/* Forgot Password */}
               <div className="text-right">
                 <div className="text-sm">
                   <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
-                    Forgot your password?
+                    {t('auth.forgotPassword')}
                   </a>
                 </div>
               </div>
@@ -207,12 +207,12 @@ export default function Login() {
                   type="submit"
                   disabled={isLoading}
                   className="btn btn-primary w-full"
-                  aria-label={isLoading ? 'Signing in...' : 'Sign in to your account'}
+                  aria-label={isLoading ? t('auth.signingIn') : t('auth.signIn')}
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />
-                      Signing in...
+                    {t('auth.signingIn')}
                     </>
                   ) : (
                     t('auth.signIn')
@@ -223,9 +223,9 @@ export default function Login() {
               {/* Sign Up Link */}
               <div className="text-center">
                 <p className="text-sm text-gray-600">
-                  Don't have an account?{' '}
+                  {t('auth.dontHaveAccount')}{' '}
                   <Link to="/signup" className="font-medium text-primary-600 hover:text-primary-500">
-                    Sign up here
+                    {t('auth.signUp')}
                   </Link>
                 </p>
               </div>

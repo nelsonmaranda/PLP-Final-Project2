@@ -81,7 +81,7 @@ export default function ReportForm() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner />
-          <p className="text-gray-600 mt-4">Loading report form...</p>
+          <p className="text-gray-600 mt-4">{t('report.loading')}</p>
         </div>
       </div>
     )
@@ -101,14 +101,14 @@ export default function ReportForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Route</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('report.route')}</label>
             <select
               value={formData.routeId}
               onChange={(e) => setFormData((p) => ({ ...p, routeId: e.target.value }))}
               className="w-full border rounded px-3 py-2"
               required
             >
-              <option value="">Select a route</option>
+              <option value="">{t('report.selectRoute')}</option>
               {routes.map((r: any) => (
                 <option key={r._id} value={r._id}>
                   {stripSaccoFromRouteName(r.name)}
@@ -118,13 +118,13 @@ export default function ReportForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Matatu SACCO (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('report.saccoOptional')}</label>
             <select
               value={selectedSacco}
               onChange={(e) => setSelectedSacco(e.target.value)}
               className="w-full border rounded px-3 py-2"
             >
-              <option value="">Select SACCO</option>
+              <option value="">{t('report.selectSacco')}</option>
               {MATATU_SACCOS.map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
@@ -132,25 +132,25 @@ export default function ReportForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Direction</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('report.direction')}</label>
             <div className="grid grid-cols-3 gap-3">
               <label className="flex items-center space-x-2 border rounded px-3 py-2 cursor-pointer">
                 <input type="radio" name="direction" value="from_cbd" checked={direction==='from_cbd'} onChange={() => setDirection('from_cbd')} />
-                <span>From CBD</span>
+                <span>{t('report.fromCBD')}</span>
               </label>
               <label className="flex items-center space-x-2 border rounded px-3 py-2 cursor-pointer">
                 <input type="radio" name="direction" value="to_cbd" checked={direction==='to_cbd'} onChange={() => setDirection('to_cbd')} />
-                <span>To CBD</span>
+                <span>{t('report.toCBD')}</span>
               </label>
               <label className="flex items-center space-x-2 border rounded px-3 py-2 cursor-pointer">
                 <input type="radio" name="direction" value="along_route" checked={direction==='along_route'} onChange={() => setDirection('along_route')} />
-                <span>Along this route</span>
+                <span>{t('report.alongRoute')}</span>
               </label>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fare (KSh)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('report.fare')}</label>
             <input
               type="number"
               min="0"
@@ -158,36 +158,36 @@ export default function ReportForm() {
               value={fareKsh}
               onChange={(e) => setFareKsh(e.target.value)}
               className="w-full border rounded px-3 py-2"
-              placeholder="e.g., 80"
+              placeholder={t('report.farePlaceholder')}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('report.reportType')}</label>
               <select
                 value={formData.reportType}
                 onChange={(e) => setFormData((p) => ({ ...p, reportType: e.target.value }))}
                 className="w-full border rounded px-3 py-2"
               >
-                <option value="delay">Delay</option>
-                <option value="crowding">Overcrowding</option>
-                <option value="breakdown">Breakdown</option>
-                <option value="safety">Safety issue</option>
-                <option value="other">Other</option>
+                <option value="delay">{t('report.delay')}</option>
+                <option value="overcrowding">{t('report.overcrowding')}</option>
+                <option value="breakdown">{t('report.breakdown')}</option>
+                <option value="safety">{t('report.safety')}</option>
+                <option value="other">{t('report.other')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Severity</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('report.severity')}</label>
               <select
                 value={formData.severity}
                 onChange={(e) => setFormData((p) => ({ ...p, severity: e.target.value as any }))}
                 className="w-full border rounded px-3 py-2"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
+                <option value="low">{t('report.low')}</option>
+                <option value="medium">{t('report.medium')}</option>
+                <option value="high">{t('report.high')}</option>
+                <option value="critical">{t('report.critical')}</option>
               </select>
             </div>
           </div>
@@ -199,17 +199,17 @@ export default function ReportForm() {
               checked={formData.isAnonymous}
               onChange={(e) => setFormData((p) => ({ ...p, isAnonymous: e.target.checked }))}
             />
-            <label htmlFor="anonymous" className="text-sm text-gray-700">Submit anonymously</label>
+            <label htmlFor="anonymous" className="text-sm text-gray-700">{t('report.anonymous')}</label>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('report.description')}</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
               className="w-full border rounded px-3 py-2"
               rows={4}
-              placeholder="Describe the issue..."
+              placeholder={t('report.descriptionPlaceholder')}
             />
           </div>
 

@@ -29,6 +29,19 @@ export default function ProtectedRoute({
     )
   }
 
+  // If we're not loading but still don't have auth state, show loading
+  // This prevents the flash of login page
+  if (!state.isLoading && state.isAuthenticated === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <LoadingSpinner />
+          <p className="text-gray-600 mt-4">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   // If authentication is required but user is not authenticated
   if (requireAuth && !state.isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />

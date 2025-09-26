@@ -1,0 +1,157 @@
+[debug] [2025-09-26T14:20:15.800Z] ----------------------------------------------------------------------
+[debug] [2025-09-26T14:20:15.807Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\KEVEM\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting,functions
+[debug] [2025-09-26T14:20:15.808Z] CLI Version:   14.16.0
+[debug] [2025-09-26T14:20:15.809Z] Platform:      win32
+[debug] [2025-09-26T14:20:15.809Z] Node Version:  v24.4.1
+[debug] [2025-09-26T14:20:15.809Z] Time:          Fri Sep 26 2025 17:20:15 GMT+0300 (East Africa Time)
+[debug] [2025-09-26T14:20:15.810Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-09-26T14:20:15.815Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2025-09-26T14:20:16.679Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-09-26T14:20:16.680Z] > authorizing via signed-in user (nelsonmaranda2@gmail.com)
+[debug] [2025-09-26T14:20:16.680Z] [iam] checking project smart-matwana-ke for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2025-09-26T14:20:16.682Z] Checked if tokens are valid: false, expires at: 1758882014222
+[debug] [2025-09-26T14:20:16.682Z] Checked if tokens are valid: false, expires at: 1758882014222
+[debug] [2025-09-26T14:20:16.683Z] > refreshing access token with scopes: []
+[debug] [2025-09-26T14:20:16.685Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-26T14:20:16.686Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-26T14:20:17.368Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-26T14:20:17.368Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-26T14:20:17.403Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/smart-matwana-ke:testIamPermissions [none]
+[debug] [2025-09-26T14:20:17.403Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/smart-matwana-ke:testIamPermissions x-goog-quota-user=projects/smart-matwana-ke
+[debug] [2025-09-26T14:20:17.403Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/smart-matwana-ke:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-09-26T14:20:17.535Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2025-09-26T14:20:17.536Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2025-09-26T14:20:19.246Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/smart-matwana-ke:testIamPermissions 200
+[debug] [2025-09-26T14:20:19.247Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/smart-matwana-ke:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-09-26T14:20:19.247Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:19.248Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:19.248Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/smart-matwana-ke/serviceAccounts/smart-matwana-ke@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-09-26T14:20:19.248Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/smart-matwana-ke/serviceAccounts/smart-matwana-ke@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-09-26T14:20:21.172Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/smart-matwana-ke/serviceAccounts/smart-matwana-ke@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-09-26T14:20:21.173Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/smart-matwana-ke/serviceAccounts/smart-matwana-ke@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-09-26T14:20:21.174Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:21.174Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:21.175Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/smart-matwana-ke [none]
+[debug] [2025-09-26T14:20:22.307Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/smart-matwana-ke 200
+[debug] [2025-09-26T14:20:22.307Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/smart-matwana-ke {"projectId":"smart-matwana-ke","projectNumber":"1075817674925","displayName":"Smart Matwana KE","name":"projects/smart-matwana-ke","resources":{"hostingSite":"smart-matwana-ke"},"state":"ACTIVE","etag":"1_0d3e6636-0812-40f6-9a9a-04897c2115be"}
+[info] 
+[info] === Deploying to 'smart-matwana-ke'...
+[info] 
+[info] i  deploying functions, hosting 
+[debug] [2025-09-26T14:20:22.369Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:22.369Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:22.370Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/smart-matwana-ke [none]
+[debug] [2025-09-26T14:20:22.805Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/smart-matwana-ke 200
+[debug] [2025-09-26T14:20:22.805Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/smart-matwana-ke {"projectNumber":"1075817674925","projectId":"smart-matwana-ke","lifecycleState":"ACTIVE","name":"Smart Matwana KE","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-09-19T07:46:50.497671Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2025-09-26T14:20:22.916Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:22.917Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:22.917Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/smart-matwana-ke/adminSdkConfig [none]
+[debug] [2025-09-26T14:20:23.469Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/smart-matwana-ke/adminSdkConfig 200
+[debug] [2025-09-26T14:20:23.470Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/smart-matwana-ke/adminSdkConfig {"projectId":"smart-matwana-ke","storageBucket":"smart-matwana-ke.firebasestorage.app"}
+[debug] [2025-09-26T14:20:23.470Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:23.470Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:23.471Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs [none]
+[debug] [2025-09-26T14:20:24.404Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs 200
+[debug] [2025-09-26T14:20:24.404Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs {"configs":[{"name":"projects/smart-matwana-ke/configs/jwt"},{"name":"projects/smart-matwana-ke/configs/mongodb"},{"name":"projects/smart-matwana-ke/configs/openweathermap"},{"name":"projects/smart-matwana-ke/configs/here"}]}
+[debug] [2025-09-26T14:20:24.405Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:24.405Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:24.406Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:24.406Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:24.406Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:24.406Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:24.407Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:24.407Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:24.407Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/jwt/variables [none]
+[debug] [2025-09-26T14:20:24.408Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/mongodb/variables [none]
+[debug] [2025-09-26T14:20:24.412Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/openweathermap/variables [none]
+[debug] [2025-09-26T14:20:24.417Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/here/variables [none]
+[debug] [2025-09-26T14:20:25.054Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/mongodb/variables 200
+[debug] [2025-09-26T14:20:25.054Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/mongodb/variables {"variables":[{"name":"projects/smart-matwana-ke/configs/mongodb/variables/uri","updateTime":"2025-09-19T21:16:14.427708151Z"}]}
+[debug] [2025-09-26T14:20:25.055Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:25.055Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:25.055Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/mongodb/variables/uri [none]
+[debug] [2025-09-26T14:20:25.068Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/here/variables 200
+[debug] [2025-09-26T14:20:25.068Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/here/variables {"variables":[{"name":"projects/smart-matwana-ke/configs/here/variables/api_key","updateTime":"2025-09-25T13:00:30.626887406Z"}]}
+[debug] [2025-09-26T14:20:25.068Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:25.068Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:25.068Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/here/variables/api_key [none]
+[debug] [2025-09-26T14:20:25.135Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/openweathermap/variables 200
+[debug] [2025-09-26T14:20:25.135Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/openweathermap/variables {"variables":[{"name":"projects/smart-matwana-ke/configs/openweathermap/variables/api_key","updateTime":"2025-09-21T14:47:57.699699168Z"}]}
+[debug] [2025-09-26T14:20:25.135Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:25.135Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:25.135Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/openweathermap/variables/api_key [none]
+[debug] [2025-09-26T14:20:25.273Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/jwt/variables 200
+[debug] [2025-09-26T14:20:25.274Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/jwt/variables {"variables":[{"name":"projects/smart-matwana-ke/configs/jwt/variables/secret","updateTime":"2025-09-21T14:26:17.984603791Z"}]}
+[debug] [2025-09-26T14:20:25.274Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:25.274Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:25.274Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/jwt/variables/secret [none]
+[debug] [2025-09-26T14:20:25.408Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/mongodb/variables/uri 200
+[debug] [2025-09-26T14:20:25.408Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/mongodb/variables/uri {"name":"projects/smart-matwana-ke/configs/mongodb/variables/uri","updateTime":"2025-09-19T21:16:14.427708151Z","text":"mongodb+srv://mnelson:27428516@cluster0.6k3x4ce.mongodb.net/smart-matwana-ke?retryWrites=true"}
+[debug] [2025-09-26T14:20:25.447Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/here/variables/api_key 200
+[debug] [2025-09-26T14:20:25.447Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/here/variables/api_key {"name":"projects/smart-matwana-ke/configs/here/variables/api_key","updateTime":"2025-09-25T13:00:30.626887406Z","text":"M94FWuMPTSaWPhoHiplFWzBH3a2wZVKpYq4N4_8uN9o"}
+[debug] [2025-09-26T14:20:25.514Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/openweathermap/variables/api_key 200
+[debug] [2025-09-26T14:20:25.515Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/openweathermap/variables/api_key {"name":"projects/smart-matwana-ke/configs/openweathermap/variables/api_key","updateTime":"2025-09-21T14:47:57.699699168Z","text":"0fa1fad111348b26c2bffae80acf231a"}
+[debug] [2025-09-26T14:20:25.645Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/jwt/variables/secret 200
+[debug] [2025-09-26T14:20:25.646Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/smart-matwana-ke/configs/jwt/variables/secret {"name":"projects/smart-matwana-ke/configs/jwt/variables/secret","updateTime":"2025-09-21T14:26:17.984603791Z","text":"smart-matatu-jwt-secret-key-2024"}
+[debug] [2025-09-26T14:20:25.648Z] Validating nodejs source
+[warn] !  functions: Runtime Node.js 18 was deprecated on 2025-04-30 and will be decommissioned on 2025-10-30, after which you will not be able to deploy without upgrading. Consider upgrading now to avoid disruption. See https://cloud.google.com/functions/docs/runtime-support for full details on the lifecycle policy 
+[warn] !  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] !  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-09-26T14:20:31.159Z] > [functions] package.json contents: {
+  "name": "smart-matatu-backend-functions",
+  "version": "1.0.0",
+  "description": "Smart Matatu Backend Cloud Functions",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build step needed for Cloud Functions'",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "firebase-functions": "^4.5.0",
+    "firebase-admin": "^11.11.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "mongoose": "^8.0.3",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.22.4",
+    "node-cron": "^3.0.3"
+  },
+  "engines": {
+    "node": "18"
+  }
+}
+[debug] [2025-09-26T14:20:31.160Z] Building nodejs source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[info] i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly 
+[debug] [2025-09-26T14:20:31.168Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-26T14:20:31.214Z] Found firebase-functions binary at 'C:\PLP\Plp Final Project\backend\functions\node_modules\.bin\firebase-functions'
+[info] Serving at port 8452
+
+[debug] [2025-09-26T14:20:35.651Z] Got response from /__/functions.yaml {"endpoints":{"api":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"httpsTrigger":{},"entryPoint":"api"}},"specVersion":"v1alpha1","requiredAPIs":[]}
+[info] MongoDB Atlas connected successfully
+
+[info] i  functions: preparing backend/functions directory for uploading... 
+[info] i  functions: packaged C:\PLP\Plp Final Project\backend\functions (65.78 KB) for uploading 
+[debug] [2025-09-26T14:20:45.991Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:45.992Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:45.992Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/projects/smart-matwana-ke/locations/-/functions [none]
+[debug] [2025-09-26T14:20:47.212Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/projects/smart-matwana-ke/locations/-/functions 200
+[debug] [2025-09-26T14:20:47.213Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/projects/smart-matwana-ke/locations/-/functions {"functions":[{"name":"projects/smart-matwana-ke/locations/us-central1/functions/api","httpsTrigger":{"url":"https://us-central1-smart-matwana-ke.cloudfunctions.net/api","securityLevel":"SECURE_ALWAYS"},"status":"ACTIVE","entryPoint":"api","timeout":"60s","availableMemoryMb":256,"serviceAccountEmail":"smart-matwana-ke@appspot.gserviceaccount.com","updateTime":"2025-09-25T15:56:44.356Z","versionId":"62","labels":{"deployment-tool":"cli-firebase","firebase-functions-hash":"afca0ce03f5e71ab61f6043624860d2c393864e7"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-615200031502.us-central1.cloudfunctions.appspot.com/0a510d55-5d8a-4edc-b28c-8ce0d7577e61.zip","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"smart-matwana-ke\",\"storageBucket\":\"smart-matwana-ke.firebasestorage.app\"}","GCLOUD_PROJECT":"smart-matwana-ke","EVENTARC_CLOUD_EVENT_SOURCE":"projects/smart-matwana-ke/locations/us-central1/functions/api"},"runtime":"nodejs18","ingressSettings":"ALLOW_ALL","buildId":"f587e04c-b7ec-449b-b2ab-9268740a0456","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"buildName":"projects/1075817674925/locations/us-central1/builds/f587e04c-b7ec-449b-b2ab-9268740a0456","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"buildServiceAccount":"projects/smart-matwana-ke/serviceAccounts/1075817674925-compute@developer.gserviceaccount.com","satisfiesPzi":true}]}
+[debug] [2025-09-26T14:20:47.219Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:47.220Z] Checked if tokens are valid: true, expires at: 1758900016369
+[debug] [2025-09-26T14:20:47.223Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v2/projects/smart-matwana-ke/locations/-/functions filter=environment%3D%22GEN_2%22
+[debug] [2025-09-26T14:20:58.419Z] *** [apiv2] error from fetch(https://cloudfunctions.googleapis.com/v2/projects/smart-matwana-ke/locations/-/functions?filter=environment%3D%22GEN_2%22, {"headers":{},"method":"GET"}): FetchError: request to https://cloudfunctions.googleapis.com/v2/projects/smart-matwana-ke/locations/-/functions?filter=environment%3D%22GEN_2%22 failed, reason: read ECONNRESET
+[debug] [2025-09-26T14:21:03.444Z] Error: Timed out.
+    at Timeout._onTimeout (C:\Users\KEVEM\AppData\Roaming\npm\node_modules\firebase-tools\lib\utils.js:275:49)
+    at listOnTimeout (node:internal/timers:608:17)
+    at process.processTimers (node:internal/timers:543:7)
+[error] 
+[error] Error: An unexpected error has occurred.
