@@ -674,7 +674,9 @@ export default function AnalyticsDashboard() {
                               <span className="text-sm font-medium text-gray-900">{rec.score}/100</span>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">{rec.reason}</p>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {rec.reason === 'Good performance' ? t('analytics.goodPerformance') : rec.reason}
+                          </p>
                           <div className="flex items-center space-x-2">
                             <span className={`px-2 py-1 text-xs rounded-full ${
                               rec.type === 'efficiency' ? 'bg-blue-100 text-blue-800' :
@@ -682,7 +684,10 @@ export default function AnalyticsDashboard() {
                               rec.type === 'cost' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-purple-100 text-purple-800'
                             }`}>
-                              {rec.type}
+                              {rec.type === 'efficiency' && t('analytics.prefEfficiency')}
+                              {rec.type === 'safety' && t('analytics.prefSafety')}
+                              {rec.type === 'cost' && t('analytics.prefCost')}
+                              {rec.type === 'convenience' && t('analytics.prefConvenience')}
                             </span>
                           </div>
                         </div>
