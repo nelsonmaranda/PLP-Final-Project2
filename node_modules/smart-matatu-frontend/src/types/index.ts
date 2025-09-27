@@ -254,6 +254,15 @@ export interface LanguageStrings {
     authorityDashboard: string
     userManagement: string
     adminPanel: string
+    quickActions: string
+    favorites: string
+    reports: string
+    safety: string
+    predictions: string
+    saccoManagement: string
+    authorityTools: string
+    fleetManagement: string
+    compliance: string
   }
   auth: {
     login: string
@@ -700,7 +709,7 @@ export interface LanguageStrings {
     addUser: string
     search: string
     searchPlaceholder: string
-    status: string
+    statusLabel: string
     role: string
     requestedRole: string
     organization: string
@@ -791,10 +800,39 @@ export interface LanguageStrings {
     subtitle: string
     loading: string
     stats: {
-      totalUsers: string
+      totalRoutes: string
       activeRoutes: string
       totalReports: string
+      safetyIssues: string
+      totalUsers: string
       systemUptime: string
+    }
+    seedRoutes: string
+    seeding: string
+    runSeed: string
+    seedDescription: string
+    tools: string
+    routeEditor: string
+    routeManagement: string
+    addRoute: string
+    addNewRoute: string
+    routeName: string
+    routeNamePlaceholder: string
+    description: string
+    descriptionPlaceholder: string
+    cancel: string
+    route: string
+    reliability: string
+    safety: string
+    reports: string
+    statusLabel: string
+    actions: string
+    activate: string
+    deactivate: string
+    status: {
+      active: string
+      inactive: string
+      maintenance: string
     }
     quickActions: {
       title: string
@@ -812,6 +850,18 @@ export interface LanguageStrings {
     title: string
     subtitle: string
     loading: string
+    pleaseLogin: string
+    loginRequired: string
+    goToLogin: string
+    role: string
+    updateError: string
+    myTripReports: string
+    favoriteRoutes: string
+    noFavoriteRoutes: string
+    exploreRoutes: string
+    yourAnalytics: string
+    totalReports: string
+    favorites: string
     tabs: {
       personal: string
       security: string
