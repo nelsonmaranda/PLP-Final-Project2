@@ -865,6 +865,13 @@ export interface LanguageStrings {
     yourAnalytics: string
     totalReports: string
     favorites: string
+    accountInformation: string
+    accountType: string
+    memberSince: string
+    noReportsYet: string
+    submitFirstReport: string
+    thisMonth: string
+    avgRating: string
     tabs: {
       personal: string
       security: string

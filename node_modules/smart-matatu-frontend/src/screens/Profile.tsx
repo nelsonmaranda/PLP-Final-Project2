@@ -305,7 +305,7 @@ export default function Profile() {
 
                     <div>
                       <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
-                        Display Name
+                        {t('profile.personalInfo.displayName')}
                       </label>
                       <input
                         type="text"
@@ -320,7 +320,7 @@ export default function Profile() {
 
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                        Email Address
+                        {t('profile.personalInfo.email')}
                       </label>
                       <input
                         type="email"
@@ -364,22 +364,22 @@ export default function Profile() {
                 ) : (
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">Account Information</h3>
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">{t('profile.accountInformation')}</h3>
                       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                          <dt className="text-sm font-medium text-gray-500">Display Name</dt>
+                          <dt className="text-sm font-medium text-gray-500">{t('profile.personalInfo.displayName')}</dt>
                           <dd className="mt-1 text-sm text-gray-900">{state.user.displayName}</dd>
                         </div>
                         <div>
-                          <dt className="text-sm font-medium text-gray-500">Email Address</dt>
+                          <dt className="text-sm font-medium text-gray-500">{t('profile.personalInfo.email')}</dt>
                           <dd className="mt-1 text-sm text-gray-900">{state.user.email}</dd>
                         </div>
                         <div>
-                          <dt className="text-sm font-medium text-gray-500">Account Type</dt>
+                          <dt className="text-sm font-medium text-gray-500">{t('profile.accountType')}</dt>
                           <dd className="mt-1 text-sm text-gray-900 capitalize">{state.user.role}</dd>
                         </div>
                         <div>
-                          <dt className="text-sm font-medium text-gray-500">Member Since</dt>
+                          <dt className="text-sm font-medium text-gray-500">{t('profile.memberSince')}</dt>
                           <dd className="mt-1 text-sm text-gray-900">
                             {new Date(state.user.createdAt || Date.now()).toLocaleDateString('en-KE')}
                           </dd>
@@ -402,9 +402,9 @@ export default function Profile() {
                 ) : reports.length === 0 ? (
                   <div className="text-center py-8">
                     <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-4">No reports submitted yet</p>
+                    <p className="text-gray-500 mb-4">{t('profile.noReportsYet')}</p>
                     <Link to="/report" className="btn btn-primary">
-                      Submit Your First Report
+                      {t('profile.submitFirstReport')}
                     </Link>
                   </div>
                 ) : (
@@ -505,7 +505,7 @@ export default function Profile() {
                     <div className="flex items-center">
                       <Clock className="w-8 h-8 text-green-600" />
                       <div className="ml-3">
-                        <p className="text-sm font-medium text-green-600">This Month</p>
+                        <p className="text-sm font-medium text-green-600">{t('profile.thisMonth')}</p>
                         <p className="text-2xl font-bold text-green-900">{analytics.reportsThisMonth}</p>
                       </div>
                     </div>
@@ -523,7 +523,7 @@ export default function Profile() {
                     <div className="flex items-center">
                       <Star className="w-8 h-8 text-yellow-600" />
                       <div className="ml-3">
-                        <p className="text-sm font-medium text-yellow-600">Avg Rating</p>
+                        <p className="text-sm font-medium text-yellow-600">{t('profile.avgRating')}</p>
                         <p className="text-2xl font-bold text-yellow-900">{analytics.averageRating.toFixed(1)}</p>
                       </div>
                     </div>
