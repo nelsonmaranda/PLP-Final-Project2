@@ -576,6 +576,10 @@ export interface LanguageStrings {
     title: string
     subtitle: string
     loading: string
+    last7Days: string
+    last30Days: string
+    last90Days: string
+    refresh: string
     tabs: {
       compliance: string
       incidents: string
@@ -584,7 +588,14 @@ export interface LanguageStrings {
       audit: string
       system: string
     }
+    kpiCards: {
+      totalSaccos: string
+      compliantSaccos: string
+      activeIncidents: string
+      systemUptime: string
+    }
     complianceTable: {
+      title: string
       sacco: string
       licenseStatus: string
       safetyScore: string
@@ -597,8 +608,13 @@ export interface LanguageStrings {
       compliant: string
       warning: string
       nonCompliant: string
+      valid: string
+      expired: string
+      pending: string
+      unknown: string
     }
     incidentsTable: {
+      title: string
       route: string
       type: string
       severity: string
@@ -608,8 +624,19 @@ export interface LanguageStrings {
       assignedTo: string
       resolution: string
       resolvedAt: string
+      allSeverity: string
+      allStatus: string
+      low: string
+      medium: string
+      high: string
+      critical: string
+      reported: string
+      investigating: string
+      resolved: string
+      closed: string
     }
     systemMetrics: {
+      title: string
       totalUsers: string
       activeReports: string
       totalRoutes: string
@@ -617,12 +644,52 @@ export interface LanguageStrings {
       dataQuality: string
       averageResponseTime: string
     }
+    performance: {
+      title: string
+      systemUptime: string
+      avgResponseTime: string
+      dataQuality: string
+    }
+    reports: {
+      title: string
+      complianceReport: {
+        title: string
+        description: string
+      }
+      safetyIncidents: {
+        title: string
+        description: string
+      }
+      systemAnalytics: {
+        title: string
+        description: string
+      }
+      exportCsv: string
+      exportXls: string
+    }
     auditTable: {
+      title: string
       action: string
       user: string
       timestamp: string
       details: string
       ipAddress: string
+      status: string
+      success: string
+      failed: string
+      warning: string
+    }
+    systemHealth: {
+      title: string
+      systemUptime: string
+      dataQuality: string
+      averageResponseTime: string
+    }
+    userActivity: {
+      title: string
+      totalUsers: string
+      activeReports: string
+      totalRoutes: string
     }
   }
   userManagement: {
