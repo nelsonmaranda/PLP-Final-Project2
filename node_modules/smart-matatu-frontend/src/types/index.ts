@@ -696,6 +696,15 @@ export interface LanguageStrings {
     title: string
     subtitle: string
     loading: string
+    refresh: string
+    addUser: string
+    search: string
+    searchPlaceholder: string
+    status: string
+    role: string
+    requestedRole: string
+    organization: string
+    created: string
     tabs: {
       users: string
       roles: string
@@ -711,6 +720,9 @@ export interface LanguageStrings {
       editUser: string
       deleteUser: string
       viewProfile: string
+      approve: string
+      reject: string
+      edit: string
     }
     status: {
       active: string
@@ -734,8 +746,33 @@ export interface LanguageStrings {
     messages: {
       userDeleted: string
       userUpdated: string
+      userCreated: string
+      userApproved: string
+      userRejected: string
       deleteError: string
       updateError: string
+      createError: string
+      approveError: string
+      rejectError: string
+    }
+    modals: {
+      addUser: {
+        title: string
+        fullName: string
+        email: string
+        password: string
+        organization: string
+        cancel: string
+        create: string
+      }
+      editUser: {
+        title: string
+        fullName: string
+        email: string
+        organization: string
+        cancel: string
+        save: string
+      }
     }
     filters: {
       searchUsers: string
@@ -747,6 +784,7 @@ export interface LanguageStrings {
       clearFilters: string
     }
     noUsers: string
+    noUsersMessage: string
   }
   admin: {
     title: string

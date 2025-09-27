@@ -95,36 +95,36 @@ export default function RoleBasedNavigation() {
     switch (userRole) {
       case 'admin':
         return [
-          { name: 'Favorites', href: '/profile?tab=favorites', icon: Heart },
-          { name: 'Reports', href: '/profile?tab=reports', icon: History },
-          { name: 'Safety', href: '/profile?tab=safety', icon: Shield },
-          { name: 'Predictions', href: '/analytics', icon: Clock },
-          { name: 'SACCO Management', href: '/sacco', icon: Building2 },
-          { name: 'Authority Tools', href: '/authority', icon: Gavel },
+          { name: t('navigation.favorites'), href: '/profile?tab=favorites', icon: Heart },
+          { name: t('navigation.reports'), href: '/profile?tab=reports', icon: History },
+          { name: t('navigation.safety'), href: '/profile?tab=safety', icon: Shield },
+          { name: t('navigation.predictions'), href: '/analytics', icon: Clock },
+          { name: t('navigation.saccoManagement'), href: '/sacco', icon: Building2 },
+          { name: t('navigation.authorityTools'), href: '/authority', icon: Gavel },
         ]
       
       case 'sacco':
         return [
-          { name: 'Favorites', href: '/profile?tab=favorites', icon: Heart },
-          { name: 'Reports', href: '/profile?tab=reports', icon: History },
-          { name: 'Safety', href: '/profile?tab=safety', icon: Shield },
-          { name: 'Fleet Management', href: '/sacco', icon: Building2 },
+          { name: t('navigation.favorites'), href: '/profile?tab=favorites', icon: Heart },
+          { name: t('navigation.reports'), href: '/profile?tab=reports', icon: History },
+          { name: t('navigation.safety'), href: '/profile?tab=safety', icon: Shield },
+          { name: t('navigation.fleetManagement'), href: '/sacco', icon: Building2 },
         ]
       
       case 'authority':
         return [
-          { name: 'Favorites', href: '/profile?tab=favorites', icon: Heart },
-          { name: 'Reports', href: '/profile?tab=reports', icon: History },
-          { name: 'Safety', href: '/profile?tab=safety', icon: Shield },
-          { name: 'Compliance', href: '/authority', icon: Gavel },
+          { name: t('navigation.favorites'), href: '/profile?tab=favorites', icon: Heart },
+          { name: t('navigation.reports'), href: '/profile?tab=reports', icon: History },
+          { name: t('navigation.safety'), href: '/profile?tab=safety', icon: Shield },
+          { name: t('navigation.compliance'), href: '/authority', icon: Gavel },
         ]
       
       default:
         return [
-          { name: 'Favorites', href: '/profile?tab=favorites', icon: Heart },
-          { name: 'Reports', href: '/profile?tab=reports', icon: History },
-          { name: 'Safety', href: '/profile?tab=safety', icon: Shield },
-          { name: 'Predictions', href: '/analytics', icon: Clock },
+          { name: t('navigation.favorites'), href: '/profile?tab=favorites', icon: Heart },
+          { name: t('navigation.reports'), href: '/profile?tab=reports', icon: History },
+          { name: t('navigation.safety'), href: '/profile?tab=safety', icon: Shield },
+          { name: t('navigation.predictions'), href: '/analytics', icon: Clock },
         ]
     }
   }
@@ -250,7 +250,7 @@ export default function RoleBasedNavigation() {
             {/* Quick Actions */}
             <div className="pt-4">
               <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Quick Actions
+                {t('navigation.quickActions')}
               </h3>
               <div className="mt-2 space-y-1">
                 {quickActions.map((action) => (

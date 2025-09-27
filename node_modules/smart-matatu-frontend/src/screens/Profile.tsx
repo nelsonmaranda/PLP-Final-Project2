@@ -127,11 +127,11 @@ export default function Profile() {
         setIsEditing(false)
         setTimeout(() => setSuccess(false), 3000)
       } else {
-        setError('Failed to update profile. Please try again.')
+        setError(t('profile.updateError'))
       }
     } catch (error) {
       console.error('Profile update error:', error)
-      setError('Failed to update profile. Please try again.')
+      setError(t('profile.updateError'))
     } finally {
       setIsLoading(false)
     }
@@ -206,10 +206,10 @@ export default function Profile() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Please log in</h2>
-          <p className="text-gray-600 mb-4">You need to be logged in to view your profile.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('profile.pleaseLogin')}</h2>
+          <p className="text-gray-600 mb-4">{t('profile.loginRequired')}</p>
           <Link to="/login" className="btn btn-primary">
-            Go to Login
+            {t('profile.goToLogin')}
           </Link>
         </div>
       </div>
@@ -232,7 +232,7 @@ export default function Profile() {
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900">{state.user.displayName}</h1>
               <p className="text-gray-600">{state.user.email}</p>
-              <p className="text-sm text-gray-500 capitalize">Role: {state.user.role}</p>
+              <p className="text-sm text-gray-500 capitalize">{t('profile.role')}: {state.user.role}</p>
             </div>
             <button
               onClick={() => setIsEditing(!isEditing)}
@@ -394,7 +394,7 @@ export default function Profile() {
             {/* Reports Tab */}
             {activeTab === 'reports' && (
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">My Trip Reports</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t('profile.myTripReports')}</h3>
                 {reportsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
@@ -442,7 +442,7 @@ export default function Profile() {
             {/* Favorites Tab */}
             {activeTab === 'favorites' && (
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Favorite Routes</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t('profile.favoriteRoutes')}</h3>
                 {favoritesLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
@@ -450,9 +450,9 @@ export default function Profile() {
                 ) : favoriteRoutes.length === 0 ? (
                   <div className="text-center py-8">
                     <Heart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-4">No favorite routes yet</p>
+                    <p className="text-gray-500 mb-4">{t('profile.noFavoriteRoutes')}</p>
                     <Link to="/map" className="btn btn-primary">
-                      Explore Routes
+                      {t('profile.exploreRoutes')}
                     </Link>
                   </div>
                 ) : (
@@ -490,13 +490,13 @@ export default function Profile() {
             {/* Analytics Tab */}
             {activeTab === 'analytics' && (
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Your Analytics</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t('profile.yourAnalytics')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   <div className="bg-blue-50 rounded-lg p-4">
                     <div className="flex items-center">
                       <History className="w-8 h-8 text-blue-600" />
                       <div className="ml-3">
-                        <p className="text-sm font-medium text-blue-600">Total Reports</p>
+                        <p className="text-sm font-medium text-blue-600">{t('profile.totalReports')}</p>
                         <p className="text-2xl font-bold text-blue-900">{analytics.totalReports}</p>
                       </div>
                     </div>
@@ -514,7 +514,7 @@ export default function Profile() {
                     <div className="flex items-center">
                       <Heart className="w-8 h-8 text-purple-600" />
                       <div className="ml-3">
-                        <p className="text-sm font-medium text-purple-600">Favorites</p>
+                        <p className="text-sm font-medium text-purple-600">{t('profile.favorites')}</p>
                         <p className="text-2xl font-bold text-purple-900">{analytics.favoriteRoutesCount}</p>
                       </div>
                     </div>

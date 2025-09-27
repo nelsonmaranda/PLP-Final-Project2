@@ -103,28 +103,28 @@ export default function Admin() {
 
   const stats = [
     {
-      title: 'Total Routes',
+      title: t('admin.stats.totalRoutes'),
       value: routes.length,
       icon: MapPin,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
     },
     {
-      title: 'Active Routes',
+      title: t('admin.stats.activeRoutes'),
       value: routes.length,
       icon: BarChart3,
       color: 'text-green-600',
       bgColor: 'bg-green-100'
     },
     {
-      title: 'Total Reports',
+      title: t('admin.stats.totalReports'),
       value: reportsCount,
       icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
     },
     {
-      title: 'Safety Issues',
+      title: t('admin.stats.safetyIssues'),
       value: (routes as any).reduce((sum: number, r: any) => sum + (r.safetyIssues || 0), 0),
       icon: AlertTriangle,
       color: 'text-red-600',
@@ -212,15 +212,15 @@ export default function Admin() {
           <div className="card mb-6">
             <div className="card-header">
               <div className="flex items-center justify-between">
-                <h2 className="card-title">Seed Curated CBD Routes</h2>
+                <h2 className="card-title">{t('admin.seedRoutes')}</h2>
                 <button onClick={runSeed} disabled={isSeeding} className="btn btn-primary btn-sm">
                   {isSeeding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                  {isSeeding ? 'Seeding…' : 'Run Seed'}
+                  {isSeeding ? t('admin.seeding') : t('admin.runSeed')}
                 </button>
               </div>
             </div>
             <div className="p-4">
-              <p className="text-sm text-gray-600">Seeds about 50 CBD routes in small chunks. Requires admin login.</p>
+              <p className="text-sm text-gray-600">{t('admin.seedDescription')}</p>
               {seedResult && (
                 <pre className="mt-3 whitespace-pre-wrap text-xs bg-gray-50 p-3 rounded border border-gray-200">{seedResult}</pre>
               )}
@@ -238,8 +238,8 @@ export default function Admin() {
                     <MapPin className="w-6 h-6 text-indigo-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Tools</p>
-                    <p className="text-lg font-semibold text-gray-900">Route Editor</p>
+                    <p className="text-sm font-medium text-gray-600">{t('admin.tools')}</p>
+                    <p className="text-lg font-semibold text-gray-900">{t('admin.routeEditor')}</p>
                   </div>
                 </div>
               </div>
@@ -272,13 +272,13 @@ export default function Admin() {
         <div className="card">
           <div className="card-header">
             <div className="flex justify-between items-center">
-              <h2 className="card-title">Route Management</h2>
+              <h2 className="card-title">{t('admin.routeManagement')}</h2>
               <button
                 onClick={() => setShowAddRoute(true)}
                 className="btn btn-primary btn-sm"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Route
+                {t('admin.addRoute')}
               </button>
             </div>
           </div>
@@ -287,26 +287,26 @@ export default function Admin() {
             {/* Add Route Form */}
             {showAddRoute && (
               <div className="border-b border-gray-200 p-6 bg-gray-50">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Route</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t('admin.addNewRoute')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="form-group">
-                    <label className="form-label">Route Name</label>
+                    <label className="form-label">{t('admin.routeName')}</label>
                     <input
                       type="text"
                       value={newRoute.name}
                       onChange={(e) => setNewRoute(prev => ({ ...prev, name: e.target.value }))}
                       className="form-input"
-                      placeholder="e.g., Route 42 - Thika Road"
+                      placeholder={t('admin.routeNamePlaceholder')}
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Description</label>
+                    <label className="form-label">{t('admin.description')}</label>
                     <input
                       type="text"
                       value={newRoute.description}
                       onChange={(e) => setNewRoute(prev => ({ ...prev, description: e.target.value }))}
                       className="form-input"
-                      placeholder="Route description"
+                      placeholder={t('admin.descriptionPlaceholder')}
                     />
                   </div>
                 </div>
@@ -315,13 +315,13 @@ export default function Admin() {
                     onClick={() => setShowAddRoute(false)}
                     className="btn btn-outline"
                   >
-                    Cancel
+                    {t('admin.cancel')}
                   </button>
                   <button
                     onClick={handleAddRoute}
                     className="btn btn-primary"
                   >
-                    Add Route
+                    {t('admin.addRoute')}
                   </button>
                 </div>
               </div>
@@ -333,22 +333,22 @@ export default function Admin() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Route
+                      {t('admin.route')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Reliability
+                      {t('admin.reliability')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Safety
+                      {t('admin.safety')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Reports
+                      {t('admin.reports')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      {t('admin.status')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      {t('admin.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -391,7 +391,7 @@ export default function Admin() {
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {route.status || 'active'}
+                          {t(`admin.status.${route.status || 'active'}`)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -406,7 +406,7 @@ export default function Admin() {
                             onClick={() => handleToggleStatus(route._id || route.id)}
                             className="text-green-600 hover:text-green-900"
                           >
-                            {(route.status || 'active') === 'active' ? 'Deactivate' : 'Activate'}
+                            {(route.status || 'active') === 'active' ? t('admin.deactivate') : t('admin.activate')}
                           </button>
                           <button 
                             onClick={() => handleDeleteRoute(route._id || route.id)}

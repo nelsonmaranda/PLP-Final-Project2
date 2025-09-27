@@ -190,6 +190,27 @@ export default function UserManagement() {
     }
   }
 
+  const translateStatus = (status: string) => {
+    switch (status) {
+      case 'active': return t('userManagement.status.active')
+      case 'pending': return t('userManagement.status.pending')
+      case 'suspended': return t('userManagement.status.suspended')
+      case 'rejected': return t('userManagement.status.rejected')
+      default: return status
+    }
+  }
+
+  const translateRole = (role: string) => {
+    switch (role) {
+      case 'admin': return t('userManagement.roles.admin')
+      case 'moderator': return t('userManagement.roles.moderator')
+      case 'sacco': return t('userManagement.roles.sacco')
+      case 'authority': return t('userManagement.roles.authority')
+      case 'user': return t('userManagement.roles.user')
+      default: return role
+    }
+  }
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -226,14 +247,14 @@ export default function UserManagement() {
               className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Refresh</span>
+              <span>{t('userManagement.refresh')}</span>
             </button>
             <button
               onClick={() => setShowCreate(true)}
               className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
             >
               <Plus className="w-4 h-4" />
-              <span>Add User</span>
+              <span>{t('userManagement.addUser')}</span>
             </button>
             </div>
           </div>
@@ -245,45 +266,45 @@ export default function UserManagement() {
         <div className="bg-white p-6 rounded-lg shadow mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('userManagement.search')}</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search users..."
+                  placeholder={t('userManagement.searchPlaceholder')}
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('userManagement.status')}</label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="suspended">Suspended</option>
-                <option value="rejected">Rejected</option>
+                <option value="all">{t('userManagement.filters.allStatus')}</option>
+                <option value="active">{t('userManagement.status.active')}</option>
+                <option value="pending">{t('userManagement.status.pending')}</option>
+                <option value="suspended">{t('userManagement.status.suspended')}</option>
+                <option value="rejected">{t('userManagement.status.rejected')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('userManagement.role')}</label>
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Roles</option>
-                <option value="user">User</option>
-                <option value="sacco">SACCO</option>
-                <option value="authority">Authority</option>
-                <option value="moderator">Moderator</option>
-                <option value="admin">Admin</option>
+                <option value="all">{t('userManagement.filters.allRoles')}</option>
+                <option value="user">{t('userManagement.roles.user')}</option>
+                <option value="sacco">{t('userManagement.roles.sacco')}</option>
+                <option value="authority">{t('userManagement.roles.authority')}</option>
+                <option value="moderator">{t('userManagement.roles.moderator')}</option>
+                <option value="admin">{t('userManagement.roles.admin')}</option>
               </select>
             </div>
           </div>
@@ -297,10 +318,10 @@ export default function UserManagement() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userManagement.table.displayName')}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userManagement.table.role')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userManagement.requestedRole')}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userManagement.table.status')}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organization</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userManagement.organization')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userManagement.created')}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('userManagement.table.actions')}</th>
                 </tr>
               </thead>
@@ -321,14 +342,14 @@ export default function UserManagement() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {getRoleIcon(user.role)}
-                        <span className="ml-2 text-sm text-gray-900 capitalize">{user.role}</span>
+                        <span className="ml-2 text-sm text-gray-900">{translateRole(user.role)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.requestedRole ? (
                         <div className="flex items-center">
                           {getRoleIcon(user.requestedRole)}
-                          <span className="ml-2 text-sm text-gray-900 capitalize">{user.requestedRole}</span>
+                          <span className="ml-2 text-sm text-gray-900">{translateRole(user.requestedRole)}</span>
                         </div>
                       ) : (
                         <span className="text-sm text-gray-500">-</span>
@@ -337,7 +358,7 @@ export default function UserManagement() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
                         {getStatusIcon(user.status)}
-                        <span className="ml-1 capitalize">{user.status}</span>
+                        <span className="ml-1">{translateStatus(user.status)}</span>
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -359,7 +380,7 @@ export default function UserManagement() {
                             ) : (
                               <UserCheck className="w-3 h-3" />
                             )}
-                            <span className="ml-1">Approve</span>
+                            <span className="ml-1">{t('userManagement.actions.approve')}</span>
                           </button>
                           <button
                             onClick={() => {
@@ -370,7 +391,7 @@ export default function UserManagement() {
                             className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
                           >
                             <UserX className="w-3 h-3" />
-                            <span className="ml-1">Reject</span>
+                            <span className="ml-1">{t('userManagement.actions.reject')}</span>
                           </button>
                         </div>
                       )}
@@ -381,7 +402,7 @@ export default function UserManagement() {
                         }}
                         className="inline-flex items-center px-3 py-1 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ml-2"
                       >
-                        <Pencil className="w-3 h-3 mr-1" /> Edit
+                        <Pencil className="w-3 h-3 mr-1" /> {t('userManagement.actions.edit')}
                       </button>
                     </td>
                   </tr>
@@ -394,8 +415,8 @@ export default function UserManagement() {
         {filteredUsers.length === 0 && (
           <div className="text-center py-12">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-            <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('userManagement.noUsers')}</h3>
+            <p className="text-gray-500">{t('userManagement.noUsersMessage')}</p>
           </div>
         )}
       </div>
@@ -404,28 +425,28 @@ export default function UserManagement() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-4">Add User</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('userManagement.modals.addUser.title')}</h3>
             <div className="space-y-3">
-              <input className="form-input w-full" placeholder="Full name" value={createForm.displayName} onChange={(e)=>setCreateForm({...createForm, displayName: e.target.value})} />
-              <input className="form-input w-full" placeholder="Email" value={createForm.email} onChange={(e)=>setCreateForm({...createForm, email: e.target.value})} />
-              <input className="form-input w-full" placeholder="Temporary password" type="password" value={createForm.password} onChange={(e)=>setCreateForm({...createForm, password: e.target.value})} />
+              <input className="form-input w-full" placeholder={t('userManagement.modals.addUser.fullName')} value={createForm.displayName} onChange={(e)=>setCreateForm({...createForm, displayName: e.target.value})} />
+              <input className="form-input w-full" placeholder={t('userManagement.modals.addUser.email')} value={createForm.email} onChange={(e)=>setCreateForm({...createForm, email: e.target.value})} />
+              <input className="form-input w-full" placeholder={t('userManagement.modals.addUser.password')} type="password" value={createForm.password} onChange={(e)=>setCreateForm({...createForm, password: e.target.value})} />
               <select className="form-select w-full" value={createForm.role} onChange={(e)=>setCreateForm({...createForm, role: e.target.value})}>
-                <option value="user">User</option>
-                <option value="sacco">SACCO</option>
-                <option value="authority">Authority</option>
-                <option value="moderator">Moderator</option>
-                <option value="admin">Admin</option>
+                <option value="user">{t('userManagement.roles.user')}</option>
+                <option value="sacco">{t('userManagement.roles.sacco')}</option>
+                <option value="authority">{t('userManagement.roles.authority')}</option>
+                <option value="moderator">{t('userManagement.roles.moderator')}</option>
+                <option value="admin">{t('userManagement.roles.admin')}</option>
               </select>
-              <input className="form-input w-full" placeholder="Organization (optional)" value={createForm.organization} onChange={(e)=>setCreateForm({...createForm, organization: e.target.value})} />
+              <input className="form-input w-full" placeholder={t('userManagement.modals.addUser.organization')} value={createForm.organization} onChange={(e)=>setCreateForm({...createForm, organization: e.target.value})} />
             </div>
             <div className="mt-5 flex justify-end gap-2">
-              <button className="btn btn-outline" onClick={()=>setShowCreate(false)}>Cancel</button>
+              <button className="btn btn-outline" onClick={()=>setShowCreate(false)}>{t('userManagement.modals.addUser.cancel')}</button>
               <button className="btn btn-primary" onClick={async ()=>{
                 try {
                   const resp = await apiService.adminCreateUser(createForm as any)
                   if (resp.success) { setShowCreate(false); setCreateForm({ displayName:'', email:'', password:'', role:'user', organization:'' }); loadUsers() }
-                } catch (e) { alert('Failed to create user') }
-              }}>Create</button>
+                } catch (e) { alert(t('userManagement.messages.createError')) }
+              }}>{t('userManagement.modals.addUser.create')}</button>
             </div>
           </div>
         </div>
@@ -435,33 +456,33 @@ export default function UserManagement() {
       {editUserId && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-4">Edit User</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('userManagement.modals.editUser.title')}</h3>
             <div className="space-y-3">
-              <input className="form-input w-full" placeholder="Full name" value={editForm.displayName} onChange={(e)=>setEditForm({...editForm, displayName: e.target.value})} />
-              <input className="form-input w-full" placeholder="Email" value={editForm.email} onChange={(e)=>setEditForm({...editForm, email: e.target.value})} />
+              <input className="form-input w-full" placeholder={t('userManagement.modals.editUser.fullName')} value={editForm.displayName} onChange={(e)=>setEditForm({...editForm, displayName: e.target.value})} />
+              <input className="form-input w-full" placeholder={t('userManagement.modals.editUser.email')} value={editForm.email} onChange={(e)=>setEditForm({...editForm, email: e.target.value})} />
               <select className="form-select w-full" value={editForm.role} onChange={(e)=>setEditForm({...editForm, role: e.target.value})}>
-                <option value="user">User</option>
-                <option value="sacco">SACCO</option>
-                <option value="authority">Authority</option>
-                <option value="moderator">Moderator</option>
-                <option value="admin">Admin</option>
+                <option value="user">{t('userManagement.roles.user')}</option>
+                <option value="sacco">{t('userManagement.roles.sacco')}</option>
+                <option value="authority">{t('userManagement.roles.authority')}</option>
+                <option value="moderator">{t('userManagement.roles.moderator')}</option>
+                <option value="admin">{t('userManagement.roles.admin')}</option>
               </select>
               <select className="form-select w-full" value={editForm.status} onChange={(e)=>setEditForm({...editForm, status: e.target.value})}>
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="suspended">Suspended</option>
-                <option value="rejected">Rejected</option>
+                <option value="active">{t('userManagement.status.active')}</option>
+                <option value="pending">{t('userManagement.status.pending')}</option>
+                <option value="suspended">{t('userManagement.status.suspended')}</option>
+                <option value="rejected">{t('userManagement.status.rejected')}</option>
               </select>
-              <input className="form-input w-full" placeholder="Organization (optional)" value={editForm.organization} onChange={(e)=>setEditForm({...editForm, organization: e.target.value})} />
+              <input className="form-input w-full" placeholder={t('userManagement.modals.editUser.organization')} value={editForm.organization} onChange={(e)=>setEditForm({...editForm, organization: e.target.value})} />
             </div>
             <div className="mt-5 flex justify-end gap-2">
-              <button className="btn btn-outline" onClick={()=>setEditUserId(null)}>Cancel</button>
+              <button className="btn btn-outline" onClick={()=>setEditUserId(null)}>{t('userManagement.modals.editUser.cancel')}</button>
               <button className="btn btn-primary" onClick={async ()=>{
                 try {
                   const resp = await apiService.adminUpdateUser(editUserId!, editForm as any)
                   if (resp.success) { setEditUserId(null); loadUsers() }
-                } catch (e) { alert('Failed to update user') }
-              }}>Save</button>
+                } catch (e) { alert(t('userManagement.messages.updateError')) }
+              }}>{t('userManagement.modals.editUser.save')}</button>
             </div>
           </div>
         </div>
