@@ -106,12 +106,18 @@ export default function Dashboard() {
 
       // Set favorite routes
       if (favoritesResponse.success && favoritesResponse.data) {
+        console.log('Favorite routes loaded:', favoritesResponse.data.routes)
         setFavoriteRoutes(favoritesResponse.data.routes)
+      } else {
+        console.log('Failed to load favorite routes:', favoritesResponse)
       }
 
       // Set recent reports
       if (reportsResponse.success && reportsResponse.data) {
+        console.log('Recent reports loaded:', reportsResponse.data.reports)
         setRecentReports(reportsResponse.data.reports.slice(0, 5))
+      } else {
+        console.log('Failed to load recent reports:', reportsResponse)
       }
 
     } catch (error) {
@@ -393,10 +399,27 @@ export default function Dashboard() {
             {/* Favorite Routes */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.favoriteRoutes')}</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.favoriteRoutes')}</h3>
+                  <button
+                    onClick={loadDashboardData}
+                    disabled={isLoading}
+                    className="flex items-center space-x-1 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50"
+                  >
+                    <svg className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>{t('dashboard.refresh')}</span>
+                  </button>
+                </div>
               </div>
               <div className="p-6">
-                {favoriteRoutes.length === 0 ? (
+                {isLoading ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-500">{t('dashboard.loading')}</p>
+                  </div>
+                ) : favoriteRoutes.length === 0 ? (
                   <div className="text-center py-4">
                     <Star className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500 mb-3">{t('dashboard.noFavorites')}</p>
@@ -430,10 +453,27 @@ export default function Dashboard() {
             {/* Recent Reports */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.recentReports')}</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.recentReports')}</h3>
+                  <button
+                    onClick={loadDashboardData}
+                    disabled={isLoading}
+                    className="flex items-center space-x-1 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50"
+                  >
+                    <svg className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>{t('dashboard.refresh')}</span>
+                  </button>
+                </div>
               </div>
               <div className="p-6">
-                {recentReports.length === 0 ? (
+                {isLoading ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-500">{t('dashboard.loading')}</p>
+                  </div>
+                ) : recentReports.length === 0 ? (
                   <div className="text-center py-4">
                     <BarChart3 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500 mb-3">{t('dashboard.noReports')}</p>

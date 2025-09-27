@@ -543,6 +543,7 @@ export interface LanguageStrings {
     routeLabel: string
     viewLabel: string
     submitReportBtn: string
+    refresh: string
     quickActions: string
     quickViewMap: string
     quickSubmitReport: string
