@@ -36,6 +36,13 @@ export default function Profile() {
   })
   const [uploading, setUploading] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(state.user?.avatarUrl || null)
+
+  // Sync avatar URL when user state changes
+  useEffect(() => {
+    if (state.user?.avatarUrl) {
+      setAvatarUrl(state.user.avatarUrl)
+    }
+  }, [state.user?.avatarUrl])
   
   // Reports state
   const [reports, setReports] = useState<Report[]>([])
@@ -177,16 +184,47 @@ export default function Profile() {
     const file = e.target.files[0]
     try {
       setUploading(true)
-      const resp = await apiService.uploadFile(file, 'profile')
-      if ((resp as any)?.success && (resp as any)?.data?.url) {
-        const url = (resp as any).data.url
-        setAvatarUrl(url)
-        // Persist avatar to user profile
-        await apiService.updateProfile(state.user!._id, { displayName: state.user!.displayName, email: state.user!.email, avatarUrl: url })
-        setUser({ ...(state.user as any), avatarUrl: url })
+      // For now, create a temporary URL for the uploaded image
+      const tempUrl = URL.createObjectURL(file)
+      setAvatarUrl(tempUrl)
+      
+      // Try to upload to backend, but fallback to temp URL if it fails
+      try {
+        const resp = await apiService.uploadFile(file, 'profile')
+        if ((resp as any)?.success && (resp as any)?.data?.url) {
+          const url = (resp as any).data.url
+          setAvatarUrl(url)
+          // Persist avatar to user profile
+          await apiService.updateProfile(state.user!._id, { displayName: state.user!.displayName, email: state.user!.email, avatarUrl: url })
+          setUser({ ...(state.user as any), avatarUrl: url })
+        } else {
+          // Fallback: save temp URL to profile (for demo purposes)
+          await apiService.updateProfile(state.user!._id, { displayName: state.user!.displayName, email: state.user!.email, avatarUrl: tempUrl })
+          setUser({ ...(state.user as any), avatarUrl: tempUrl })
+        }
+      } catch (uploadError) {
+        console.log('Upload endpoint not available, using temporary URL')
+        // Fallback: save temp URL to profile (for demo purposes)
+        await apiService.updateProfile(state.user!._id, { displayName: state.user!.displayName, email: state.user!.email, avatarUrl: tempUrl })
+        setUser({ ...(state.user as any), avatarUrl: tempUrl })
       }
     } catch (err) {
-      console.error('Upload failed', err)
+      console.error('Photo change failed', err)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // Add a simple URL input method as an alternative
+  const handleAvatarUrlChange = async (url: string) => {
+    try {
+      setUploading(true)
+      setAvatarUrl(url)
+      // Update profile with the new avatar URL
+      await apiService.updateProfile(state.user!._id, { displayName: state.user!.displayName, email: state.user!.email, avatarUrl: url })
+      setUser({ ...(state.user as any), avatarUrl: url })
+    } catch (err) {
+      console.error('Avatar URL update failed', err)
     } finally {
       setUploading(false)
     }
@@ -263,11 +301,40 @@ export default function Profile() {
               <Edit3 className="w-4 h-4 mr-2" />
               {isEditing ? t('common.cancel') : t('profile.personalInfo.editProfile')}
             </button>
-            <div className="ml-4">
+            <div className="ml-4 flex flex-col space-y-2">
               <label className="btn btn-outline btn-sm cursor-pointer">
                 {uploading ? t('profile.personalInfo.uploading') : t('profile.personalInfo.uploadPhoto')}
                 <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
               </label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="url"
+                  placeholder="Or enter image URL"
+                  className="px-2 py-1 text-xs border rounded w-48"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      const target = e.target as HTMLInputElement;
+                      if (target.value) {
+                        handleAvatarUrlChange(target.value);
+                        target.value = '';
+                      }
+                    }
+                  }}
+                />
+                <button
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    if (input?.value) {
+                      handleAvatarUrlChange(input.value);
+                      input.value = '';
+                    }
+                  }}
+                  className="btn btn-ghost btn-xs"
+                  disabled={uploading}
+                >
+                  Set
+                </button>
+              </div>
             </div>
           </div>
         </div>

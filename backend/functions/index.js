@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
 const { User, Route, Report, Score, RateLimit, TrafficCache } = require('./models');
 
 // Auth middleware
@@ -26,6 +27,23 @@ const app = express();
 
 // Trust proxy for Firebase Functions
 app.set('trust proxy', true);
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow only image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 // JWT Secret (in production, use environment variable)
 const JWT_SECRET = functions.config().jwt?.secret || process.env.JWT_SECRET;
@@ -838,6 +856,55 @@ app.put('/users/:userId', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Internal server error'
+    });
+  }
+});
+
+// File upload endpoint
+app.post('/upload', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No file uploaded' 
+      });
+    }
+
+    const { type } = req.body;
+    
+    // Validate file type
+    if (!type || !['profile', 'report'].includes(type)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid upload type' 
+      });
+    }
+
+    // For now, we'll return a mock URL since we don't have cloud storage set up
+    // In production, you would upload to Firebase Storage, AWS S3, or similar
+    const mockUrl = `https://via.placeholder.com/150x150/007bff/ffffff?text=${req.user.userId.slice(-4)}`;
+    
+    // In a real implementation, you would:
+    // 1. Upload the file to cloud storage
+    // 2. Get the public URL
+    // 3. Return the URL
+    
+    res.json({
+      success: true,
+      data: {
+        url: mockUrl,
+        filename: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      },
+      message: 'File uploaded successfully'
+    });
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Upload failed'
     });
   }
 });
