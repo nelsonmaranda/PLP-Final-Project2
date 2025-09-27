@@ -60,7 +60,7 @@ export interface RouteWithScores extends Route {
 export interface Report {
   _id: string
   userId: string
-  routeId: string
+  routeId: string | Route
   reportType: string
   description?: string
   location: {
@@ -72,6 +72,10 @@ export interface Report {
   isAnonymous: boolean
   createdAt: string
   updatedAt: string
+}
+
+export interface PopulatedReport extends Omit<Report, 'routeId'> {
+  routeId: Route
 }
 
 export interface CreateReportData {
@@ -865,7 +869,9 @@ export interface LanguageStrings {
     updateError: string
     myTripReports: string
     favoriteRoutes: string
+    ratedRoutes: string
     noFavoriteRoutes: string
+    noRatedRoutes: string
     exploreRoutes: string
     yourAnalytics: string
     totalReports: string
@@ -878,6 +884,11 @@ export interface LanguageStrings {
     thisMonth: string
     avgRating: string
     refresh: string
+    debugUser: string
+    debugReports: string
+    fixReports: string
+    fixScores: string
+    fixRateLimits: string
     tabs: {
       personal: string
       security: string
@@ -894,6 +905,14 @@ export interface LanguageStrings {
       editProfile: string
       uploading: string
       saveChanges: string
+      orEnterImageUrl: string
+      set: string
+      deletePhoto: string
+      admin: string
+      rated: string
+      youRatedThisRoute: string
+      view: string
+      mostReportedRoute: string
     }
     security: {
       changePassword: string

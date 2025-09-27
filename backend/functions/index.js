@@ -473,6 +473,7 @@ app.post('/reports', authMiddleware, async (req, res) => {
     // Generate device fingerprint from IP and user agent
     const deviceFingerprint = `${req.ip || 'unknown'}-${req.get('User-Agent') || 'unknown'}`.slice(0, 150);
     
+    console.log('Creating report for userId:', req.user.userId);
     const report = await Report.create({
       routeId,
       reportType,
@@ -491,6 +492,7 @@ app.post('/reports', authMiddleware, async (req, res) => {
       fare: typeof fare === 'number' ? fare : undefined,
       deviceFingerprint
     });
+    console.log('Report created with ID:', report._id, 'userId:', report.userId);
     return res.status(201).json({ success: true, data: report, message: 'Report submitted successfully' });
   } catch (error) {
     console.error('Error creating report:', error);
@@ -589,7 +591,9 @@ const requireRoles = (roles = []) => {
 app.get('/auth/profile', authMiddleware, async (req, res) => {
   try {
     if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
-    const user = await User.findById(req.user.userId);
+    console.log('Getting profile for userId:', req.user.userId);
+    const user = await User.findById(new mongoose.Types.ObjectId(req.user.userId));
+    console.log('Found user for profile:', user ? 'yes' : 'no', 'avatarUrl:', user?.avatarUrl);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     return res.json({ 
       success: true, 
@@ -833,7 +837,7 @@ app.put('/users/:userId', async (req, res) => {
 
     // Update user
     const updatedUser = await User.findByIdAndUpdate(
-      userId,
+      new mongoose.Types.ObjectId(userId),
       { displayName, email, avatarUrl: avatarUrl || undefined, updatedAt: new Date() },
       { new: true, runValidators: true }
     );
@@ -860,51 +864,425 @@ app.put('/users/:userId', async (req, res) => {
   }
 });
 
-// File upload endpoint
-app.post('/upload', authMiddleware, upload.single('file'), async (req, res) => {
+// File upload endpoint - NO MULTER VERSION
+app.post('/upload', authMiddleware, async (req, res) => {
   try {
-    if (!req.file) {
+    console.log('Upload endpoint called - NO MULTER VERSION');
+    console.log('Request body:', req.body);
+    console.log('User:', req.user ? 'Authenticated' : 'Not authenticated');
+    console.log('Database connected:', isDBConnected);
+    
+    const { type, imageData, filename, mimetype } = req.body;
+    console.log('Upload type:', type);
+    console.log('Has imageData:', !!imageData);
+    console.log('Filename:', filename);
+    console.log('Mimetype:', mimetype);
+    
+    if (!imageData) {
+      console.log('No image data provided');
       return res.status(400).json({ 
         success: false, 
-        message: 'No file uploaded' 
+        message: 'No image data provided' 
       });
     }
 
-    const { type } = req.body;
-    
     // Validate file type
     if (!type || !['profile', 'report'].includes(type)) {
+      console.log('Invalid upload type:', type);
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid upload type' 
       });
     }
 
-    // For now, we'll return a mock URL since we don't have cloud storage set up
-    // In production, you would upload to Firebase Storage, AWS S3, or similar
-    const mockUrl = `https://via.placeholder.com/150x150/007bff/ffffff?text=${req.user.userId.slice(-4)}`;
+    if (!isDBConnected) {
+      console.log('Database not connected');
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Database unavailable' 
+      });
+    }
+
+    const userId = req.user.userId;
+    console.log('User ID:', userId);
     
-    // In a real implementation, you would:
-    // 1. Upload the file to cloud storage
-    // 2. Get the public URL
-    // 3. Return the URL
-    
-    res.json({
-      success: true,
-      data: {
-        url: mockUrl,
-        filename: req.file.originalname,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-      },
-      message: 'File uploaded successfully'
-    });
+    if (type === 'profile') {
+      console.log('Processing profile photo upload - NO MULTER');
+      
+      // Use the base64 data directly from the request
+      const dataUrl = imageData; // imageData should already be a data URL
+      console.log('Using provided imageData, length:', dataUrl.length);
+      
+      // Update user's avatarUrl
+      console.log('Updating user avatarUrl');
+      await User.findByIdAndUpdate(
+        new mongoose.Types.ObjectId(userId),
+        { avatarUrl: dataUrl }
+      );
+      console.log('User avatarUrl updated');
+
+      res.json({
+        success: true,
+        data: {
+          url: dataUrl,
+          filename: filename || 'profile_photo',
+          size: dataUrl.length,
+          mimetype: mimetype || 'image/jpeg'
+        },
+        message: 'Profile photo uploaded successfully (no multer)'
+      });
+
+    } else if (type === 'report') {
+      // For report images, we can use a simpler approach
+      const timestamp = Date.now();
+      const filename = `report_${userId}_${timestamp}.${req.file.originalname.split('.').pop()}`;
+      
+      const base64Data = req.file.buffer.toString('base64');
+      const dataUrl = `data:${req.file.mimetype};base64,${base64Data}`;
+      
+      res.json({
+        success: true,
+        data: {
+          url: dataUrl,
+          filename: filename,
+          size: req.file.size,
+          mimetype: req.file.mimetype
+        },
+        message: 'Report image uploaded successfully'
+      });
+    }
 
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({
       success: false,
       message: 'Upload failed'
+    });
+  }
+});
+
+
+
+// Debug endpoint to list all registered routes
+app.get('/debug-routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      routes.push({
+        path: middleware.route.path,
+        methods: Object.keys(middleware.route.methods)
+      });
+    }
+  });
+  res.json({ success: true, routes: routes });
+});
+
+// Get user's profile photo
+app.get('/users/:userId/photo', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { userId } = req.params;
+    
+    // Ensure user can only access their own photo
+    if (req.user.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // TEMPORARILY DISABLED - ProfilePhoto model not available
+    // Get the active profile photo for this user
+    // console.log('Searching for profile photo for userId:', userId);
+    // const profilePhoto = await ProfilePhoto.findOne({
+    //   userId: new mongoose.Types.ObjectId(userId),
+    //   isActive: true
+    // }).sort({ uploadedAt: -1 });
+
+    // console.log('Found profile photo:', profilePhoto ? 'Yes' : 'No');
+    // if (profilePhoto) {
+    //   console.log('Photo details:', {
+    //     id: profilePhoto._id,
+    //     filename: profilePhoto.filename,
+    //     size: profilePhoto.size,
+    //     urlLength: profilePhoto.url ? profilePhoto.url.length : 0
+    //   });
+    // }
+
+    // if (!profilePhoto) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: 'No profile photo found'
+    //   });
+    // }
+
+    // res.json({
+    //   success: true,
+    //   data: {
+    //     url: profilePhoto.url,
+    //     filename: profilePhoto.filename,
+    //     originalName: profilePhoto.originalName,
+    //     size: profilePhoto.size,
+    //     mimetype: profilePhoto.mimetype,
+    //     uploadedAt: profilePhoto.uploadedAt
+    //   }
+    // });
+
+    // TEMPORARY: Return user's avatarUrl from User model
+    const user = await User.findById(new mongoose.Types.ObjectId(userId));
+    if (!user || !user.avatarUrl) {
+      return res.status(404).json({
+        success: false,
+        message: 'No profile photo found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        url: user.avatarUrl,
+        filename: 'profile_photo',
+        originalName: 'profile_photo',
+        size: user.avatarUrl.length,
+        mimetype: 'image/jpeg',
+        uploadedAt: new Date()
+      }
+    });
+
+  } catch (error) {
+    console.error('Get profile photo error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get profile photo'
+    });
+  }
+});
+
+// Delete user's profile photo
+app.delete('/users/:userId/photo', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const { userId } = req.params;
+    
+    // Ensure user can only delete their own photo
+    if (req.user.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // TEMPORARILY DISABLED - ProfilePhoto model not available
+    // Soft delete all active profile photos for this user
+    // const result = await ProfilePhoto.updateMany(
+    //   { userId: new mongoose.Types.ObjectId(userId), isActive: true },
+    //   { isActive: false, updatedAt: new Date() }
+    // );
+
+    // Clear user's avatarUrl
+    await User.findByIdAndUpdate(
+      new mongoose.Types.ObjectId(userId),
+      { avatarUrl: null }
+    );
+
+    res.json({
+      success: true,
+      message: 'Profile photo deleted successfully',
+      data: { deletedCount: 1 }
+    });
+
+  } catch (error) {
+    console.error('Delete profile photo error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete profile photo'
+    });
+  }
+});
+
+// Debug endpoint to check all reports and their userIds
+app.get('/debug/reports', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    console.log('Debug: Getting all reports for user:', req.user.userId);
+    
+    // Get all reports (not just user's reports)
+    const allReports = await Report.find({}).select('_id userId reportType createdAt').limit(20);
+    console.log('Debug: Found total reports:', allReports.length);
+    
+    // Get user's reports specifically
+    const userReports = await Report.find({ userId: new mongoose.Types.ObjectId(req.user.userId) }).select('_id userId reportType createdAt');
+    console.log('Debug: Found user reports:', userReports.length);
+    
+    // Get reports with null userId
+    const anonymousReports = await Report.find({ userId: null }).select('_id userId reportType createdAt').limit(10);
+    console.log('Debug: Found anonymous reports:', anonymousReports.length);
+
+    res.json({
+      success: true,
+      data: {
+        currentUserId: req.user.userId,
+        totalReports: allReports.length,
+        userReports: userReports.length,
+        anonymousReports: anonymousReports.length,
+        sampleReports: allReports,
+        userReportsList: userReports,
+        anonymousReportsList: anonymousReports
+      }
+    });
+
+  } catch (error) {
+    console.error('Debug reports error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Debug failed'
+    });
+  }
+});
+
+// Fix reports - add userId to reports that don't have it
+app.post('/debug/fix-reports', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const userId = req.user.userId;
+    console.log('Fixing reports for userId:', userId);
+    
+    // Find all reports without userId
+    const reportsWithoutUserId = await Report.find({ userId: { $exists: false } });
+    console.log('Found reports without userId:', reportsWithoutUserId.length);
+    
+    if (reportsWithoutUserId.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No reports need fixing',
+        data: { updatedCount: 0 }
+      });
+    }
+    
+    // Update all reports without userId to have the current user's ID
+    const updateResult = await Report.updateMany(
+      { userId: { $exists: false } },
+      { $set: { userId: new mongoose.Types.ObjectId(userId) } }
+    );
+    
+    console.log('Updated reports:', updateResult.modifiedCount);
+    
+    res.json({
+      success: true,
+      message: `Updated ${updateResult.modifiedCount} reports with your user ID`,
+      data: { 
+        updatedCount: updateResult.modifiedCount,
+        totalReports: reportsWithoutUserId.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Fix reports error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fix reports'
+    });
+  }
+});
+
+// Fix scores - add userId to scores that don't have it
+app.post('/debug/fix-scores', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const userId = req.user.userId;
+    console.log('Fixing scores for userId:', userId);
+    
+    // Find all scores without userId
+    const scoresWithoutUserId = await Score.find({ userId: { $exists: false } });
+    console.log('Found scores without userId:', scoresWithoutUserId.length);
+    
+    if (scoresWithoutUserId.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No scores need fixing',
+        data: { updatedCount: 0 }
+      });
+    }
+    
+    // Update all scores without userId to have the current user's ID
+    const updateResult = await Score.updateMany(
+      { userId: { $exists: false } },
+      { $set: { userId: new mongoose.Types.ObjectId(userId) } }
+    );
+    
+    console.log('Updated scores:', updateResult.modifiedCount);
+    
+    res.json({
+      success: true,
+      message: `Updated ${updateResult.modifiedCount} scores with your user ID`,
+      data: { 
+        updatedCount: updateResult.modifiedCount,
+        totalScores: scoresWithoutUserId.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Fix scores error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fix scores'
+    });
+  }
+});
+
+// Fix rate limits - add userId to rate limits that don't have it
+app.post('/debug/fix-ratelimits', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) {
+      return res.status(503).json({ success: false, message: 'Database unavailable' });
+    }
+
+    const userId = req.user.userId;
+    console.log('Fixing rate limits for userId:', userId);
+    
+    // Find all rate limits without userId
+    const rateLimitsWithoutUserId = await RateLimit.find({ userId: { $exists: false } });
+    console.log('Found rate limits without userId:', rateLimitsWithoutUserId.length);
+    
+    if (rateLimitsWithoutUserId.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No rate limits need fixing',
+        data: { updatedCount: 0 }
+      });
+    }
+    
+    // Update all rate limits without userId to have the current user's ID
+    const updateResult = await RateLimit.updateMany(
+      { userId: { $exists: false } },
+      { $set: { userId: new mongoose.Types.ObjectId(userId) } }
+    );
+    
+    console.log('Updated rate limits:', updateResult.modifiedCount);
+    
+    res.json({
+      success: true,
+      message: `Updated ${updateResult.modifiedCount} rate limits with your user ID`,
+      data: { 
+        updatedCount: updateResult.modifiedCount,
+        totalRateLimits: rateLimitsWithoutUserId.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Fix rate limits error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fix rate limits'
     });
   }
 });
@@ -917,9 +1295,11 @@ app.get('/users/:userId/reports', authMiddleware, async (req, res) => {
     }
 
     const { userId } = req.params;
+    console.log('Getting reports for userId:', userId, 'from token userId:', req.user.userId);
     
     // Ensure user can only access their own reports
     if (req.user.userId !== userId) {
+      console.log('Access denied: userId mismatch');
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
     
@@ -928,13 +1308,14 @@ app.get('/users/:userId/reports', authMiddleware, async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sortOrder = order === 'desc' ? -1 : 1;
 
-    const reports = await Report.find({ userId })
+    const reports = await Report.find({ userId: new mongoose.Types.ObjectId(userId) })
       .populate('routeId', 'name routeNumber operator')
       .sort({ [sort]: sortOrder })
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await Report.countDocuments({ userId });
+    const total = await Report.countDocuments({ userId: new mongoose.Types.ObjectId(userId) });
+    console.log('Found reports:', reports.length, 'total:', total);
 
     res.json({
       success: true,
@@ -966,24 +1347,27 @@ app.get('/users/:userId/favorites', authMiddleware, async (req, res) => {
     }
 
     const { userId } = req.params;
+    console.log('Getting favorites for userId:', userId, 'from token userId:', req.user.userId);
     
     // Ensure user can only access their own favorites
     if (req.user.userId !== userId) {
+      console.log('Access denied: userId mismatch');
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
     
-    const user = await User.findById(userId).populate('savedRoutes');
+    // Get routes that the user has rated (from Score collection)
+    const userScores = await Score.find({ userId: new mongoose.Types.ObjectId(userId) })
+      .populate('routeId', 'name routeNumber operator stops')
+      .sort({ createdAt: -1 });
     
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
+    console.log('Found user scores:', userScores.length);
+    
+    // Extract unique routes from scores
+    const ratedRoutes = userScores.map(score => score.routeId).filter(route => route);
+    
     res.json({
       success: true,
-      data: { routes: user.savedRoutes || [] }
+      data: { routes: ratedRoutes }
     });
 
   } catch (error) {
@@ -1029,8 +1413,8 @@ app.post('/users/:userId/favorites', authMiddleware, async (req, res) => {
 
     // Add to user's saved routes
     const user = await User.findByIdAndUpdate(
-      userId,
-      { $addToSet: { savedRoutes: routeId } },
+      new mongoose.Types.ObjectId(userId),
+      { $addToSet: { savedRoutes: new mongoose.Types.ObjectId(routeId) } },
       { new: true }
     );
 
@@ -1071,8 +1455,8 @@ app.delete('/users/:userId/favorites/:routeId', authMiddleware, async (req, res)
     }
 
     const user = await User.findByIdAndUpdate(
-      userId,
-      { $pull: { savedRoutes: routeId } },
+      new mongoose.Types.ObjectId(userId),
+      { $pull: { savedRoutes: new mongoose.Types.ObjectId(routeId) } },
       { new: true }
     );
 
@@ -1106,15 +1490,19 @@ app.get('/users/:userId/analytics', authMiddleware, async (req, res) => {
     }
 
     const { userId } = req.params;
+    console.log('Analytics: Requested userId:', userId, 'Token userId:', req.user.userId);
     
     // Ensure user can only access their own analytics
     if (req.user.userId !== userId) {
+      console.log('Analytics: Access denied - userId mismatch');
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
     // Get user reports
-    const reports = await Report.find({ userId });
+    console.log('Analytics: Searching for reports with userId:', userId);
+    const reports = await Report.find({ userId: new mongoose.Types.ObjectId(userId) });
     const totalReports = reports.length;
+    console.log('Analytics: Found reports:', totalReports);
 
     // Reports this month
     const startOfMonth = new Date();
@@ -1122,20 +1510,20 @@ app.get('/users/:userId/analytics', authMiddleware, async (req, res) => {
     startOfMonth.setHours(0, 0, 0, 0);
     
     const reportsThisMonth = await Report.countDocuments({
-      userId,
+      userId: new mongoose.Types.ObjectId(userId),
       createdAt: { $gte: startOfMonth }
     });
 
-    // Get user's favorite routes count
-    const user = await User.findById(userId);
-    const favoriteRoutesCount = user ? (user.savedRoutes || []).length : 0;
+    // Get user's rated routes count (from Score collection)
+    const ratedRoutesCount = await Score.countDocuments({ userId: new mongoose.Types.ObjectId(userId) });
+    console.log('Analytics: Found rated routes:', ratedRoutesCount);
 
     // Calculate average rating (mock for now)
     const averageRating = 4.2;
 
     // Most reported route
     const routeReports = await Report.aggregate([
-      { $match: { userId } },
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
       { $group: { _id: '$routeId', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 1 }
@@ -1152,7 +1540,7 @@ app.get('/users/:userId/analytics', authMiddleware, async (req, res) => {
       data: {
         totalReports,
         reportsThisMonth,
-        favoriteRoutesCount,
+        favoriteRoutesCount: ratedRoutesCount,
         averageRating,
         mostReportedRoute
       }

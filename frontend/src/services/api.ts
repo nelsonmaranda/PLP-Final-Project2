@@ -379,22 +379,38 @@ class ApiService {
     }
   }
 
-  // File upload
+  // File upload - NO MULTER VERSION
   async uploadFile(file: File, type: 'report' | 'profile'): Promise<ApiResponse<{ url: string }>> {
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', type)
+      // Convert file to base64
+      const base64 = await this.fileToBase64(file)
+      
+      const requestData = {
+        type: type,
+        imageData: base64,
+        filename: file.name,
+        mimetype: file.type
+      }
 
-      const response: AxiosResponse<ApiResponse<{ url: string }>> = await this.api.post('/upload', formData, {
+      const response: AxiosResponse<ApiResponse<{ url: string }>> = await this.api.post('/upload', requestData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
       })
       return response.data
     } catch (error) {
       throw this.handleError(error)
     }
+  }
+
+  // Helper method to convert file to base64
+  private fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = error => reject(error)
+    })
   }
 
   // Search
@@ -502,6 +518,117 @@ class ApiService {
         averageRating: number;
         mostReportedRoute: string | null;
       }>> = await this.api.get(`/users/${userId}/analytics`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Debug endpoint
+  async getDebugReports(): Promise<ApiResponse<{
+    currentUserId: string;
+    totalReports: number;
+    userReports: number;
+    anonymousReports: number;
+    sampleReports: any[];
+    userReportsList: any[];
+    anonymousReportsList: any[];
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        currentUserId: string;
+        totalReports: number;
+        userReports: number;
+        anonymousReports: number;
+        sampleReports: any[];
+        userReportsList: any[];
+        anonymousReportsList: any[];
+      }>> = await this.api.get('/debug/reports')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Fix reports endpoint
+  async fixReports(): Promise<ApiResponse<{
+    updatedCount: number;
+    totalReports: number;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        updatedCount: number;
+        totalReports: number;
+      }>> = await this.api.post('/debug/fix-reports')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Fix scores endpoint
+  async fixScores(): Promise<ApiResponse<{
+    updatedCount: number;
+    totalScores: number;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        updatedCount: number;
+        totalScores: number;
+      }>> = await this.api.post('/debug/fix-scores')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Fix rate limits endpoint
+  async fixRateLimits(): Promise<ApiResponse<{
+    updatedCount: number;
+    totalRateLimits: number;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        updatedCount: number;
+        totalRateLimits: number;
+      }>> = await this.api.post('/debug/fix-ratelimits')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Profile photo management
+  async getUserPhoto(userId: string): Promise<ApiResponse<{
+    url: string;
+    filename: string;
+    originalName: string;
+    size: number;
+    mimetype: string;
+    uploadedAt: string;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        url: string;
+        filename: string;
+        originalName: string;
+        size: number;
+        mimetype: string;
+        uploadedAt: string;
+      }>> = await this.api.get(`/users/${userId}/photo`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async deleteUserPhoto(userId: string): Promise<ApiResponse<{
+    deletedCount: number;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        deletedCount: number;
+      }>> = await this.api.delete(`/users/${userId}/photo`)
       return response.data
     } catch (error) {
       throw this.handleError(error)

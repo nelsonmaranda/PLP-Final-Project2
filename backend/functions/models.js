@@ -89,6 +89,7 @@ const reportSchema = new mongoose.Schema({
 // Score Schema
 const scoreSchema = new mongoose.Schema({
   routeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Route', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Optional for user-specific scores
   reliability: { type: Number, min: 0, max: 5, required: true },
   safety: { type: Number, min: 0, max: 5, required: true },
   punctuality: { type: Number, min: 0, max: 5, required: true },
@@ -103,6 +104,7 @@ const scoreSchema = new mongoose.Schema({
 // Rate limit Schema for device-based throttling per route
 const rateLimitSchema = new mongoose.Schema({
   routeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Route', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Optional for user-specific rate limits
   fingerprint: { type: String, required: true },
   lastRatedAt: { type: Date, default: Date.now },
   count: { type: Number, default: 0 }
@@ -110,6 +112,7 @@ const rateLimitSchema = new mongoose.Schema({
 
 rateLimitSchema.index({ routeId: 1, fingerprint: 1 });
 rateLimitSchema.index({ lastRatedAt: 1 });
+rateLimitSchema.index({ userId: 1 });
 
 // Create indexes for better performance
 routeSchema.index({ 'stops.coordinates': '2dsphere' });
@@ -119,6 +122,7 @@ reportSchema.index({ userId: 1, createdAt: -1 });
 reportSchema.index({ sacco: 1 });
 reportSchema.index({ deviceFingerprint: 1, createdAt: -1 });
 scoreSchema.index({ routeId: 1 });
+scoreSchema.index({ userId: 1 });
 
 // Traffic cache for congestion info per route
 const trafficCacheSchema = new mongoose.Schema({
@@ -131,6 +135,22 @@ const trafficCacheSchema = new mongoose.Schema({
 });
 trafficCacheSchema.index({ routeId: 1 }, { unique: true });
 
+// Profile Photo Schema for storing uploaded profile images - TEMPORARILY DISABLED
+// const profilePhotoSchema = new mongoose.Schema({
+//   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+//   filename: { type: String, required: true },
+//   originalName: { type: String, required: true },
+//   mimetype: { type: String, required: true },
+//   size: { type: Number, required: true },
+//   url: { type: String, required: true }, // URL to access the image
+//   isActive: { type: Boolean, default: true }, // For soft deletion
+//   uploadedAt: { type: Date, default: Date.now },
+//   updatedAt: { type: Date, default: Date.now }
+// });
+
+// profilePhotoSchema.index({ userId: 1, isActive: 1 });
+// profilePhotoSchema.index({ uploadedAt: -1 });
+
 // Create models
 const User = mongoose.model('User', userSchema);
 const Route = mongoose.model('Route', routeSchema);
@@ -138,6 +158,7 @@ const Report = mongoose.model('Report', reportSchema);
 const Score = mongoose.model('Score', scoreSchema);
 const RateLimit = mongoose.model('RateLimit', rateLimitSchema);
 const TrafficCache = mongoose.model('TrafficCache', trafficCacheSchema);
+// const ProfilePhoto = mongoose.model('ProfilePhoto', profilePhotoSchema);
 
 module.exports = {
   User,
@@ -146,4 +167,5 @@ module.exports = {
   Score,
   RateLimit,
   TrafficCache
+  // ProfilePhoto - TEMPORARILY DISABLED
 };
