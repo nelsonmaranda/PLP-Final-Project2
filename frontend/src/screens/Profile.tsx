@@ -12,7 +12,8 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
-  Star
+  Star,
+  RefreshCw
 } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
 import apiService from '../services/api'
@@ -101,6 +102,21 @@ export default function Profile() {
     }
   }, [state.user])
 
+  // Remove favorite route
+  const removeFavorite = useCallback(async (routeId: string) => {
+    if (!state.user) return
+    
+    try {
+      const response = await apiService.removeFavoriteRoute(state.user._id, routeId)
+      if (response.success) {
+        // Refresh favorites list
+        loadFavorites()
+      }
+    } catch (error) {
+      console.error('Error removing favorite:', error)
+    }
+  }, [state.user, loadFavorites])
+
   // Load data when component mounts or user changes
   useEffect(() => {
     if (state.user) {
@@ -109,6 +125,25 @@ export default function Profile() {
       loadAnalytics()
     }
   }, [state.user, loadReports, loadFavorites, loadAnalytics])
+
+  // Load data when active tab changes
+  useEffect(() => {
+    if (state.user) {
+      switch (activeTab) {
+        case 'reports':
+          loadReports()
+          break
+        case 'favorites':
+          loadFavorites()
+          break
+        case 'analytics':
+          loadAnalytics()
+          break
+        default:
+          break
+      }
+    }
+  }, [activeTab, state.user, loadReports, loadFavorites, loadAnalytics])
 
   // Handle profile update
   const handleProfileUpdate = async (e: React.FormEvent) => {
@@ -166,19 +201,6 @@ export default function Profile() {
     }))
   }
 
-  // Remove favorite route
-  const removeFavorite = async (routeId: string) => {
-    if (!state.user) return
-    
-    try {
-      const response = await apiService.removeFavoriteRoute(state.user._id, routeId)
-      if (response.success) {
-        setFavoriteRoutes(prev => prev.filter(route => route._id !== routeId))
-      }
-    } catch (error) {
-      console.error('Error removing favorite:', error)
-    }
-  }
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -394,7 +416,17 @@ export default function Profile() {
             {/* Reports Tab */}
             {activeTab === 'reports' && (
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">{t('profile.myTripReports')}</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">{t('profile.myTripReports')}</h3>
+                  <button
+                    onClick={loadReports}
+                    disabled={reportsLoading}
+                    className="flex items-center space-x-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${reportsLoading ? 'animate-spin' : ''}`} />
+                    <span>{t('profile.refresh')}</span>
+                  </button>
+                </div>
                 {reportsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
@@ -442,7 +474,17 @@ export default function Profile() {
             {/* Favorites Tab */}
             {activeTab === 'favorites' && (
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">{t('profile.favoriteRoutes')}</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">{t('profile.favoriteRoutes')}</h3>
+                  <button
+                    onClick={loadFavorites}
+                    disabled={favoritesLoading}
+                    className="flex items-center space-x-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${favoritesLoading ? 'animate-spin' : ''}`} />
+                    <span>{t('profile.refresh')}</span>
+                  </button>
+                </div>
                 {favoritesLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
@@ -490,7 +532,16 @@ export default function Profile() {
             {/* Analytics Tab */}
             {activeTab === 'analytics' && (
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">{t('profile.yourAnalytics')}</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">{t('profile.yourAnalytics')}</h3>
+                  <button
+                    onClick={loadAnalytics}
+                    className="flex items-center space-x-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>{t('profile.refresh')}</span>
+                  </button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   <div className="bg-blue-50 rounded-lg p-4">
                     <div className="flex items-center">

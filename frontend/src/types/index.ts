@@ -337,6 +337,10 @@ export interface LanguageStrings {
     selectRoute: string
     saccoOptional: string
     selectSacco: string
+    otherSacco: string
+    specifyOtherSacco: string
+    otherSaccoPlaceholder: string
+    otherSaccoRequired: string
     direction: string
     fromCBD: string
     toCBD: string
@@ -872,6 +876,7 @@ export interface LanguageStrings {
     submitFirstReport: string
     thisMonth: string
     avgRating: string
+    refresh: string
     tabs: {
       personal: string
       security: string

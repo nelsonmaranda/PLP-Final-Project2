@@ -28,6 +28,7 @@ export default function ReportForm() {
   })
 
   const [selectedSacco, setSelectedSacco] = useState<string>('')
+  const [otherSacco, setOtherSacco] = useState<string>('')
   const [direction, setDirection] = useState<'from_cbd' | 'to_cbd' | 'along_route'>('along_route')
   const [fareKsh, setFareKsh] = useState<string>('')
 
@@ -55,10 +56,17 @@ export default function ReportForm() {
     setIsSubmitting(true)
     setError(null)
 
+    // Validate Other SACCO field
+    if (selectedSacco === 'other' && !otherSacco.trim()) {
+      setError(t('report.otherSaccoRequired'))
+      setIsSubmitting(false)
+      return
+    }
+
     try {
       const payload = {
         ...formData,
-        sacco: selectedSacco || undefined,
+        sacco: selectedSacco === 'other' ? otherSacco.trim() : (selectedSacco || undefined),
         direction,
         fare: fareKsh ? Number(fareKsh) : undefined
       }
@@ -121,14 +129,33 @@ export default function ReportForm() {
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('report.saccoOptional')}</label>
             <select
               value={selectedSacco}
-              onChange={(e) => setSelectedSacco(e.target.value)}
+              onChange={(e) => {
+                setSelectedSacco(e.target.value)
+                if (e.target.value !== 'other') {
+                  setOtherSacco('')
+                }
+              }}
               className="w-full border rounded px-3 py-2"
             >
               <option value="">{t('report.selectSacco')}</option>
               {MATATU_SACCOS.map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
+              <option value="other">{t('report.otherSacco')}</option>
             </select>
+            
+            {selectedSacco === 'other' && (
+              <div className="mt-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('report.specifyOtherSacco')}</label>
+                <input
+                  type="text"
+                  value={otherSacco}
+                  onChange={(e) => setOtherSacco(e.target.value)}
+                  placeholder={t('report.otherSaccoPlaceholder')}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+            )}
           </div>
 
           <div>
