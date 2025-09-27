@@ -57,7 +57,7 @@ const reportSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   reportType: { 
     type: String, 
-    enum: ['delay', 'breakdown', 'safety', 'crowding', 'other'], 
+    enum: ['delay', 'breakdown', 'safety', 'crowding', 'overcrowding', 'accident', 'harassment', 'other'], 
     required: true 
   },
   description: { type: String },
@@ -115,6 +115,7 @@ rateLimitSchema.index({ lastRatedAt: 1 });
 routeSchema.index({ 'stops.coordinates': '2dsphere' });
 reportSchema.index({ location: '2dsphere' });
 reportSchema.index({ routeId: 1, createdAt: -1 });
+reportSchema.index({ userId: 1, createdAt: -1 });
 reportSchema.index({ sacco: 1 });
 reportSchema.index({ deviceFingerprint: 1, createdAt: -1 });
 scoreSchema.index({ routeId: 1 });

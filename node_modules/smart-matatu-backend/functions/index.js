@@ -7,6 +7,20 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User, Route, Report, Score, RateLimit, TrafficCache } = require('./models');
 
+// Auth middleware
+const authMiddleware = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = payload;
+    return next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+};
+
 // Create Express app
 const app = express();
 
@@ -428,7 +442,7 @@ app.get('/scores/worst/:limit', async (req, res) => {
 });
 
 // Reports endpoint (database-backed)
-app.post('/reports', async (req, res) => {
+app.post('/reports', authMiddleware, async (req, res) => {
   try {
     const { routeId, reportType, description, severity, location, isAnonymous, sacco, direction, fare } = req.body;
     if (!routeId || !reportType) {
@@ -452,6 +466,7 @@ app.post('/reports', async (req, res) => {
       },
       status: 'pending',
       isAnonymous: Boolean(isAnonymous),
+      userId: req.user.userId, // Associate report with the authenticated user
       // Optional analytics metadata
       sacco: sacco || undefined,
       direction: direction || undefined,
@@ -535,19 +550,6 @@ app.get('/analytics/homepage', async (req, res) => {
   }
 });
 
-// Auth middleware and profile endpoint (for frontend current user)
-const authMiddleware = (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const payload = jwt.verify(token, JWT_SECRET);
-    req.user = payload;
-    return next();
-  } catch (err) {
-    return res.status(401).json({ success: false, message: 'Unauthorized' });
-  }
-};
 
 const requireRoles = (roles = []) => {
   return async (req, res, next) => {
@@ -841,13 +843,19 @@ app.put('/users/:userId', async (req, res) => {
 });
 
 // Get user reports
-app.get('/users/:userId/reports', async (req, res) => {
+app.get('/users/:userId/reports', authMiddleware, async (req, res) => {
   try {
     if (!isDBConnected) {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
     const { userId } = req.params;
+    
+    // Ensure user can only access their own reports
+    if (req.user.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    
     const { page = 1, limit = 20, sort = 'createdAt', order = 'desc' } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -884,13 +892,19 @@ app.get('/users/:userId/reports', async (req, res) => {
 });
 
 // Get user favorite routes
-app.get('/users/:userId/favorites', async (req, res) => {
+app.get('/users/:userId/favorites', authMiddleware, async (req, res) => {
   try {
     if (!isDBConnected) {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
     const { userId } = req.params;
+    
+    // Ensure user can only access their own favorites
+    if (req.user.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    
     const user = await User.findById(userId).populate('savedRoutes');
     
     if (!user) {
@@ -915,13 +929,19 @@ app.get('/users/:userId/favorites', async (req, res) => {
 });
 
 // Add favorite route
-app.post('/users/:userId/favorites', async (req, res) => {
+app.post('/users/:userId/favorites', authMiddleware, async (req, res) => {
   try {
     if (!isDBConnected) {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
     const { userId } = req.params;
+    
+    // Ensure user can only add to their own favorites
+    if (req.user.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    
     const { routeId } = req.body;
 
     if (!routeId) {
@@ -970,13 +990,18 @@ app.post('/users/:userId/favorites', async (req, res) => {
 });
 
 // Remove favorite route
-app.delete('/users/:userId/favorites/:routeId', async (req, res) => {
+app.delete('/users/:userId/favorites/:routeId', authMiddleware, async (req, res) => {
   try {
     if (!isDBConnected) {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
     const { userId, routeId } = req.params;
+    
+    // Ensure user can only remove from their own favorites
+    if (req.user.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -1007,13 +1032,18 @@ app.delete('/users/:userId/favorites/:routeId', async (req, res) => {
 });
 
 // Get user analytics
-app.get('/users/:userId/analytics', async (req, res) => {
+app.get('/users/:userId/analytics', authMiddleware, async (req, res) => {
   try {
     if (!isDBConnected) {
       return res.status(503).json({ success: false, message: 'Database unavailable' });
     }
 
     const { userId } = req.params;
+    
+    // Ensure user can only access their own analytics
+    if (req.user.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
 
     // Get user reports
     const reports = await Report.find({ userId });
