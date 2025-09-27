@@ -763,7 +763,10 @@ export interface LanguageStrings {
       createError: string
       approveError: string
       rejectError: string
+      fetchError: string
+      loadError: string
     }
+    rejectionReason: string
     modals: {
       addUser: {
         title: string

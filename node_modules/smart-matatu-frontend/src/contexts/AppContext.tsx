@@ -872,7 +872,10 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
         createError: 'Failed to create user',
         approveError: 'Failed to approve user',
         rejectError: 'Failed to reject user',
+        fetchError: 'Failed to fetch users',
+        loadError: 'Failed to load users',
       },
+      rejectionReason: 'Rejection reason:',
       modals: {
         addUser: {
           title: 'Add User',
@@ -1555,7 +1558,10 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
         createError: 'Imeshindwa kumunda mtumiaji',
         approveError: 'Imeshindwa kumidhinisha mtumiaji',
         rejectError: 'Imeshindwa kumkataa mtumiaji',
+        fetchError: 'Imeshindwa kupata watumiaji',
+        loadError: 'Imeshindwa kupakia watumiaji',
       },
+      rejectionReason: 'Sababu ya kukataa:',
       modals: {
         addUser: {
           title: 'Ongeza Mtumiaji',

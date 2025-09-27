@@ -61,14 +61,14 @@ export default function UserManagement() {
       })
       
       if (!response.ok) {
-        throw new Error('Failed to fetch users')
+        throw new Error(t('userManagement.messages.fetchError'))
       }
       
       const data = await response.json()
       if (data.success) {
         setUsers(data.data)
       } else {
-        throw new Error(data.message || 'Failed to load users')
+        throw new Error(data.message || t('userManagement.messages.loadError'))
       }
     } catch (error) {
       console.error('Error loading users:', error)
@@ -91,7 +91,7 @@ export default function UserManagement() {
       })
       
       if (!response.ok) {
-        throw new Error('Failed to approve user')
+        throw new Error(t('userManagement.messages.approveError'))
       }
       
       const data = await response.json()
@@ -109,11 +109,11 @@ export default function UserManagement() {
             : user
         ))
       } else {
-        throw new Error(data.message || 'Failed to approve user')
+        throw new Error(data.message || t('userManagement.messages.approveError'))
       }
     } catch (error) {
       console.error('Error approving user:', error)
-      alert('Failed to approve user. Please try again.')
+      alert(t('userManagement.messages.approveError'))
     } finally {
       setActionLoading(null)
     }
@@ -133,7 +133,7 @@ export default function UserManagement() {
       })
       
       if (!response.ok) {
-        throw new Error('Failed to reject user')
+        throw new Error(t('userManagement.messages.rejectError'))
       }
       
       const data = await response.json()
@@ -150,11 +150,11 @@ export default function UserManagement() {
             : user
         ))
       } else {
-        throw new Error(data.message || 'Failed to reject user')
+        throw new Error(data.message || t('userManagement.messages.rejectError'))
       }
     } catch (error) {
       console.error('Error rejecting user:', error)
-      alert('Failed to reject user. Please try again.')
+      alert(t('userManagement.messages.rejectError'))
     } finally {
       setActionLoading(null)
     }
@@ -384,7 +384,7 @@ export default function UserManagement() {
                           </button>
                           <button
                             onClick={() => {
-                              const reason = prompt('Rejection reason:')
+                              const reason = prompt(t('userManagement.rejectionReason'))
                               if (reason) handleReject(user._id, reason)
                             }}
                             disabled={actionLoading === user._id}
