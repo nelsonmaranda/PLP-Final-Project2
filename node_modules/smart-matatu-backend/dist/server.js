@@ -42,12 +42,14 @@ const routes_1 = __importDefault(require("./routes/routes"));
 const reports_1 = __importDefault(require("./routes/reports"));
 const scores_1 = __importDefault(require("./routes/scores"));
 const ai_1 = __importDefault(require("./routes/ai"));
+const analytics_1 = __importDefault(require("./routes/analytics"));
 const scoringService_1 = __importDefault(require("./services/scoringService"));
 app.use('/api/auth', auth_1.default);
 app.use('/api/routes', routes_1.default);
 app.use('/api/reports', reports_1.default);
 app.use('/api/scores', scores_1.default);
 app.use('/api/ai', ai_1.default);
+app.use('/api/analytics', analytics_1.default);
 app.use('*', (req, res) => {
     res.status(404).json({
         error: 'Route not found',

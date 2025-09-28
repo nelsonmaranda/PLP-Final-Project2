@@ -254,6 +254,7 @@ export interface LanguageStrings {
     settings: string
     dashboard: string
     analytics: string
+    subscription: string
     saccoDashboard: string
     authorityDashboard: string
     userManagement: string
@@ -267,6 +268,11 @@ export interface LanguageStrings {
     authorityTools: string
     fleetManagement: string
     compliance: string
+    adminAnalytics: string
+    saccoAnalytics: string
+    authorityAnalytics: string
+    moderatorAnalytics: string
+    myAnalytics: string
   }
   auth: {
     login: string
@@ -933,6 +939,554 @@ export interface LanguageStrings {
       uploadingImage: string
       imageUploadError: string
       avatarUpdateError: string
+    }
+  }
+  subscription: {
+    title: string
+    subtitle: string
+    currentPlan: string
+    status: string
+    expires: string
+    features: string
+    popular: string
+    free: string
+    month: string
+    current: string
+    processing: string
+    getStarted: string
+    upgrade: string
+    featureComparison: string
+    basicReports: string
+    unlimitedReports: string
+    advancedAnalytics: string
+    prioritySupport: string
+    apiAccess: string
+    faq: string
+    faq1: {
+      question: string
+      answer: string
+    }
+    faq2: {
+      question: string
+      answer: string
+    }
+      faq3: {
+        question: string
+        answer: string
+      }
+      featureNames: {
+        advancedAnalytics: string
+        prioritySupport: string
+        customBranding: string
+        apiAccess: string
+        unlimitedReports: string
+      }
+      adminAccess: string
+      planTypes: {
+        free: string
+        premium: string
+        sacco: string
+        enterprise: string
+      }
+      statusTypes: {
+        active: string
+        inactive: string
+        expired: string
+        pending: string
+      }
+      plans: {
+        free: {
+          name: string
+          features: {
+            basicInfo: string
+            reports: string
+            support: string
+          }
+        }
+        premium: {
+          name: string
+          features: {
+            unlimitedReports: string
+            advancedAnalytics: string
+            prioritySupport: string
+            realTimeNotifications: string
+          }
+        }
+        sacco: {
+          name: string
+          features: {
+            allPremium: string
+            revenueAnalytics: string
+            customBranding: string
+            apiAccess: string
+            dedicatedSupport: string
+          }
+        }
+        enterprise: {
+          name: string
+          features: {
+            allSacco: string
+            whiteLabel: string
+            customIntegrations: string
+            support247: string
+            slaGuarantee: string
+          }
+        }
+      }
+      daysRemaining: string
+      totalSubscription: string
+      yearly: string
+      selectPlan: string
+      days: string
+    }
+  analyticsDashboard: {
+    title: string
+    subtitle: string
+    last7Days: string
+    last30Days: string
+    error: string
+    totalEvents: string
+    activeUsers: string
+    avgEngagement: string
+    performanceScore: string
+    eventTypes: string
+    performanceMetrics: string
+    metric: string
+    value: string
+    endpoint: string
+    timestamp: string
+    noMetrics: string
+    noMetricsDesc: string
+    // User Metrics
+    userMetrics: {
+      title: string
+      totalUsers: string
+      activeUsers: string
+      newUsers: string
+      userRoles: string
+    }
+    // Route Metrics
+    routeMetrics: {
+      title: string
+      totalRoutes: string
+      activeRoutes: string
+      topOperators: string
+    }
+    // Report Metrics
+    reportMetrics: {
+      title: string
+      totalReports: string
+      recentReports: string
+      reportsByType: string
+      reportsBySeverity: string
+      reportsByStatus: string
+    }
+    // Rating Metrics
+    ratingMetrics: {
+      title: string
+      totalRatings: string
+      averageRating: string
+      topRatedRoutes: string
+      routeName: string
+      routeNumber: string
+      operator: string
+      avgRating: string
+    }
+    // Subscription Metrics
+    subscriptionMetrics: {
+      title: string
+      totalSubscriptions: string
+      activeSubscriptions: string
+      subscriptionsByPlan: string
+    }
+    // Payment Metrics
+    paymentMetrics: {
+      title: string
+      totalPayments: string
+      successfulPayments: string
+      successRate: string
+      totalRevenue: string
+      paymentsByMethod: string
+    }
+    // Traffic Metrics
+    trafficMetrics: {
+      title: string
+      totalRoutesWithTraffic: string
+      averageCongestion: string
+      congestionIndex: string
+      trafficFactor: string
+    }
+    // Geographic Analytics
+    geographicAnalytics: {
+      title: string
+      reportHotspots: string
+    }
+    // Time Analytics
+    timeAnalytics: {
+      title: string
+      reportsByHour: string
+    }
+    // Metric Type Names
+    metricTypes: {
+      apiResponseTime: string
+      pageLoadTime: string
+      errorRate: string
+      userEngagement: string
+    }
+    // Report Types
+    reportTypes: {
+      crowding: string
+      delay: string
+      safety: string
+      breakdown: string
+      other: string
+    }
+    // Severity Levels
+    severityLevels: {
+      low: string
+      medium: string
+      high: string
+      critical: string
+    }
+    // User Roles
+    userRoles: {
+      admin: string
+      user: string
+      moderator: string
+      sacco: string
+      authority: string
+    }
+    // Subscription Plans
+    subscriptionPlans: {
+      free: string
+      premium: string
+      sacco: string
+      enterprise: string
+    }
+  }
+  userAnalytics: {
+    title: string
+    subtitle: string
+    last7Days: string
+    last30Days: string
+    last90Days: string
+    refresh: string
+    error: string
+    retry: string
+    loading: string
+    // Personal Stats
+    personalStats: {
+      totalReports: string
+      totalRatings: string
+      favoriteRoutes: string
+      activityScore: string
+      reportsThisMonth: string
+      avgRating: string
+      savedRoutes: string
+      veryActiveUser: string
+    }
+    // Route Insights
+    routeInsights: {
+      title: string
+      mostReportedRoute: string
+      bestRatedRoute: string
+      reports: string
+      last: string
+      stars: string
+      ratings: string
+    }
+    // Recent Activity
+    recentActivity: {
+      title: string
+      reportedDelay: string
+      ratedStars: string
+      reportedSafetyIssue: string
+    }
+    // Safety Insights
+    safetyInsights: {
+      title: string
+      safetyReports: string
+      delayReports: string
+      resolvedReports: string
+      averageResponseTime: string
+    }
+    // Recommendations
+    recommendations: {
+      title: string
+      suggestedRoutes: string
+      highlyRatedByUsers: string
+      reliableAndPunctual: string
+      safetyTips: string
+      avoidPeakHours: string
+      bestSafetyRecord: string
+      reportImmediately: string
+    }
+    // Peak Hours
+    peakHours: {
+      title: string
+      highTraffic: string
+      peakHours: string
+    }
+  }
+  saccoDashboard: {
+    title: string
+    dashboardTitle: string
+    subtitle: string
+    dataSource: string
+    last7Days: string
+    last30Days: string
+    last90Days: string
+    refresh: string
+    loadingAnalytics: string
+    totalRoutes: string
+    avgRating: string
+    totalReports: string
+    marketRank: string
+    active: string
+    outOf: string
+    perDay: string
+    ofSaccos: string
+    reportsByType: string
+    reportsBySeverity: string
+    // Route Performance Analysis
+    routePerformanceAnalysis: string
+    route: string
+    overallRating: string
+    safety: string
+    punctuality: string
+    comfort: string
+    totalRatings: string
+    // Revenue Analytics
+    totalRevenue: string
+    avgDailyRevenue: string
+    revenueDays: string
+    dailyRevenueTrends: string
+    // Market Position
+    yourPerformance: string
+    marketRanking: string
+    marketAverage: string
+    top5Saccos: string
+    // Geographic Insights
+    incidentHotspots: string
+    peakHoursAnalysis: string
+    error: string
+    retry: string
+    loading: string
+    usingSampleData: string
+    // Overview Tab
+    overview: {
+      title: string
+      totalRoutes: string
+      active: string
+      avgRating: string
+      outOf: string
+      totalReports: string
+      perDay: string
+      marketRank: string
+      ofSaccos: string
+      reportsByType: string
+      reportsBySeverity: string
+    }
+    // Route Performance Tab
+    routePerformance: {
+      title: string
+      topRatedRoutes: string
+      routeName: string
+      routeNumber: string
+      avgRating: string
+      totalRatings: string
+      avgReliability: string
+      avgSafety: string
+      avgPunctuality: string
+      avgComfort: string
+    }
+    // Incident Reports Tab
+    incidentReports: {
+      title: string
+      recentReports: string
+      reportType: string
+      severity: string
+      location: string
+      reportedAt: string
+      status: string
+    }
+    // Revenue Analytics Tab
+    revenueAnalytics: {
+      title: string
+      dailyRevenue: string
+      totalRevenue: string
+      avgDailyRevenue: string
+      revenueTrend: string
+    }
+    // Market Position Tab
+    marketPosition: {
+      title: string
+      competitiveAnalysis: string
+      saccoRanking: string
+      totalSaccos: string
+      performanceVsMarket: string
+      saccoReports: string
+      marketAvg: string
+    }
+    // Geographic Insights Tab
+    geographicInsights: {
+      title: string
+      hotspots: string
+      totalLocations: string
+      latitude: string
+      longitude: string
+      incidentCount: string
+      types: string
+    }
+  }
+  authorityDashboard: {
+    title: string
+    subtitle: string
+    last7Days: string
+    last30Days: string
+    last90Days: string
+    refresh: string
+    loadingInsights: string
+    critical: string
+    avgRisk: string
+    highRiskAreas: string
+    systemEfficiency: string
+    focusAreas: string
+    recommendedActions: string
+    avgDailyReports: string
+    trendDirection: string
+    totalReportsLabel: string
+    criticalSaccos: string
+    avgReportsPerSacco: string
+    strategicFocusAreas: string
+    incidents: string
+    reports: string
+    priorityScoreLabel: string
+    totalReportsCount: string
+    criticalReportsLabel: string
+    error: string
+    retry: string
+    loading: string
+    // Strategic Overview Tab
+    strategicOverview: {
+      title: string
+      keyPerformanceIndicators: string
+      totalSaccos: string
+      totalRoutes: string
+      totalReports: string
+      criticalIncidents: string
+      focusAreas: string
+      recommendedActions: string
+      increaseMonitoring: string
+      implementInterventions: string
+      focusResources: string
+      developProtocols: string
+      establishWarning: string
+    }
+    // SACCO Performance Tab
+    saccoPerformance: {
+      title: string
+      topPerformers: string
+      poorPerformers: string
+      averageReportsPerSacco: string
+      criticalSaccos: string
+      saccoName: string
+      totalReports: string
+      criticalReports: string
+      avgSeverity: string
+      lastReport: string
+    }
+    // Route Risk Analysis Tab
+    routeRiskAnalysis: {
+      title: string
+      highRiskRoutes: string
+      totalRoutesAnalyzed: string
+      averageRiskScore: string
+      criticalRoutes: string
+      routeName: string
+      routeNumber: string
+      operator: string
+      totalIncidents: string
+      criticalIncidents: string
+      safetyIncidents: string
+      accidentIncidents: string
+      riskScore: string
+      lastIncident: string
+    }
+    // Geographic Insights Tab
+    geographicInsights: {
+      title: string
+      highRiskZones: string
+      totalRiskZones: string
+      averageRiskLevel: string
+      latitude: string
+      longitude: string
+      totalIncidents: string
+      criticalIncidents: string
+      incidentTypes: string
+      avgSeverity: string
+      riskLevel: string
+    }
+    // Temporal Patterns Tab
+    temporalPatterns: {
+      title: string
+      peakHours: string
+      peakDays: string
+        averageIncidentsPerHour: string
+        peakHoursIdentified: string
+        hour: string
+      dayOfWeek: string
+      incidentCount: string
+      criticalCount: string
+      avgSeverity: string
+    }
+    // Compliance Trends Tab
+    complianceTrends: {
+      title: string
+      dailyTrends: string
+      averageDailyReports: string
+      trendDirection: string
+      increasing: string
+      decreasing: string
+      stable: string
+      day: string
+      totalReports: string
+      totalCritical: string
+      saccoCount: string
+      avgReportsPerSacco: string
+    }
+    // Risk Indicators Tab
+    riskIndicators: {
+      title: string
+      topRisks: string
+      criticalRiskTypes: string
+      averageRiskLevel: string
+      reportType: string
+      totalCount: string
+      criticalCount: string
+      avgSeverity: string
+      trend: string
+    }
+    // System Health Tab
+    systemHealth: {
+      title: string
+      totalReports: string
+      averageResponseTime: string
+      resolutionRate: string
+      dataQuality: string
+    }
+    // Resource Recommendations Tab
+    resourceRecommendations: {
+      title: string
+      prioritySaccos: string
+      totalResourcesNeeded: string
+        highPriorityCount: string
+        highPriorityCases: string
+        saccoName: string
+      totalReports: string
+      criticalReports: string
+      reportTypes: string
+      priorityScore: string
     }
   }
 }

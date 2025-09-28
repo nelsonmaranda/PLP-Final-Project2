@@ -1,175 +1,129 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
-  Shield, 
   AlertTriangle, 
-  FileText, 
-  Download, 
   Users, 
   CheckCircle,
   TrendingUp,
   BarChart3,
   RefreshCw,
   Eye,
-  Settings
+  MapPin,
+  Clock,
+  Target,
+  Award,
+  TrendingDown,
+  Lightbulb,
+  AlertCircle,
+  Activity
 } from 'lucide-react'
 import apiService from '../services/api'
 import { useTranslation } from '../hooks/useTranslation'
 
-interface ComplianceData {
-  saccoId: string
-  saccoName: string
-  licenseStatus: 'valid' | 'expired' | 'pending'
-  safetyScore: number
-  incidentCount: number
-  lastInspection: string
-  violations: number
-  status: 'compliant' | 'warning' | 'non-compliant'
+interface AuthorityInsights {
+  period: string
+  generatedAt: string
+  saccoPerformance: {
+    totalSaccos: number
+    topPerformers: any[]
+    poorPerformers: any[]
+    averageReportsPerSacco: string
+    criticalSaccos: number
+  }
+  routeSafetyAnalysis: {
+    highRiskRoutes: any[]
+    totalRoutesAnalyzed: number
+    averageRiskScore: string
+    criticalRoutes: number
+  }
+  geographicRiskMap: {
+    highRiskZones: any[]
+    totalRiskZones: number
+    averageRiskLevel: string
+  }
+  temporalPatterns: {
+    peakHours: any[]
+    peakDays: any[]
+    averageIncidentsPerHour: string
+  }
+  complianceTrends: {
+    dailyTrends: any[]
+    averageDailyReports: string
+    trendDirection: string
+  }
+  riskIndicators: {
+    topRisks: any[]
+    criticalRiskTypes: any[]
+    averageRiskLevel: string
+  }
+  systemHealth: {
+    totalReports: number
+    averageResponseTime: number
+    resolutionRate: number
+    dataQuality: number
+  }
+  resourceRecommendations: {
+    prioritySaccos: any[]
+    totalResourcesNeeded: number
+    highPriorityCount: number
+  }
+  planningInsights: {
+    focusAreas: string[]
+    recommendedActions: string[]
+  }
 }
 
-interface SafetyIncident {
-  id: string
-  routeId: string
-  routeName: string
-  saccoName: string
-  type: 'accident' | 'breakdown' | 'overcrowding' | 'speeding' | 'other'
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  description: string
-  location: string
-  reportedAt: string
-  status: 'reported' | 'investigating' | 'resolved' | 'closed'
-  assignedTo?: string
-  resolution?: string
-  resolvedAt?: string
-}
-
-interface SystemMetrics {
-  totalUsers: number
-  activeReports: number
-  totalRoutes: number
-  systemUptime: number
-  dataQuality: number
-  averageResponseTime: number
-}
-
-interface AuditLog {
-  id: string
-  action: string
-  user: string
-  timestamp: string
-  details: string
-  ipAddress: string
-  status: 'success' | 'failed' | 'warning'
-}
-
-export default function AuthorityDashboard() {
+const AuthorityDashboard: React.FC = () => {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview')
   const [loading, setLoading] = useState(true)
-  const [complianceData, setComplianceData] = useState<ComplianceData[]>([])
-  const [safetyIncidents, setSafetyIncidents] = useState<SafetyIncident[]>([])
-  const [systemMetrics, setSystemMetrics] = useState<SystemMetrics | null>(null)
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
+  const [insights, setInsights] = useState<AuthorityInsights | null>(null)
   const [dateRange, setDateRange] = useState('30d')
-  const [filterSeverity, setFilterSeverity] = useState('all')
-  const [filterStatus, setFilterStatus] = useState('all')
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadDashboardData()
-  }, [dateRange, filterSeverity, filterStatus])
+    loadAuthorityInsights()
+  }, [dateRange])
 
-  const loadDashboardData = async () => {
+  const loadAuthorityInsights = async () => {
     try {
       setLoading(true)
-
-      const response = await apiService.getAuthorityDashboard()
-      if (response.success && response.data) {
-        const { complianceData, safetyIncidents, systemMetrics, auditLogs } = response.data
-        setComplianceData(complianceData || [])
-        setSafetyIncidents(safetyIncidents || [])
-        setSystemMetrics(systemMetrics || null)
-        setAuditLogs(auditLogs || [])
+      setError(null)
+      
+      const response = await apiService.getAuthorityAnalytics(dateRange)
+      if (response.success) {
+        setInsights(response.data)
       } else {
-        setComplianceData([])
-        setSafetyIncidents([])
-        setSystemMetrics(null)
-        setAuditLogs([])
+        setError('Failed to load authority insights')
       }
-
-    } catch (error) {
-      console.error('Error loading dashboard data:', error)
-      setComplianceData([])
-      setSafetyIncidents([])
-      setSystemMetrics(null)
-      setAuditLogs([])
+    } catch (err) {
+      setError('Failed to load authority insights')
+      console.error('Authority insights error:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'compliant': return 'text-green-600 bg-green-100'
-      case 'warning': return 'text-yellow-600 bg-yellow-100'
-      case 'non-compliant': return 'text-red-600 bg-red-100'
-      case 'valid': return 'text-green-600 bg-green-100'
-      case 'expired': return 'text-red-600 bg-red-100'
-      case 'pending': return 'text-yellow-600 bg-yellow-100'
-      case 'reported': return 'text-blue-600 bg-blue-100'
-      case 'investigating': return 'text-yellow-600 bg-yellow-100'
-      case 'resolved': return 'text-green-600 bg-green-100'
-      case 'closed': return 'text-gray-600 bg-gray-100'
-      case 'success': return 'text-green-600 bg-green-100'
-      case 'failed': return 'text-red-600 bg-red-100'
-      case 'warning': return 'text-yellow-600 bg-yellow-100'
-      default: return 'text-gray-600 bg-gray-100'
+  const getRiskColor = (riskLevel: number) => {
+    if (riskLevel >= 3.5) return 'text-red-600 bg-red-100'
+    if (riskLevel >= 2.5) return 'text-orange-600 bg-orange-100'
+    if (riskLevel >= 1.5) return 'text-yellow-600 bg-yellow-100'
+    return 'text-green-600 bg-green-100'
+  }
+
+  const getTrendIcon = (direction: string) => {
+    switch (direction) {
+      case 'increasing': return <TrendingUp className="w-4 h-4 text-red-500" />
+      case 'decreasing': return <TrendingDown className="w-4 h-4 text-green-500" />
+      default: return <Activity className="w-4 h-4 text-gray-500" />
     }
   }
 
-  const translateStatus = (status: string) => {
-    switch (status) {
-      case 'compliant': return t('authority.complianceStatus.compliant')
-      case 'warning': return t('authority.complianceStatus.warning')
-      case 'non-compliant': return t('authority.complianceStatus.nonCompliant')
-      case 'valid': return t('authority.complianceStatus.valid')
-      case 'expired': return t('authority.complianceStatus.expired')
-      case 'pending': return t('authority.complianceStatus.pending')
-      case 'unknown': return t('authority.complianceStatus.unknown')
-      case 'reported': return t('authority.incidentsTable.reported')
-      case 'investigating': return t('authority.incidentsTable.investigating')
-      case 'resolved': return t('authority.incidentsTable.resolved')
-      case 'closed': return t('authority.incidentsTable.closed')
-      case 'success': return t('authority.auditTable.success')
-      case 'failed': return t('authority.auditTable.failed')
-      case 'low': return t('authority.incidentsTable.low')
-      case 'medium': return t('authority.incidentsTable.medium')
-      case 'high': return t('authority.incidentsTable.high')
-      case 'critical': return t('authority.incidentsTable.critical')
-      default: return status
+  const getTrendDirectionText = (direction: string) => {
+    switch (direction) {
+      case 'increasing': return t('authorityDashboard.complianceTrends.increasing')
+      case 'decreasing': return t('authorityDashboard.complianceTrends.decreasing')
+      default: return t('authorityDashboard.complianceTrends.stable')
     }
-  }
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'low': return 'text-green-600 bg-green-100'
-      case 'medium': return 'text-yellow-600 bg-yellow-100'
-      case 'high': return 'text-orange-600 bg-orange-100'
-      case 'critical': return 'text-red-600 bg-red-100'
-      default: return 'text-gray-600 bg-gray-100'
-    }
-  }
-
-  const exportData = async (type: 'compliance' | 'incidents' | 'analytics', format: 'csv' | 'xls') => {
-    const base = 'https://us-central1-smart-matwana-ke.cloudfunctions.net/api'
-    const endpoint = type === 'compliance' ? '/export/compliance'
-      : type === 'incidents' ? '/export/incidents'
-      : '/export/system'
-    const url = `${base}${endpoint}?format=${format}`
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${type}-${new Date().toISOString().split('T')[0]}.${format}`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
   }
 
   if (loading) {
@@ -177,7 +131,24 @@ export default function AuthorityDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">{t('authority.loading')}</p>
+          <p className="text-gray-600">{t('authorityDashboard.loadingInsights')}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-4 text-red-600" />
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={loadAuthorityInsights}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     )
@@ -190,8 +161,8 @@ export default function AuthorityDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{t('authority.title')}</h1>
-              <p className="text-gray-600 mt-1">{t('authority.subtitle')}</p>
+              <h1 className="text-3xl font-bold text-gray-900">{t('authorityDashboard.title')}</h1>
+              <p className="text-gray-600 mt-1">{t('authorityDashboard.subtitle')}</p>
             </div>
             <div className="flex items-center space-x-4">
               <select
@@ -199,16 +170,16 @@ export default function AuthorityDashboard() {
                 onChange={(e) => setDateRange(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
               >
-                <option value="7d">{t('authority.last7Days')}</option>
-                <option value="30d">{t('authority.last30Days')}</option>
-                <option value="90d">{t('authority.last90Days')}</option>
+                <option value="7d">{t('authorityDashboard.last7Days')}</option>
+                <option value="30d">{t('authorityDashboard.last30Days')}</option>
+                <option value="90d">{t('authorityDashboard.last90Days')}</option>
               </select>
               <button
-                onClick={loadDashboardData}
+                onClick={loadAuthorityInsights}
                 className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>{t('authority.refresh')}</span>
+                <span>{t('authorityDashboard.refresh')}</span>
               </button>
             </div>
           </div>
@@ -220,12 +191,13 @@ export default function AuthorityDashboard() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             {[
-              { id: 'overview', name: t('authority.tabs.metrics'), icon: BarChart3 },
-              { id: 'compliance', name: t('authority.tabs.compliance'), icon: Shield },
-              { id: 'incidents', name: t('authority.tabs.incidents'), icon: AlertTriangle },
-              { id: 'reports', name: t('authority.tabs.reports'), icon: FileText },
-              { id: 'audit', name: t('authority.tabs.audit'), icon: Eye },
-              { id: 'system', name: t('authority.tabs.system'), icon: Settings }
+              { id: 'overview', name: t('authorityDashboard.strategicOverview.title'), icon: BarChart3 },
+              { id: 'sacco', name: t('authorityDashboard.saccoPerformance.title'), icon: Users },
+              { id: 'routes', name: t('authorityDashboard.routeRiskAnalysis.title'), icon: MapPin },
+              { id: 'geographic', name: t('authorityDashboard.geographicInsights.title'), icon: Eye },
+              { id: 'temporal', name: t('authorityDashboard.temporalPatterns.title'), icon: Clock },
+              { id: 'planning', name: t('authorityDashboard.complianceTrends.title'), icon: Lightbulb },
+              { id: 'resources', name: t('authorityDashboard.resourceRecommendations.title'), icon: Target }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -246,411 +218,448 @@ export default function AuthorityDashboard() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Users className="w-6 h-6 text-blue-600" />
+        {insights && (
+          <>
+            {/* Strategic Overview Tab */}
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                {/* Key Performance Indicators */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Users className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('authorityDashboard.strategicOverview.totalSaccos')}</p>
+                        <p className="text-2xl font-bold text-gray-900">{insights.saccoPerformance.totalSaccos}</p>
+                        <p className="text-xs text-gray-500">{insights.saccoPerformance.criticalSaccos} {t('authorityDashboard.critical')}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">{t('authority.kpiCards.totalSaccos')}</p>
-                    <p className="text-2xl font-bold text-gray-900">{complianceData.length}</p>
+
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-red-100 rounded-lg">
+                        <AlertTriangle className="w-6 h-6 text-red-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('authorityDashboard.routeRiskAnalysis.highRiskRoutes')}</p>
+                        <p className="text-2xl font-bold text-gray-900">{insights.routeSafetyAnalysis.criticalRoutes}</p>
+                        <p className="text-xs text-gray-500">{t('authorityDashboard.avgRisk')} {insights.routeSafetyAnalysis.averageRiskScore}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-yellow-100 rounded-lg">
+                        <MapPin className="w-6 h-6 text-yellow-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('authorityDashboard.geographicInsights.highRiskZones')}</p>
+                        <p className="text-2xl font-bold text-gray-900">{insights.geographicRiskMap.highRiskZones.length}</p>
+                        <p className="text-xs text-gray-500">{t('authorityDashboard.highRiskAreas')}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <CheckCircle className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('authorityDashboard.systemHealth.resolutionRate')}</p>
+                        <p className="text-2xl font-bold text-gray-900">{(insights.systemHealth.resolutionRate * 100).toFixed(1)}%</p>
+                        <p className="text-xs text-gray-500">{t('authorityDashboard.systemEfficiency')}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircle className="w-6 h-6 text-green-600" />
+                {/* Planning Insights */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                      <Lightbulb className="w-5 h-5 mr-2 text-yellow-500" />
+{t('authorityDashboard.focusAreas')}
+                    </h3>
+                    <div className="space-y-2">
+                      {insights.planningInsights.focusAreas.slice(0, 5).map((area, index) => (
+                        <div key={index} className="flex items-center text-sm text-gray-600">
+                          <AlertCircle className="w-4 h-4 mr-2 text-orange-500" />
+                          {area}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">{t('authority.kpiCards.compliantSaccos')}</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {complianceData.filter(s => s.status === 'compliant').length}
-                    </p>
+
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                      <Target className="w-5 h-5 mr-2 text-blue-500" />
+{t('authorityDashboard.recommendedActions')}
+                    </h3>
+                    <div className="space-y-2">
+                      {[
+                        t('authorityDashboard.strategicOverview.increaseMonitoring'),
+                        t('authorityDashboard.strategicOverview.implementInterventions'),
+                        t('authorityDashboard.strategicOverview.focusResources'),
+                        t('authorityDashboard.strategicOverview.developProtocols'),
+                        t('authorityDashboard.strategicOverview.establishWarning')
+                      ].map((action, index) => (
+                        <div key={index} className="flex items-center text-sm text-gray-600">
+                          <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                          {action}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="flex items-center">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <AlertTriangle className="w-6 h-6 text-yellow-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">{t('authority.kpiCards.activeIncidents')}</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {safetyIncidents.filter(i => i.status !== 'resolved' && i.status !== 'closed').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="flex items-center">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <TrendingUp className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">{t('authority.kpiCards.systemUptime')}</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {systemMetrics?.systemUptime}%
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* System Health */}
-            {systemMetrics && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Trend Analysis */}
                 <div className="bg-white p-6 rounded-lg shadow">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('authority.systemMetrics.title')}</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{t('authority.systemMetrics.totalUsers')}</span>
-                      <span className="text-lg font-semibold">{systemMetrics.totalUsers.toLocaleString()}</span>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.complianceTrends.title')}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{insights.complianceTrends.averageDailyReports}</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.avgDailyReports')}</p>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{t('authority.systemMetrics.activeReports')}</span>
-                      <span className="text-lg font-semibold text-blue-600">{systemMetrics.activeReports}</span>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center">
+                        {getTrendIcon(insights.complianceTrends.trendDirection)}
+                        <span className="ml-2 text-sm text-gray-600 capitalize">
+                          {getTrendDirectionText(insights.complianceTrends.trendDirection)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.trendDirection')}</p>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{t('authority.systemMetrics.totalRoutes')}</span>
-                      <span className="text-lg font-semibold">{systemMetrics.totalRoutes}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{t('authority.systemMetrics.dataQuality')}</span>
-                      <span className="text-lg font-semibold text-green-600">{systemMetrics.dataQuality}%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-lg shadow">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('authority.performance.title')}</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{t('authority.performance.systemUptime')}</span>
-                      <span className="text-lg font-semibold text-green-600">{systemMetrics.systemUptime}%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{t('authority.performance.avgResponseTime')}</span>
-                      <span className="text-lg font-semibold">{systemMetrics.averageResponseTime}s</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{t('authority.performance.dataQuality')}</span>
-                      <span className="text-lg font-semibold text-green-600">{systemMetrics.dataQuality}%</span>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{insights.systemHealth.totalReports}</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.totalReportsLabel')}</p>
                     </div>
                   </div>
                 </div>
               </div>
             )}
-          </div>
-        )}
 
-        {activeTab === 'compliance' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{t('authority.complianceTable.title')}</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.complianceTable.sacco')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.complianceTable.licenseStatus')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.complianceTable.safetyScore')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.complianceTable.incidentCount')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.complianceTable.violations')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.complianceTable.lastInspection')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.complianceTable.status')}</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {complianceData.map((sacco) => (
-                    <tr key={sacco.saccoId}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{sacco.saccoName}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(sacco.licenseStatus)}`}>
-                          {translateStatus(sacco.licenseStatus)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                            <div 
-                              className="bg-green-600 h-2 rounded-full" 
-                              style={{ width: `${sacco.safetyScore}%` }}
-                            ></div>
+            {/* SACCO Performance Tab */}
+            {activeTab === 'sacco' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.saccoPerformance.topPerformers')}</h3>
+                    <div className="space-y-3">
+                      {insights.saccoPerformance.topPerformers.map((sacco, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <Award className="w-4 h-4 mr-2 text-yellow-500" />
+                            <span className="text-sm font-medium text-gray-900">{sacco._id || 'Unknown SACCO'}</span>
                           </div>
-                          <span className="text-sm text-gray-900">{sacco.safetyScore}%</span>
+                          <div className="text-right">
+                            <span className="text-sm text-gray-500">{sacco.totalReports} {t('authorityDashboard.reports')}</span>
+                            <div className="text-xs text-gray-400">
+                              {sacco.criticalReports} {t('authorityDashboard.critical')}
+                            </div>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {sacco.incidentCount}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {sacco.violations}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(sacco.lastInspection).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(sacco.status)}`}>
-                          {translateStatus(sacco.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+                      ))}
+                    </div>
+                  </div>
 
-        {activeTab === 'incidents' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-900">{t('authority.incidentsTable.title')}</h3>
-                  <div className="flex space-x-4">
-                    <select
-                      value={filterSeverity}
-                      onChange={(e) => setFilterSeverity(e.target.value)}
-                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                    >
-                      <option value="all">{t('authority.incidentsTable.allSeverity')}</option>
-                      <option value="low">{t('authority.incidentsTable.low')}</option>
-                      <option value="medium">{t('authority.incidentsTable.medium')}</option>
-                      <option value="high">{t('authority.incidentsTable.high')}</option>
-                      <option value="critical">{t('authority.incidentsTable.critical')}</option>
-                    </select>
-                    <select
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value)}
-                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                    >
-                      <option value="all">{t('authority.incidentsTable.allStatus')}</option>
-                      <option value="reported">{t('authority.incidentsTable.reported')}</option>
-                      <option value="investigating">{t('authority.incidentsTable.investigating')}</option>
-                      <option value="resolved">{t('authority.incidentsTable.resolved')}</option>
-                      <option value="closed">{t('authority.incidentsTable.closed')}</option>
-                    </select>
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.saccoPerformance.poorPerformers')}</h3>
+                    <div className="space-y-3">
+                      {insights.saccoPerformance.poorPerformers.map((sacco, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <AlertTriangle className="w-4 h-4 mr-2 text-red-500" />
+                            <span className="text-sm font-medium text-gray-900">{sacco._id || 'Unknown SACCO'}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm text-gray-500">{sacco.totalReports} {t('authorityDashboard.reports')}</span>
+                            <div className="text-xs text-red-500">
+                              {sacco.criticalReports} {t('authorityDashboard.critical')}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.saccoPerformance.title')}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{insights.saccoPerformance.totalSaccos}</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.strategicOverview.totalSaccos')}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{insights.saccoPerformance.averageReportsPerSacco}</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.avgReportsPerSacco')}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-red-600">{insights.saccoPerformance.criticalSaccos}</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.criticalSaccos')}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="divide-y divide-gray-200">
-                {safetyIncidents
-                  .filter(incident => 
-                    (filterSeverity === 'all' || incident.severity === filterSeverity) &&
-                    (filterStatus === 'all' || incident.status === filterStatus)
-                  )
-                  .map((incident) => (
-                    <div key={incident.id} className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h4 className="text-sm font-medium text-gray-900">{incident.routeName}</h4>
-                            <span className="text-sm text-gray-500">•</span>
-                            <span className="text-sm text-gray-500">{incident.saccoName}</span>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">{incident.description}</p>
-                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                            <span className="capitalize">{incident.type}</span>
-                            <span>•</span>
-                            <span>{incident.location}</span>
-                            <span>•</span>
-                            <span>{new Date(incident.reportedAt).toLocaleDateString()}</span>
-                            {incident.assignedTo && (
-                              <>
-                                <span>•</span>
-                                <span>Assigned to: {incident.assignedTo}</span>
-                              </>
-                            )}
-                          </div>
+            )}
+
+            {/* Route Risk Analysis Tab */}
+            {activeTab === 'routes' && (
+              <div className="space-y-6">
+                <div className="bg-white shadow rounded-lg">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">{t('authorityDashboard.routeRiskAnalysis.highRiskRoutes')}</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('authorityDashboard.routeRiskAnalysis.routeName')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('authorityDashboard.routeRiskAnalysis.operator')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('authorityDashboard.routeRiskAnalysis.riskScore')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('authorityDashboard.routeRiskAnalysis.totalIncidents')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('authorityDashboard.routeRiskAnalysis.criticalIncidents')}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {insights.routeSafetyAnalysis.highRiskRoutes.map((route) => (
+                          <tr key={route._id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {route.routeNumber} - {route.routeName}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {route.operator}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRiskColor(route.riskScore)}`}>
+                                {route.riskScore.toFixed(1)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {route.totalIncidents}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500">
+                              {route.criticalIncidents}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Geographic Insights Tab */}
+            {activeTab === 'geographic' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.geographicInsights.highRiskZones')}</h3>
+                  <div className="space-y-3">
+                    {insights.geographicRiskMap.highRiskZones.map((zone, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-2 text-red-500" />
+                          <span className="text-sm font-medium text-gray-900">
+                            {zone._id.lat.toFixed(2)}, {zone._id.lng.toFixed(2)}
+                          </span>
                         </div>
-                        <div className="flex flex-col items-end space-y-2">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getSeverityColor(incident.severity)}`}>
-                            {translateStatus(incident.severity)}
-                          </span>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(incident.status)}`}>
-                            {translateStatus(incident.status)}
-                          </span>
+                        <div className="text-right">
+                          <span className="text-sm text-gray-500">{zone.totalIncidents} {t('authorityDashboard.incidents')}</span>
+                          <div className="text-xs text-red-500">
+                            {zone.criticalIncidents} {t('authorityDashboard.critical')}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'reports' && (
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('authority.reports.title')}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <Shield className="w-8 h-8 text-blue-600" />
-                    <div>
-                      <h4 className="font-medium text-gray-900">{t('authority.reports.complianceReport.title')}</h4>
-                      <p className="text-sm text-gray-500">{t('authority.reports.complianceReport.description')}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => exportData('compliance','csv')} className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                      <Download className="w-4 h-4" />
-                      <span>{t('authority.reports.exportCsv')}</span>
-                    </button>
-                    <button onClick={() => exportData('compliance','xls')} className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                      <Download className="w-4 h-4" />
-                      <span>{t('authority.reports.exportXls')}</span>
-                    </button>
+                    ))}
                   </div>
                 </div>
 
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <AlertTriangle className="w-8 h-8 text-red-600" />
-                    <div>
-                      <h4 className="font-medium text-gray-900">{t('authority.reports.safetyIncidents.title')}</h4>
-                      <p className="text-sm text-gray-500">{t('authority.reports.safetyIncidents.description')}</p>
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.geographicInsights.title')} {t('authorityDashboard.geographicInsights.totalRiskZones')}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{insights.geographicRiskMap.totalRiskZones}</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.geographicInsights.totalRiskZones')}</p>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => exportData('incidents','csv')} className="w-full flex items-center justify-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
-                      <Download className="w-4 h-4" />
-                      <span>{t('authority.reports.exportCsv')}</span>
-                    </button>
-                    <button onClick={() => exportData('incidents','xls')} className="w-full flex items-center justify-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
-                      <Download className="w-4 h-4" />
-                      <span>{t('authority.reports.exportXls')}</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <BarChart3 className="w-8 h-8 text-green-600" />
-                    <div>
-                      <h4 className="font-medium text-gray-900">{t('authority.reports.systemAnalytics.title')}</h4>
-                      <p className="text-sm text-gray-500">{t('authority.reports.systemAnalytics.description')}</p>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-red-600">{insights.geographicRiskMap.highRiskZones.length}</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.geographicInsights.highRiskZones')}</p>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => exportData('analytics','csv')} className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                      <Download className="w-4 h-4" />
-                      <span>{t('authority.reports.exportCsv')}</span>
-                    </button>
-                    <button onClick={() => exportData('analytics','xls')} className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                      <Download className="w-4 h-4" />
-                      <span>{t('authority.reports.exportXls')}</span>
-                    </button>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{insights.geographicRiskMap.averageRiskLevel}</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.geographicInsights.averageRiskLevel')}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {activeTab === 'audit' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{t('authority.auditTable.title')}</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.auditTable.action')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.auditTable.user')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.auditTable.timestamp')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.auditTable.details')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.auditTable.ipAddress')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('authority.auditTable.status')}</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {auditLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {log.action}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {log.user}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(log.timestamp).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {log.details}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {log.ipAddress}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(log.status)}`}>
-                          {translateStatus(log.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+            {/* Temporal Patterns Tab */}
+            {activeTab === 'temporal' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.temporalPatterns.peakHours')}</h3>
+                    <div className="space-y-3">
+                      {insights.temporalPatterns.peakHours.map((hour, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <Clock className="w-4 h-4 mr-2 text-blue-500" />
+                            <span className="text-sm font-medium text-gray-900">
+                              {hour._id.hour}:00 - {hour._id.hour + 1}:00
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-500">{hour.incidentCount} {t('authorityDashboard.incidents')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-        {activeTab === 'system' && systemMetrics && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('authority.systemHealth.title')}</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('authority.systemHealth.systemUptime')}</span>
-                    <span className="text-lg font-semibold text-green-600">{systemMetrics.systemUptime}%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('authority.systemHealth.dataQuality')}</span>
-                    <span className="text-lg font-semibold text-green-600">{systemMetrics.dataQuality}%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('authority.systemHealth.averageResponseTime')}</span>
-                    <span className="text-lg font-semibold">{systemMetrics.averageResponseTime}s</span>
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.temporalPatterns.title')}</h3>
+                    <div className="space-y-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-900">{insights.temporalPatterns.averageIncidentsPerHour}</p>
+                        <p className="text-sm text-gray-500">{t('authorityDashboard.temporalPatterns.averageIncidentsPerHour')}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-900">{insights.temporalPatterns.peakHours.length}</p>
+                        <p className="text-sm text-gray-500">{t('authorityDashboard.temporalPatterns.peakHoursIdentified')}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('authority.userActivity.title')}</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('authority.userActivity.totalUsers')}</span>
-                    <span className="text-lg font-semibold">{systemMetrics.totalUsers.toLocaleString()}</span>
+            {/* Planning Insights Tab */}
+            {activeTab === 'planning' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                      <Lightbulb className="w-5 h-5 mr-2 text-yellow-500" />
+{t('authorityDashboard.strategicFocusAreas')}
+                    </h3>
+                    <div className="space-y-3">
+                      {insights.planningInsights.focusAreas.map((area, index) => (
+                        <div key={index} className="flex items-start">
+                          <AlertCircle className="w-4 h-4 mr-2 text-orange-500 mt-0.5" />
+                          <span className="text-sm text-gray-600">{area}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('authority.userActivity.activeReports')}</span>
-                    <span className="text-lg font-semibold text-blue-600">{systemMetrics.activeReports}</span>
+
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                      <Target className="w-5 h-5 mr-2 text-blue-500" />
+{t('authorityDashboard.recommendedActions')}
+                    </h3>
+                    <div className="space-y-3">
+                      {[
+                        t('authorityDashboard.strategicOverview.increaseMonitoring'),
+                        t('authorityDashboard.strategicOverview.implementInterventions'),
+                        t('authorityDashboard.strategicOverview.focusResources'),
+                        t('authorityDashboard.strategicOverview.developProtocols'),
+                        t('authorityDashboard.strategicOverview.establishWarning')
+                      ].map((action, index) => (
+                        <div key={index} className="flex items-start">
+                          <CheckCircle className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
+                          <span className="text-sm text-gray-600">{action}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('authority.userActivity.totalRoutes')}</span>
-                    <span className="text-lg font-semibold">{systemMetrics.totalRoutes}</span>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.riskIndicators.title')}</h3>
+                  <div className="space-y-3">
+                    {insights.riskIndicators.topRisks.map((risk, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center">
+                          <AlertTriangle className="w-4 h-4 mr-2 text-red-500" />
+                          <span className="text-sm font-medium text-gray-900 capitalize">
+                            {risk._id.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm text-gray-500">{risk.totalCount} {t('authorityDashboard.incidents')}</span>
+                          <div className="text-xs text-red-500">
+                            {risk.criticalCount} {t('authorityDashboard.critical')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            )}
+
+            {/* Resource Allocation Tab */}
+            {activeTab === 'resources' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.resourceRecommendations.prioritySaccos')} {t('authorityDashboard.resourceRecommendations.title')}</h3>
+                  <div className="space-y-3">
+                    {insights.resourceRecommendations.prioritySaccos.map((sacco, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <div className="flex items-center">
+                          <Target className="w-4 h-4 mr-2 text-blue-500" />
+                          <span className="text-sm font-medium text-gray-900">{sacco._id || 'Unknown SACCO'}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm text-gray-500">{t('authorityDashboard.priorityScoreLabel')} {sacco.priorityScore}</span>
+                          <div className="text-xs text-gray-400">
+                            {sacco.totalReports} {t('authorityDashboard.reports')}, {sacco.criticalReports} {t('authorityDashboard.critical')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('authorityDashboard.resourceRecommendations.title')} {t('authorityDashboard.resourceRecommendations.totalResourcesNeeded')}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{insights.resourceRecommendations.totalResourcesNeeded}</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.resourceRecommendations.totalResourcesNeeded')}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-red-600">{insights.resourceRecommendations.highPriorityCount}</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.resourceRecommendations.highPriorityCases')}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{(insights.systemHealth.dataQuality * 100).toFixed(1)}%</p>
+                      <p className="text-sm text-gray-500">{t('authorityDashboard.systemHealth.dataQuality')}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   )
 }
+
+export default AuthorityDashboard

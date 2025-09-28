@@ -358,6 +358,7 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
       settings: 'Settings',
       dashboard: 'Dashboard',
       analytics: 'Analytics',
+      subscription: 'Subscription',
       saccoDashboard: 'SACCO Dashboard',
       authorityDashboard: 'Authority Dashboard',
       userManagement: 'User Management',
@@ -371,6 +372,11 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
       authorityTools: 'Authority Tools',
       fleetManagement: 'Fleet Management',
       compliance: 'Compliance',
+      adminAnalytics: 'Admin Analytics',
+      saccoAnalytics: 'SACCO Analytics',
+      authorityAnalytics: 'Authority Analytics',
+      moderatorAnalytics: 'Moderator Analytics',
+      myAnalytics: 'My Analytics',
     },
     auth: {
       login: 'Login',
@@ -1040,6 +1046,554 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
         avatarUpdateError: 'Failed to update profile with new avatar',
       },
     },
+    subscription: {
+      title: 'Choose Your Plan',
+      subtitle: 'Select the perfect plan for your transportation needs. Upgrade anytime to unlock premium features.',
+      currentPlan: 'Current Plan',
+      status: 'Status',
+      expires: 'Expires',
+      features: 'Active Features',
+      popular: 'Popular',
+      free: 'Free',
+      month: 'month',
+      current: 'Current Plan',
+      processing: 'Processing...',
+      getStarted: 'Get Started',
+      upgrade: 'Upgrade Now',
+      featureComparison: 'Feature Comparison',
+      basicReports: 'Basic Reports',
+      unlimitedReports: 'Unlimited Reports',
+      advancedAnalytics: 'Advanced Analytics',
+      prioritySupport: 'Priority Support',
+      apiAccess: 'API Access',
+      faq: 'Frequently Asked Questions',
+      faq1: {
+        question: 'Can I change my plan anytime?',
+        answer: 'Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately.'
+      },
+      faq2: {
+        question: 'What payment methods do you accept?',
+        answer: 'We accept all major credit cards, M-Pesa, Airtel Money, and bank transfers.'
+      },
+      faq3: {
+        question: 'Is there a free trial?',
+        answer: 'Yes, all paid plans come with a 7-day free trial. No credit card required.'
+      },
+      featureNames: {
+        advancedAnalytics: 'Advanced Analytics',
+        prioritySupport: 'Priority Support',
+        customBranding: 'Custom Branding',
+        apiAccess: 'API Access',
+        unlimitedReports: 'Unlimited Reports'
+      },
+      adminAccess: 'Admin Access',
+      planTypes: {
+        free: 'Free',
+        premium: 'Premium',
+        sacco: 'SACCO',
+        enterprise: 'Enterprise'
+      },
+      statusTypes: {
+        active: 'Active',
+        inactive: 'Inactive',
+        expired: 'Expired',
+        pending: 'Pending'
+      },
+      plans: {
+        free: {
+          name: 'Free',
+          features: {
+            basicInfo: 'Basic route information',
+            reports: 'Submit 5 reports per month',
+            support: 'Community support'
+          }
+        },
+        premium: {
+          name: 'Premium',
+          features: {
+            unlimitedReports: 'Unlimited reports',
+            advancedAnalytics: 'Advanced analytics',
+            prioritySupport: 'Priority support',
+            realTimeNotifications: 'Real-time notifications'
+          }
+        },
+        sacco: {
+          name: 'SACCO',
+          features: {
+            allPremium: 'All Premium features',
+            revenueAnalytics: 'Revenue analytics',
+            customBranding: 'Custom branding',
+            apiAccess: 'API access',
+            dedicatedSupport: 'Dedicated support'
+          }
+        },
+        enterprise: {
+          name: 'Enterprise',
+          features: {
+            allSacco: 'All SACCO features',
+            whiteLabel: 'White-label solution',
+            customIntegrations: 'Custom integrations',
+            support247: '24/7 support',
+            slaGuarantee: 'SLA guarantee'
+          }
+        }
+      },
+      daysRemaining: 'Days Remaining',
+      totalSubscription: 'Total Subscription',
+      yearly: 'Yearly',
+      selectPlan: 'Select Plan',
+      days: 'days',
+    },
+    analyticsDashboard: {
+      title: 'Analytics Dashboard',
+      subtitle: 'Monitor system performance and user engagement',
+      last7Days: 'Last 7 Days',
+      last30Days: 'Last 30 Days',
+      error: 'Error Loading Analytics',
+      totalEvents: 'Total Events',
+      activeUsers: 'Active Users',
+      avgEngagement: 'Avg Engagement',
+      performanceScore: 'Performance Score',
+      eventTypes: 'Event Types',
+      performanceMetrics: 'Performance Metrics',
+      metric: 'Metric',
+      value: 'Value',
+      endpoint: 'Endpoint',
+      timestamp: 'Timestamp',
+      noMetrics: 'No Performance Metrics',
+      noMetricsDesc: 'Performance metrics will appear here as the system collects data.',
+      // User Metrics
+      userMetrics: {
+        title: 'User Metrics',
+        totalUsers: 'Total Users',
+        activeUsers: 'Active Users',
+        newUsers: 'New Users',
+        userRoles: 'User Roles'
+      },
+      // Route Metrics
+      routeMetrics: {
+        title: 'Route Metrics',
+        totalRoutes: 'Total Routes',
+        activeRoutes: 'Active Routes',
+        topOperators: 'Top Operators'
+      },
+      // Report Metrics
+      reportMetrics: {
+        title: 'Report Metrics',
+        totalReports: 'Total Reports',
+        recentReports: 'Recent Reports',
+        reportsByType: 'Reports by Type',
+        reportsBySeverity: 'Reports by Severity',
+        reportsByStatus: 'Reports by Status'
+      },
+      // Rating Metrics
+      ratingMetrics: {
+        title: 'Rating Metrics',
+        totalRatings: 'Total Ratings',
+        averageRating: 'Average Rating',
+        topRatedRoutes: 'Top Rated Routes',
+        routeName: 'Route Name',
+        routeNumber: 'Route Number',
+        operator: 'Operator',
+        avgRating: 'Avg Rating'
+      },
+      // Subscription Metrics
+      subscriptionMetrics: {
+        title: 'Subscription Metrics',
+        totalSubscriptions: 'Total Subscriptions',
+        activeSubscriptions: 'Active Subscriptions',
+        subscriptionsByPlan: 'Subscriptions by Plan'
+      },
+      // Payment Metrics
+      paymentMetrics: {
+        title: 'Payment Metrics',
+        totalPayments: 'Total Payments',
+        successfulPayments: 'Successful Payments',
+        successRate: 'Success Rate',
+        totalRevenue: 'Total Revenue',
+        paymentsByMethod: 'Payments by Method'
+      },
+      // Traffic Metrics
+      trafficMetrics: {
+        title: 'Traffic Metrics',
+        totalRoutesWithTraffic: 'Total Routes with Traffic',
+        averageCongestion: 'Average Congestion',
+        congestionIndex: 'Congestion Index',
+        trafficFactor: 'Traffic Factor'
+      },
+      // Geographic Analytics
+      geographicAnalytics: {
+        title: 'Geographic Analytics',
+        reportHotspots: 'Report Hotspots'
+      },
+      // Time Analytics
+      timeAnalytics: {
+        title: 'Time Analytics',
+        reportsByHour: 'Reports by Hour'
+      },
+      // Metric Type Names
+      metricTypes: {
+        apiResponseTime: 'API Response Time',
+        pageLoadTime: 'Page Load Time',
+        errorRate: 'Error Rate',
+        userEngagement: 'User Engagement'
+      },
+      // Report Types
+      reportTypes: {
+        crowding: 'Crowding',
+        delay: 'Delay',
+        safety: 'Safety',
+        breakdown: 'Breakdown',
+        other: 'Other'
+      },
+      // Severity Levels
+      severityLevels: {
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+        critical: 'Critical'
+      },
+      // User Roles
+      userRoles: {
+        admin: 'Admin',
+        user: 'User',
+        moderator: 'Moderator',
+        sacco: 'SACCO',
+        authority: 'Authority'
+      },
+      // Subscription Plans
+      subscriptionPlans: {
+        free: 'Free',
+        premium: 'Premium',
+        sacco: 'SACCO',
+        enterprise: 'Enterprise'
+      }
+    },
+    userAnalytics: {
+      title: 'Your Personal Analytics',
+      subtitle: 'Insights and recommendations tailored for you',
+      last7Days: 'Last 7 Days',
+      last30Days: 'Last 30 Days',
+      last90Days: 'Last 90 Days',
+      refresh: 'Refresh',
+      error: 'Failed to load user analytics',
+      retry: 'Retry',
+      loading: 'Loading Your Personal Analytics...',
+      // Personal Stats
+      personalStats: {
+        totalReports: 'Total Reports',
+        totalRatings: 'Total Ratings',
+        favoriteRoutes: 'Favorite Routes',
+        activityScore: 'Activity Score',
+        reportsThisMonth: 'this month',
+        avgRating: 'Avg',
+        savedRoutes: 'Saved routes',
+        veryActiveUser: 'Very active user'
+      },
+      // Route Insights
+      routeInsights: {
+        title: 'Your Route Insights',
+        mostReportedRoute: 'Most Reported Route',
+        bestRatedRoute: 'Best Rated Route',
+        reports: 'reports',
+        last: 'last',
+        stars: 'stars',
+        ratings: 'ratings'
+      },
+      // Recent Activity
+      recentActivity: {
+        title: 'Recent Activity',
+        reportedDelay: 'Reported delay',
+        ratedStars: 'Rated 5 stars',
+        reportedSafetyIssue: 'Reported safety issue'
+      },
+      // Safety Insights
+      safetyInsights: {
+        title: 'Safety Insights',
+        safetyReports: 'Safety Reports',
+        delayReports: 'Delay Reports',
+        resolvedReports: 'Resolved Reports',
+        averageResponseTime: 'Average Response Time'
+      },
+      // Recommendations
+      recommendations: {
+        title: 'Recommended Routes',
+        suggestedRoutes: 'Suggested Routes',
+        highlyRatedByUsers: 'Highly rated by users',
+        reliableAndPunctual: 'Reliable and punctual',
+        safetyTips: 'Safety Tips',
+        avoidPeakHours: 'Avoid peak hours (7-9 AM, 5-7 PM) for better safety',
+        bestSafetyRecord: 'Route 15 has the best safety record in your area',
+        reportImmediately: 'Report any safety concerns immediately for faster response'
+      },
+      // Peak Hours
+      peakHours: {
+        title: 'Peak Hours & Recommendations',
+        highTraffic: 'High traffic, allow extra time',
+        peakHours: 'Peak hours, consider alternative routes'
+      }
+    },
+    saccoDashboard: {
+      title: 'SACCO Dashboard',
+      dashboardTitle: 'Dashboard',
+      subtitle: 'SACCO Performance Analytics & Insights',
+      dataSource: 'Data Source: Real-time database analytics',
+      last7Days: 'Last 7 Days',
+      last30Days: 'Last 30 Days',
+      last90Days: 'Last 90 Days',
+      refresh: 'Refresh',
+      loadingAnalytics: 'Loading SACCO Analytics...',
+      totalRoutes: 'Total Routes',
+      avgRating: 'Avg Rating',
+      totalReports: 'Total Reports',
+      marketRank: 'Market Rank',
+      active: 'active',
+      outOf: 'out of',
+      perDay: 'per day',
+      ofSaccos: 'SACCOs',
+      reportsByType: 'Reports by Type',
+      reportsBySeverity: 'Reports by Severity',
+      // Route Performance Analysis
+      routePerformanceAnalysis: 'Route Performance Analysis',
+      route: 'Route',
+      overallRating: 'Overall Rating',
+      safety: 'Safety',
+      punctuality: 'Punctuality',
+      comfort: 'Comfort',
+      totalRatings: 'Total Ratings',
+      // Revenue Analytics
+      totalRevenue: 'Total Revenue',
+      avgDailyRevenue: 'Avg Daily Revenue',
+      revenueDays: 'Revenue Days',
+      dailyRevenueTrends: 'Daily Revenue Trends',
+      // Market Position
+      yourPerformance: 'Your Performance',
+      marketRanking: 'Market Ranking:',
+      marketAverage: 'Market Average:',
+      top5Saccos: 'Top 5 SACCOs',
+      // Geographic Insights
+      incidentHotspots: 'Incident Hotspots',
+      peakHoursAnalysis: 'Peak Hours Analysis',
+      error: 'Failed to load SACCO analytics',
+      retry: 'Retry',
+      loading: 'Loading SACCO Analytics...',
+      usingSampleData: 'Using sample data - real data unavailable',
+      // Overview Tab
+      overview: {
+        title: 'Overview',
+        totalRoutes: 'Total Routes',
+        active: 'active',
+        avgRating: 'Avg Rating',
+        outOf: 'out of 5.0',
+        totalReports: 'Total Reports',
+        perDay: 'per day',
+        marketRank: 'Market Rank',
+        ofSaccos: 'of 6 SACCOs',
+        reportsByType: 'Reports by Type',
+        reportsBySeverity: 'Reports by Severity'
+      },
+      // Route Performance Tab
+      routePerformance: {
+        title: 'Route Performance',
+        topRatedRoutes: 'Top Rated Routes',
+        routeName: 'Route Name',
+        routeNumber: 'Route Number',
+        avgRating: 'Avg Rating',
+        totalRatings: 'Total Ratings',
+        avgReliability: 'Avg Reliability',
+        avgSafety: 'Avg Safety',
+        avgPunctuality: 'Avg Punctuality',
+        avgComfort: 'Avg Comfort'
+      },
+      // Incident Reports Tab
+      incidentReports: {
+        title: 'Incident Reports',
+        recentReports: 'Recent Reports',
+        reportType: 'Report Type',
+        severity: 'Severity',
+        location: 'Location',
+        reportedAt: 'Reported At',
+        status: 'Status'
+      },
+      // Revenue Analytics Tab
+      revenueAnalytics: {
+        title: 'Revenue Analytics',
+        dailyRevenue: 'Daily Revenue',
+        totalRevenue: 'Total Revenue',
+        avgDailyRevenue: 'Avg Daily Revenue',
+        revenueTrend: 'Revenue Trend'
+      },
+      // Market Position Tab
+      marketPosition: {
+        title: 'Market Position',
+        competitiveAnalysis: 'Competitive Analysis',
+        saccoRanking: 'SACCO Ranking',
+        totalSaccos: 'Total SACCOs',
+        performanceVsMarket: 'Performance vs Market',
+        saccoReports: 'SACCO Reports',
+        marketAvg: 'Market Avg'
+      },
+      // Geographic Insights Tab
+      geographicInsights: {
+        title: 'Geographic Insights',
+        hotspots: 'Hotspots',
+        totalLocations: 'Total Locations',
+        latitude: 'Latitude',
+        longitude: 'Longitude',
+        incidentCount: 'Incident Count',
+        types: 'Types'
+      }
+    },
+    authorityDashboard: {
+      title: 'Authority Planning Dashboard',
+      subtitle: 'Strategic Planning & Regulatory Insights',
+      last7Days: 'Last 7 Days',
+      last30Days: 'Last 30 Days',
+      last90Days: 'Last 90 Days',
+      refresh: 'Refresh',
+      loadingInsights: 'Loading Authority Planning Insights...',
+      critical: 'critical',
+      avgRisk: 'Avg Risk:',
+      highRiskAreas: 'High risk areas',
+      systemEfficiency: 'System efficiency',
+      focusAreas: 'Focus Areas',
+      recommendedActions: 'Recommended Actions',
+      avgDailyReports: 'Avg Daily Reports',
+      trendDirection: 'Trend Direction',
+      totalReportsLabel: 'Total Reports',
+      criticalSaccos: 'Critical SACCOs',
+      avgReportsPerSacco: 'Avg Reports per SACCO',
+      strategicFocusAreas: 'Strategic Focus Areas',
+      incidents: 'incidents',
+      reports: 'reports',
+      priorityScoreLabel: 'Priority Score:',
+      totalReportsCount: 'Total Reports:',
+      criticalReportsLabel: 'Critical Reports:',
+      error: 'Failed to load authority insights',
+      retry: 'Retry',
+      loading: 'Loading Authority Insights...',
+      // Strategic Overview Tab
+      strategicOverview: {
+        title: 'Strategic Overview',
+        keyPerformanceIndicators: 'Key Performance Indicators',
+        totalSaccos: 'Total SACCOs',
+        totalRoutes: 'Total Routes',
+        totalReports: 'Total Reports',
+        criticalIncidents: 'Critical Incidents',
+        focusAreas: 'Focus Areas',
+        recommendedActions: 'Recommended Actions',
+        increaseMonitoring: 'Increase monitoring in high-risk geographic zones',
+        implementInterventions: 'Implement targeted interventions for poor-performing SACCOs',
+        focusResources: 'Focus resources on peak incident hours',
+        developProtocols: 'Develop specific safety protocols for high-risk routes',
+        establishWarning: 'Establish early warning systems for critical incidents'
+      },
+      // SACCO Performance Tab
+      saccoPerformance: {
+        title: 'SACCO Performance Analysis',
+        topPerformers: 'Top Performers',
+        poorPerformers: 'Poor Performers',
+        averageReportsPerSacco: 'Average Reports per SACCO',
+        criticalSaccos: 'Critical SACCOs',
+        saccoName: 'SACCO Name',
+        totalReports: 'Total Reports',
+        criticalReports: 'Critical Reports',
+        avgSeverity: 'Avg Severity',
+        lastReport: 'Last Report'
+      },
+      // Route Risk Analysis Tab
+      routeRiskAnalysis: {
+        title: 'Route Risk Analysis',
+        highRiskRoutes: 'High Risk Routes',
+        totalRoutesAnalyzed: 'Total Routes Analyzed',
+        averageRiskScore: 'Average Risk Score',
+        criticalRoutes: 'Critical Routes',
+        routeName: 'Route Name',
+        routeNumber: 'Route Number',
+        operator: 'Operator',
+        totalIncidents: 'Total Incidents',
+        criticalIncidents: 'Critical Incidents',
+        safetyIncidents: 'Safety Incidents',
+        accidentIncidents: 'Accident Incidents',
+        riskScore: 'Risk Score',
+        lastIncident: 'Last Incident'
+      },
+      // Geographic Insights Tab
+      geographicInsights: {
+        title: 'Geographic Risk Mapping',
+        highRiskZones: 'High Risk Zones',
+        totalRiskZones: 'Total Risk Zones',
+        averageRiskLevel: 'Average Risk Level',
+        latitude: 'Latitude',
+        longitude: 'Longitude',
+        totalIncidents: 'Total Incidents',
+        criticalIncidents: 'Critical Incidents',
+        incidentTypes: 'Incident Types',
+        avgSeverity: 'Avg Severity',
+        riskLevel: 'Risk Level'
+      },
+      // Temporal Patterns Tab
+      temporalPatterns: {
+        title: 'Temporal Pattern Analysis',
+        peakHours: 'Peak Hours',
+        peakDays: 'Peak Days',
+        averageIncidentsPerHour: 'Average Incidents per Hour',
+        peakHoursIdentified: 'Peak Hours Identified',
+        hour: 'Hour',
+        dayOfWeek: 'Day of Week',
+        incidentCount: 'Incident Count',
+        criticalCount: 'Critical Count',
+        avgSeverity: 'Avg Severity'
+      },
+      // Compliance Trends Tab
+      complianceTrends: {
+        title: 'SACCO Compliance Trends',
+        dailyTrends: 'Daily Trends',
+        averageDailyReports: 'Average Daily Reports',
+        trendDirection: 'Trend Direction',
+        increasing: 'Increasing',
+        decreasing: 'Decreasing',
+        stable: 'Stable',
+        day: 'Day',
+        totalReports: 'Total Reports',
+        totalCritical: 'Total Critical',
+        saccoCount: 'SACCO Count',
+        avgReportsPerSacco: 'Avg Reports per SACCO'
+      },
+      // Risk Indicators Tab
+      riskIndicators: {
+        title: 'Predictive Risk Indicators',
+        topRisks: 'Top Risks',
+        criticalRiskTypes: 'Critical Risk Types',
+        averageRiskLevel: 'Average Risk Level',
+        reportType: 'Report Type',
+        totalCount: 'Total Count',
+        criticalCount: 'Critical Count',
+        avgSeverity: 'Avg Severity',
+        trend: 'Trend'
+      },
+      // System Health Tab
+      systemHealth: {
+        title: 'System Health & Performance',
+        totalReports: 'Total Reports',
+        averageResponseTime: 'Average Response Time',
+        resolutionRate: 'Resolution Rate',
+        dataQuality: 'Data Quality'
+      },
+      // Resource Recommendations Tab
+      resourceRecommendations: {
+        title: 'Resource Allocation Recommendations',
+        prioritySaccos: 'Priority SACCOs',
+        totalResourcesNeeded: 'Total Resources Needed',
+        highPriorityCount: 'High Priority Count',
+        highPriorityCases: 'High Priority Cases',
+        saccoName: 'SACCO Name',
+        totalReports: 'Total Reports',
+        criticalReports: 'Critical Reports',
+        reportTypes: 'Report Types',
+        priorityScore: 'Priority Score'
+      }
+    },
   },
   sw: {
     common: {
@@ -1072,6 +1626,7 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
       settings: 'Mipangilio',
       dashboard: 'Dashibodi',
       analytics: 'Uchambuzi',
+      subscription: 'Mpango wa Malipo',
       saccoDashboard: 'Dashibodi ya SACCO',
       authorityDashboard: 'Dashibodi ya Mamlaka',
       userManagement: 'Usimamizi wa Watumiaji',
@@ -1085,6 +1640,11 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
       authorityTools: 'Vifaa vya Mamlaka',
       fleetManagement: 'Usimamizi wa Gari',
       compliance: 'Utii',
+      adminAnalytics: 'Uchambuzi wa Msimamizi',
+      saccoAnalytics: 'Uchambuzi wa SACCO',
+      authorityAnalytics: 'Uchambuzi wa Mamlaka',
+      moderatorAnalytics: 'Uchambuzi wa Msimamizi',
+      myAnalytics: 'Uchambuzi Wangu',
     },
     auth: {
       login: 'Ingia',
@@ -1753,6 +2313,554 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
         imageUploadError: 'Imeshindwa kupakia picha',
         avatarUpdateError: 'Imeshindwa kusasisha wasifu na picha mpya',
       },
+    },
+    subscription: {
+      title: 'Chagua Mpango Wako',
+      subtitle: 'Chagua mpango kamili kwa mahitaji yako ya usafiri. Badilisha wakati wowote ili kufungua vipengele vya hali ya juu.',
+      currentPlan: 'Mpango wa Sasa',
+      status: 'Hali',
+      expires: 'Inaisha',
+      features: 'Vipengele Vya Kufanya Kazi',
+      popular: 'Maarufu',
+      free: 'Bure',
+      month: 'mwezi',
+      current: 'Mpango wa Sasa',
+      processing: 'Inachakata...',
+      getStarted: 'Anza',
+      upgrade: 'Badilisha Sasa',
+      featureComparison: 'Ulinganisho wa Vipengele',
+      basicReports: 'Ripoti za Msingi',
+      unlimitedReports: 'Ripoti zisizo na Kikomo',
+      advancedAnalytics: 'Uchambuzi wa Hali ya Juu',
+      prioritySupport: 'Msaada wa Kipaumbele',
+      apiAccess: 'Ufikiaji wa API',
+      faq: 'Maswali Yanayoulizwa Mara nyingi',
+      faq1: {
+        question: 'Je, naweza kubadilisha mpango wangu wakati wowote?',
+        answer: 'Ndiyo, unaweza kubadilisha mpango wako wakati wowote. Mabadiliko yanaanza kufanya kazi mara moja.'
+      },
+      faq2: {
+        question: 'Je, unakubali njia zipi za malipo?',
+        answer: 'Tunakubali kadi zote kuu za mkopo, M-Pesa, Airtel Money, na uhamisho wa benki.'
+      },
+      faq3: {
+        question: 'Je, kuna jaribio la bure?',
+        answer: 'Ndiyo, mipango yote ya kulipia inakuja na jaribio la siku 7 la bure. Hakuna kadi ya mkopo inahitajika.'
+      },
+      featureNames: {
+        advancedAnalytics: 'Uchambuzi wa Hali ya Juu',
+        prioritySupport: 'Msaada wa Kipaumbele',
+        customBranding: 'Alama ya Kibinafsi',
+        apiAccess: 'Ufikiaji wa API',
+        unlimitedReports: 'Ripoti Zisizo na Kikomo'
+      },
+      adminAccess: 'Ufikiaji wa Msimamizi',
+      planTypes: {
+        free: 'Bure',
+        premium: 'Hali ya Juu',
+        sacco: 'SACCO',
+        enterprise: 'Kampuni'
+      },
+      statusTypes: {
+        active: 'Inafanya Kazi',
+        inactive: 'Haifanyi Kazi',
+        expired: 'Imeisha',
+        pending: 'Inasubiri'
+      },
+      plans: {
+        free: {
+          name: 'Bure',
+          features: {
+            basicInfo: 'Maelezo ya msingi ya njia',
+            reports: 'Wasilisha ripoti 5 kwa mwezi',
+            support: 'Msaada wa jamii'
+          }
+        },
+        premium: {
+          name: 'Hali ya Juu',
+          features: {
+            unlimitedReports: 'Ripoti zisizo na kikomo',
+            advancedAnalytics: 'Uchambuzi wa hali ya juu',
+            prioritySupport: 'Msaada wa kipaumbele',
+            realTimeNotifications: 'Arifa za wakati halisi'
+          }
+        },
+        sacco: {
+          name: 'SACCO',
+          features: {
+            allPremium: 'Vipengele vyote vya Hali ya Juu',
+            revenueAnalytics: 'Uchambuzi wa mapato',
+            customBranding: 'Alama ya kibinafsi',
+            apiAccess: 'Ufikiaji wa API',
+            dedicatedSupport: 'Msaada wa maalum'
+          }
+        },
+        enterprise: {
+          name: 'Kampuni',
+          features: {
+            allSacco: 'Vipengele vyote vya SACCO',
+            whiteLabel: 'Suluhisho la alama nyeupe',
+            customIntegrations: 'Ujumuishaji wa kibinafsi',
+            support247: 'Msaada wa masaa 24/7',
+            slaGuarantee: 'Dhamana ya SLA'
+          }
+        }
+      },
+      daysRemaining: 'Siku Zilizobaki',
+      totalSubscription: 'Jumla ya Usajili',
+      yearly: 'Kila Mwaka',
+      selectPlan: 'Chagua Mpango',
+      days: 'siku',
+    },
+    analyticsDashboard: {
+      title: 'Dashibodi ya Uchambuzi',
+      subtitle: 'Fuatilia utendaji wa mfumo na ushiriki wa watumiaji',
+      last7Days: 'Siku 7 za Mwisho',
+      last30Days: 'Siku 30 za Mwisho',
+      error: 'Hitilafu ya Kupakia Uchambuzi',
+      totalEvents: 'Matukio Jumla',
+      activeUsers: 'Watumiaji Wanaofanya Kazi',
+      avgEngagement: 'Ushiriki wa Wastani',
+      performanceScore: 'Alama ya Utendaji',
+      eventTypes: 'Aina za Matukio',
+      performanceMetrics: 'Vipimo vya Utendaji',
+      metric: 'Kipimo',
+      value: 'Thamani',
+      endpoint: 'Mwisho wa Mstari',
+      timestamp: 'Muda wa Alama',
+      noMetrics: 'Hakuna Vipimo vya Utendaji',
+      noMetricsDesc: 'Vipimo vya utendaji vitaonekana hapa mfumo unavyokusanya data.',
+      // User Metrics
+      userMetrics: {
+        title: 'Vipimo vya Watumiaji',
+        totalUsers: 'Watumiaji Jumla',
+        activeUsers: 'Watumiaji Wanaofanya Kazi',
+        newUsers: 'Watumiaji Wapya',
+        userRoles: 'Majukumu ya Watumiaji'
+      },
+      // Route Metrics
+      routeMetrics: {
+        title: 'Vipimo vya Njia',
+        totalRoutes: 'Njia Jumla',
+        activeRoutes: 'Njia Zinazofanya Kazi',
+        topOperators: 'Waendeshaji wa Juu'
+      },
+      // Report Metrics
+      reportMetrics: {
+        title: 'Vipimo vya Ripoti',
+        totalReports: 'Ripoti Jumla',
+        recentReports: 'Ripoti za Hivi Karibuni',
+        reportsByType: 'Ripoti kwa Aina',
+        reportsBySeverity: 'Ripoti kwa Ukali',
+        reportsByStatus: 'Ripoti kwa Hali'
+      },
+      // Rating Metrics
+      ratingMetrics: {
+        title: 'Vipimo vya Alama',
+        totalRatings: 'Alama Jumla',
+        averageRating: 'Alama ya Wastani',
+        topRatedRoutes: 'Njia za Alama za Juu',
+        routeName: 'Jina la Njia',
+        routeNumber: 'Nambari ya Njia',
+        operator: 'Mwendeshaji',
+        avgRating: 'Alama ya Wastani'
+      },
+      // Subscription Metrics
+      subscriptionMetrics: {
+        title: 'Vipimo vya Usajili',
+        totalSubscriptions: 'Usajili Jumla',
+        activeSubscriptions: 'Usajili Unaofanya Kazi',
+        subscriptionsByPlan: 'Usajili kwa Mpango'
+      },
+      // Payment Metrics
+      paymentMetrics: {
+        title: 'Vipimo vya Malipo',
+        totalPayments: 'Malipo Jumla',
+        successfulPayments: 'Malipo Yaliyofanikiwa',
+        successRate: 'Kiwango cha Mafanikio',
+        totalRevenue: 'Mapato Jumla',
+        paymentsByMethod: 'Malipo kwa Njia'
+      },
+      // Traffic Metrics
+      trafficMetrics: {
+        title: 'Vipimo vya Msongamano',
+        totalRoutesWithTraffic: 'Njia Jumla na Msongamano',
+        averageCongestion: 'Msongamano wa Wastani',
+        congestionIndex: 'Kielelezo cha Msongamano',
+        trafficFactor: 'Sababu ya Msongamano'
+      },
+      // Geographic Analytics
+      geographicAnalytics: {
+        title: 'Uchambuzi wa Kijiografia',
+        reportHotspots: 'Maeneo ya Ripoti'
+      },
+      // Time Analytics
+      timeAnalytics: {
+        title: 'Uchambuzi wa Muda',
+        reportsByHour: 'Ripoti kwa Saa'
+      },
+      // Metric Type Names
+      metricTypes: {
+        apiResponseTime: 'Muda wa Majibu ya API',
+        pageLoadTime: 'Muda wa Kupakia Ukurasa',
+        errorRate: 'Kiwango cha Hitilafu',
+        userEngagement: 'Ushiriki wa Mtumiaji'
+      },
+      // Report Types
+      reportTypes: {
+        crowding: 'Msongamano',
+        delay: 'Ucheleweshaji',
+        safety: 'Usalama',
+        breakdown: 'Kuvunjika',
+        other: 'Nyingine'
+      },
+      // Severity Levels
+      severityLevels: {
+        low: 'Chini',
+        medium: 'Wastani',
+        high: 'Juu',
+        critical: 'Muhimu'
+      },
+      // User Roles
+      userRoles: {
+        admin: 'Msimamizi',
+        user: 'Mtumiaji',
+        moderator: 'Msimamizi',
+        sacco: 'SACCO',
+        authority: 'Mamlaka'
+      },
+      // Subscription Plans
+      subscriptionPlans: {
+        free: 'Bure',
+        premium: 'Hali ya Juu',
+        sacco: 'SACCO',
+        enterprise: 'Kampuni'
+      }
+    },
+    userAnalytics: {
+      title: 'Uchambuzi Wako wa Kibinafsi',
+      subtitle: 'Ufahamu na mapendekezo yaliyojengwa kwa ajili yako',
+      last7Days: 'Siku 7 za Mwisho',
+      last30Days: 'Siku 30 za Mwisho',
+      last90Days: 'Siku 90 za Mwisho',
+      refresh: 'Sasisha',
+      error: 'Imeshindwa kupakia uchambuzi wa mtumiaji',
+      retry: 'Jaribu Tena',
+      loading: 'Inapakia Uchambuzi Wako wa Kibinafsi...',
+      // Personal Stats
+      personalStats: {
+        totalReports: 'Ripoti Jumla',
+        totalRatings: 'Alama Jumla',
+        favoriteRoutes: 'Njia za Kupendeza',
+        activityScore: 'Alama ya Shughuli',
+        reportsThisMonth: 'mwezi huu',
+        avgRating: 'Wastani',
+        savedRoutes: 'Njia zilizohifadhiwa',
+        veryActiveUser: 'Mtumiaji mwenye shughuli nyingi'
+      },
+      // Route Insights
+      routeInsights: {
+        title: 'Ufahamu wa Njia Zako',
+        mostReportedRoute: 'Njia Iliyoripotiwa Zaidi',
+        bestRatedRoute: 'Njia ya Alama Bora',
+        reports: 'ripoti',
+        last: 'mwisho',
+        stars: 'nyota',
+        ratings: 'alama'
+      },
+      // Recent Activity
+      recentActivity: {
+        title: 'Shughuli za Hivi Karibuni',
+        reportedDelay: 'Aliripoti ucheleweshaji',
+        ratedStars: 'Alitoa alama 5',
+        reportedSafetyIssue: 'Aliripoti tatizo la usalama'
+      },
+      // Safety Insights
+      safetyInsights: {
+        title: 'Ufahamu wa Usalama',
+        safetyReports: 'Ripoti za Usalama',
+        delayReports: 'Ripoti za Ucheleweshaji',
+        resolvedReports: 'Ripoti Zilizotatuliwa',
+        averageResponseTime: 'Muda wa Wastani wa Majibu'
+      },
+      // Recommendations
+      recommendations: {
+        title: 'Njia Zinazopendekezwa',
+        suggestedRoutes: 'Njia Zinazopendekezwa',
+        highlyRatedByUsers: 'Alama za juu na watumiaji',
+        reliableAndPunctual: 'Kuaminika na kufika kwa wakati',
+        safetyTips: 'Vidokezo vya Usalama',
+        avoidPeakHours: 'Epuka masaa ya kilele (7-9 asubuhi, 5-7 jioni) kwa usalama bora',
+        bestSafetyRecord: 'Njia 15 ina rekodi bora ya usalama katika eneo lako',
+        reportImmediately: 'Ripoti wasiwasi wowote wa usalama mara moja kwa majibu ya haraka'
+      },
+      // Peak Hours
+      peakHours: {
+        title: 'Masaa ya Kilele na Mapendekezo',
+        highTraffic: 'Msongamano mkubwa, ruhusu muda wa ziada',
+        peakHours: 'Masaa ya kilele, fikiria njia mbadala'
+      }
+    },
+    saccoDashboard: {
+      title: 'Dashibodi ya SACCO',
+      dashboardTitle: 'Dashibodi',
+      subtitle: 'Uchambuzi wa Utendaji wa SACCO na Ufahamu',
+      dataSource: 'Chanzo cha Data: Uchambuzi wa hali halisi wa hifadhidata',
+      last7Days: 'Siku 7 za Mwisho',
+      last30Days: 'Siku 30 za Mwisho',
+      last90Days: 'Siku 90 za Mwisho',
+      refresh: 'Sasisha',
+      loadingAnalytics: 'Inapakia Uchambuzi wa SACCO...',
+      totalRoutes: 'Njia Jumla',
+      avgRating: 'Alama ya Wastani',
+      totalReports: 'Ripoti Jumla',
+      marketRank: 'Cheo cha Soko',
+      active: 'inafanya kazi',
+      outOf: 'kati ya',
+      perDay: 'kwa siku',
+      ofSaccos: 'SACCO',
+      reportsByType: 'Ripoti kwa Aina',
+      reportsBySeverity: 'Ripoti kwa Ukali',
+      // Route Performance Analysis
+      routePerformanceAnalysis: 'Uchambuzi wa Utendaji wa Njia',
+      route: 'Njia',
+      overallRating: 'Alama ya Jumla',
+      safety: 'Usalama',
+      punctuality: 'Ukweli wa Muda',
+      comfort: 'Starehe',
+      totalRatings: 'Alama Jumla',
+      // Revenue Analytics
+      totalRevenue: 'Mapato Jumla',
+      avgDailyRevenue: 'Mapato ya Wastani ya Kila Siku',
+      revenueDays: 'Siku za Mapato',
+      dailyRevenueTrends: 'Mwelekeo wa Mapato ya Kila Siku',
+      // Market Position
+      yourPerformance: 'Utendaji Wako',
+      marketRanking: 'Cheo cha Soko:',
+      marketAverage: 'Wastani wa Soko:',
+      top5Saccos: 'SACCO 5 za Juu',
+      // Geographic Insights
+      incidentHotspots: 'Maeneo ya Matukio',
+      peakHoursAnalysis: 'Uchambuzi wa Masaa ya Kilele',
+      error: 'Imeshindwa kupakia uchambuzi wa SACCO',
+      retry: 'Jaribu Tena',
+      loading: 'Inapakia Uchambuzi wa SACCO...',
+      usingSampleData: 'Inatumia data ya mfano - data halisi haipatikani',
+      // Overview Tab
+      overview: {
+        title: 'Muhtasari',
+        totalRoutes: 'Njia Jumla',
+        active: 'zinazofanya kazi',
+        avgRating: 'Alama ya Wastani',
+        outOf: 'kati ya 5.0',
+        totalReports: 'Ripoti Jumla',
+        perDay: 'kwa siku',
+        marketRank: 'Cheo cha Soko',
+        ofSaccos: 'kati ya SACCO 6',
+        reportsByType: 'Ripoti kwa Aina',
+        reportsBySeverity: 'Ripoti kwa Ukali'
+      },
+      // Route Performance Tab
+      routePerformance: {
+        title: 'Utendaji wa Njia',
+        topRatedRoutes: 'Njia za Alama za Juu',
+        routeName: 'Jina la Njia',
+        routeNumber: 'Nambari ya Njia',
+        avgRating: 'Alama ya Wastani',
+        totalRatings: 'Alama Jumla',
+        avgReliability: 'Kuaminika wa Wastani',
+        avgSafety: 'Usalama wa Wastani',
+        avgPunctuality: 'Kufika kwa Wakati wa Wastani',
+        avgComfort: 'Starehe ya Wastani'
+      },
+      // Incident Reports Tab
+      incidentReports: {
+        title: 'Ripoti za Matukio',
+        recentReports: 'Ripoti za Hivi Karibuni',
+        reportType: 'Aina ya Ripoti',
+        severity: 'Ukali',
+        location: 'Mahali',
+        reportedAt: 'Imeripotiwa',
+        status: 'Hali'
+      },
+      // Revenue Analytics Tab
+      revenueAnalytics: {
+        title: 'Uchambuzi wa Mapato',
+        dailyRevenue: 'Mapato ya Kila Siku',
+        totalRevenue: 'Mapato Jumla',
+        avgDailyRevenue: 'Mapato ya Wastani ya Kila Siku',
+        revenueTrend: 'Mwelekeo wa Mapato'
+      },
+      // Market Position Tab
+      marketPosition: {
+        title: 'Nafasi ya Soko',
+        competitiveAnalysis: 'Uchambuzi wa Ushindani',
+        saccoRanking: 'Cheo cha SACCO',
+        totalSaccos: 'SACCO Jumla',
+        performanceVsMarket: 'Utendaji dhidi ya Soko',
+        saccoReports: 'Ripoti za SACCO',
+        marketAvg: 'Wastani wa Soko'
+      },
+      // Geographic Insights Tab
+      geographicInsights: {
+        title: 'Ufahamu wa Kijiografia',
+        hotspots: 'Maeneo ya Matukio',
+        totalLocations: 'Maeneo Jumla',
+        latitude: 'Latitudo',
+        longitude: 'Longitudo',
+        incidentCount: 'Idadi ya Matukio',
+        types: 'Aina'
+      }
+    },
+    authorityDashboard: {
+      title: 'Dashibodi ya Mipango ya Mamlaka',
+      subtitle: 'Mipango ya Kimkakati na Ufahamu wa Udhibiti',
+      last7Days: 'Siku 7 za Mwisho',
+      last30Days: 'Siku 30 za Mwisho',
+      last90Days: 'Siku 90 za Mwisho',
+      refresh: 'Sasisha',
+      loadingInsights: 'Inapakia Ufahamu wa Mipango ya Mamlaka...',
+      critical: 'muhimu',
+      avgRisk: 'Hatari ya Wastani:',
+      highRiskAreas: 'Maeneo ya hatari ya juu',
+      systemEfficiency: 'Ufanisi wa mfumo',
+      focusAreas: 'Maeneo ya Kuzingatia',
+      recommendedActions: 'Vitendo Vipendekezwa',
+      avgDailyReports: 'Ripoti za Wastani za Kila Siku',
+      trendDirection: 'Mwelekeo wa Mwelekeo',
+      totalReportsLabel: 'Ripoti Jumla',
+      criticalSaccos: 'SACCO Muhimu',
+      avgReportsPerSacco: 'Ripoti za Wastani kwa SACCO',
+      strategicFocusAreas: 'Maeneo ya Kuzingatia ya Kimkakati',
+      incidents: 'matukio',
+      reports: 'ripoti',
+      priorityScoreLabel: 'Alama ya Kipaumbele:',
+      totalReportsCount: 'Ripoti Jumla:',
+      criticalReportsLabel: 'Ripoti Muhimu:',
+      error: 'Imeshindwa kupakia ufahamu wa mamlaka',
+      retry: 'Jaribu Tena',
+      loading: 'Inapakia Ufahamu wa Mamlaka...',
+      // Strategic Overview Tab
+      strategicOverview: {
+        title: 'Muhtasari wa Kimkakati',
+        keyPerformanceIndicators: 'Vielelezo Muhimu vya Utendaji',
+        totalSaccos: 'SACCO Jumla',
+        totalRoutes: 'Njia Jumla',
+        totalReports: 'Ripoti Jumla',
+        criticalIncidents: 'Matukio Muhimu',
+        focusAreas: 'Maeneo ya Kuzingatia',
+        recommendedActions: 'Vitendo Vinazopendekezwa',
+        increaseMonitoring: 'Ongeza ufuatiliaji katika maeneo ya hatari ya kijiografia',
+        implementInterventions: 'Tekeleza mipango ya kusudi kwa SACCO zisizofanya vizuri',
+        focusResources: 'Zingatia rasilimali kwenye masaa ya kilele ya matukio',
+        developProtocols: 'Tengeneza miongozo maalum ya usalama kwa njia za hatari',
+        establishWarning: 'Anzisha mifumo ya onyo la mapema kwa matukio muhimu'
+      },
+      // SACCO Performance Tab
+      saccoPerformance: {
+        title: 'Uchambuzi wa Utendaji wa SACCO',
+        topPerformers: 'Wafanyikazi wa Juu',
+        poorPerformers: 'Wafanyikazi Duni',
+        averageReportsPerSacco: 'Ripoti za Wastani kwa SACCO',
+        criticalSaccos: 'SACCO Muhimu',
+        saccoName: 'Jina la SACCO',
+        totalReports: 'Ripoti Jumla',
+        criticalReports: 'Ripoti Muhimu',
+        avgSeverity: 'Ukali wa Wastani',
+        lastReport: 'Ripoti ya Mwisho'
+      },
+      // Route Risk Analysis Tab
+      routeRiskAnalysis: {
+        title: 'Uchambuzi wa Hatari ya Njia',
+        highRiskRoutes: 'Njia za Hatari Kubwa',
+        totalRoutesAnalyzed: 'Njia Jumla Zilizochambuliwa',
+        averageRiskScore: 'Alama ya Wastani ya Hatari',
+        criticalRoutes: 'Njia Muhimu',
+        routeName: 'Jina la Njia',
+        routeNumber: 'Nambari ya Njia',
+        operator: 'Mwendeshaji',
+        totalIncidents: 'Matukio Jumla',
+        criticalIncidents: 'Matukio Muhimu',
+        safetyIncidents: 'Matukio ya Usalama',
+        accidentIncidents: 'Matukio ya Ajali',
+        riskScore: 'Alama ya Hatari',
+        lastIncident: 'Tukio la Mwisho'
+      },
+      // Geographic Insights Tab
+      geographicInsights: {
+        title: 'Ramani ya Hatari ya Kijiografia',
+        highRiskZones: 'Maeneo ya Hatari Kubwa',
+        totalRiskZones: 'Maeneo Jumla ya Hatari',
+        averageRiskLevel: 'Kiwango cha Wastani cha Hatari',
+        latitude: 'Latitudo',
+        longitude: 'Longitudo',
+        totalIncidents: 'Matukio Jumla',
+        criticalIncidents: 'Matukio Muhimu',
+        incidentTypes: 'Aina za Matukio',
+        avgSeverity: 'Ukali wa Wastani',
+        riskLevel: 'Kiwango cha Hatari'
+      },
+      // Temporal Patterns Tab
+      temporalPatterns: {
+        title: 'Uchambuzi wa Mwelekeo wa Muda',
+        peakHours: 'Masaa ya Kilele',
+        peakDays: 'Siku za Kilele',
+        averageIncidentsPerHour: 'Matukio ya Wastani kwa Saa',
+        peakHoursIdentified: 'Masaa ya Kilele Yaliyotambuliwa',
+        hour: 'Saa',
+        dayOfWeek: 'Siku ya Wiki',
+        incidentCount: 'Idadi ya Matukio',
+        criticalCount: 'Idadi Muhimu',
+        avgSeverity: 'Ukali wa Wastani'
+      },
+      // Compliance Trends Tab
+      complianceTrends: {
+        title: 'Mwelekeo wa Utekelezaji wa SACCO',
+        dailyTrends: 'Mwelekeo wa Kila Siku',
+        averageDailyReports: 'Ripoti za Wastani za Kila Siku',
+        trendDirection: 'Mwelekeo wa Mwelekeo',
+        increasing: 'Inaongezeka',
+        decreasing: 'Inapungua',
+        stable: 'Imara',
+        day: 'Siku',
+        totalReports: 'Ripoti Jumla',
+        totalCritical: 'Jumla Muhimu',
+        saccoCount: 'Idadi ya SACCO',
+        avgReportsPerSacco: 'Ripoti za Wastani kwa SACCO'
+      },
+      // Risk Indicators Tab
+      riskIndicators: {
+        title: 'Vielelezo vya Hatari vya Kutabiri',
+        topRisks: 'Hatari za Juu',
+        criticalRiskTypes: 'Aina za Hatari Muhimu',
+        averageRiskLevel: 'Kiwango cha Wastani cha Hatari',
+        reportType: 'Aina ya Ripoti',
+        totalCount: 'Idadi Jumla',
+        criticalCount: 'Idadi Muhimu',
+        avgSeverity: 'Ukali wa Wastani',
+        trend: 'Mwelekeo'
+      },
+      // System Health Tab
+      systemHealth: {
+        title: 'Afya ya Mfumo na Utendaji',
+        totalReports: 'Ripoti Jumla',
+        averageResponseTime: 'Muda wa Wastani wa Majibu',
+        resolutionRate: 'Kiwango cha Utatuzi',
+        dataQuality: 'Ubora wa Data'
+      },
+      // Resource Recommendations Tab
+      resourceRecommendations: {
+        title: 'Mapendekezo ya Ugawaji wa Rasilimali',
+        prioritySaccos: 'SACCO za Kipaumbele',
+        totalResourcesNeeded: 'Rasilimali Jumla Zinazohitajika',
+        highPriorityCount: 'Idadi ya Kipaumbele cha Juu',
+        highPriorityCases: 'Kesi za Kipaumbele cha Juu',
+        saccoName: 'Jina la SACCO',
+        totalReports: 'Ripoti Jumla',
+        criticalReports: 'Ripoti Muhimu',
+        reportTypes: 'Aina za Ripoti',
+        priorityScore: 'Alama ya Kipaumbele'
+      }
     },
   },
 }

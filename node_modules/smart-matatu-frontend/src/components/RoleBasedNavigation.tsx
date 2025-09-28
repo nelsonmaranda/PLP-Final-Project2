@@ -13,6 +13,7 @@ import {
   Shield,
   TrendingUp,
   Cloud,
+  CreditCard,
   Clock,
   Building2,
   Gavel,
@@ -48,7 +49,8 @@ export default function RoleBasedNavigation() {
       case 'admin':
         return [
           ...baseNavigation,
-          { name: t('navigation.analytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.adminAnalytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.subscription'), href: '/subscription', icon: CreditCard },
           { name: t('navigation.saccoDashboard'), href: '/sacco', icon: Building2 },
           { name: t('navigation.authorityDashboard'), href: '/authority', icon: Gavel },
           { name: t('navigation.userManagement'), href: '/users', icon: Users },
@@ -60,7 +62,8 @@ export default function RoleBasedNavigation() {
         return [
           ...baseNavigation,
           { name: t('navigation.saccoDashboard'), href: '/sacco', icon: Building2 },
-          { name: t('navigation.analytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.saccoAnalytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.subscription'), href: '/subscription', icon: CreditCard },
           { name: t('navigation.profile'), href: '/profile', icon: User },
         ]
       
@@ -68,14 +71,16 @@ export default function RoleBasedNavigation() {
         return [
           ...baseNavigation,
           { name: t('navigation.authorityDashboard'), href: '/authority', icon: Gavel },
-          { name: t('navigation.analytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.authorityAnalytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.subscription'), href: '/subscription', icon: CreditCard },
           { name: t('navigation.profile'), href: '/profile', icon: User },
         ]
       
       case 'moderator':
         return [
           ...baseNavigation,
-          { name: t('navigation.analytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.moderatorAnalytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.subscription'), href: '/subscription', icon: CreditCard },
           { name: t('navigation.adminPanel'), href: '/admin', icon: Settings },
           { name: t('navigation.profile'), href: '/profile', icon: User },
         ]
@@ -83,7 +88,8 @@ export default function RoleBasedNavigation() {
       default: // Regular users
         return [
           ...baseNavigation,
-          { name: t('navigation.analytics'), href: '/analytics', icon: TrendingUp },
+          { name: t('navigation.myAnalytics'), href: '/my-analytics', icon: TrendingUp },
+          { name: t('navigation.subscription'), href: '/subscription', icon: CreditCard },
           { name: t('navigation.profile'), href: '/profile', icon: User },
         ]
     }

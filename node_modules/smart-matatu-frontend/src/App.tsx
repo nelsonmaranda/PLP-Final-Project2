@@ -17,6 +17,9 @@ const Signup = lazy(() => import('./screens/Signup'))
 const Profile = lazy(() => import('./screens/Profile'))
 const Admin = lazy(() => import('./screens/Admin'))
 const AnalyticsDashboard = lazy(() => import('./screens/AnalyticsDashboard'))
+const UserAnalytics = lazy(() => import('./screens/UserAnalytics'))
+const Subscription = lazy(() => import('./screens/Subscription'))
+const Payment = lazy(() => import('./screens/Payment'))
 const SaccoDashboard = lazy(() => import('./screens/SaccoDashboard'))
 const AuthorityDashboard = lazy(() => import('./screens/AuthorityDashboard'))
 const UserManagement = lazy(() => import('./screens/UserManagement'))
@@ -51,6 +54,21 @@ function App() {
                 <Route path="/analytics" element={
                   <ProtectedRoute requireAuth={true}>
                     <AnalyticsDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/my-analytics" element={
+                  <ProtectedRoute requireAuth={true}>
+                    <UserAnalytics />
+                  </ProtectedRoute>
+                } />
+                <Route path="/subscription" element={
+                  <ProtectedRoute requireAuth={true}>
+                    <Subscription />
+                  </ProtectedRoute>
+                } />
+                <Route path="/payment" element={
+                  <ProtectedRoute requireAuth={true}>
+                    <Payment />
                   </ProtectedRoute>
                 } />
                 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useApp } from '../contexts/AppContext'
 import { useTranslation } from '../hooks/useTranslation'
 import apiService from '../services/api'
@@ -29,15 +30,85 @@ interface UserSubscription {
 const Subscription: React.FC = () => {
   const { t } = useTranslation()
   const { state } = useApp()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
   const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null)
   const [loading, setLoading] = useState(true)
-  const [processing, setProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  // Check if this is the special admin user
+  const isSpecialAdmin = state.user?.email === 'nelsonmaranda2@gmail.com'
+
+  // Calculate subscription days remaining
+  const calculateDaysRemaining = (endDate?: string): number => {
+    if (!endDate) return 0
+    const end = new Date(endDate)
+    const now = new Date()
+    const diffTime = end.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return Math.max(0, diffDays)
+  }
+
+  // Calculate total subscription days
+  const calculateTotalDays = (startDate: string, endDate?: string): number => {
+    if (!endDate) return 365 // Default to yearly
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    const diffTime = end.getTime() - start.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  const getTranslatedFeatures = (planId: string): string[] => {
+    switch (planId) {
+      case 'free':
+        return [
+          t('subscription.plans.free.features.basicInfo'),
+          t('subscription.plans.free.features.reports'),
+          t('subscription.plans.free.features.support')
+        ]
+      case 'premium':
+        return [
+          t('subscription.plans.premium.features.unlimitedReports'),
+          t('subscription.plans.premium.features.advancedAnalytics'),
+          t('subscription.plans.premium.features.prioritySupport'),
+          t('subscription.plans.premium.features.realTimeNotifications')
+        ]
+      case 'sacco':
+        return [
+          t('subscription.plans.sacco.features.allPremium'),
+          t('subscription.plans.sacco.features.revenueAnalytics'),
+          t('subscription.plans.sacco.features.customBranding'),
+          t('subscription.plans.sacco.features.apiAccess'),
+          t('subscription.plans.sacco.features.dedicatedSupport')
+        ]
+      case 'enterprise':
+        return [
+          t('subscription.plans.enterprise.features.allSacco'),
+          t('subscription.plans.enterprise.features.whiteLabel'),
+          t('subscription.plans.enterprise.features.customIntegrations'),
+          t('subscription.plans.enterprise.features.support247'),
+          t('subscription.plans.enterprise.features.slaGuarantee')
+        ]
+      default:
+        return []
+    }
+  }
 
   useEffect(() => {
     loadData()
-  }, [])
+    
+    // Check for success message from payment
+    const success = searchParams.get('success')
+    const plan = searchParams.get('plan')
+    if (success === 'true' && plan) {
+      setSuccessMessage(`Successfully upgraded to ${plan} plan!`)
+      // Clear the URL parameters
+      navigate('/subscription', { replace: true })
+    }
+  }, [searchParams, navigate])
 
   const loadData = async () => {
     try {
@@ -58,44 +129,40 @@ const Subscription: React.FC = () => {
     }
   }
 
-  const handleUpgrade = async (planId: string) => {
-    if (!state.user) return
+  const handleUpgrade = (planId: string) => {
+    // Get the selected plan
+    const selectedPlan = plans.find(plan => plan.id === planId)
+    if (!selectedPlan) {
+      setError('Plan not found')
+      return
+    }
 
+    // Check if this is the special admin user
+    if (isSpecialAdmin) {
+      // Admin user - no payment required, directly activate
+      handleAdminUpgrade(planId)
+      return
+    }
+
+    // Redirect to payment page with plan details
+    const params = new URLSearchParams({
+      plan: planId,
+      amount: selectedPlan.price.toString(),
+      planName: selectedPlan.name
+    })
+    
+    navigate(`/payment?${params.toString()}`)
+  }
+
+  const handleAdminUpgrade = async (planId: string) => {
     try {
-      setProcessing(true)
-      setError(null)
-
-      const plan = plans.find(p => p.id === planId)
-      if (!plan) return
-
-      // Create payment intent
-      const paymentResponse = await apiService.createPaymentIntent(
-        plan.price,
-        plan.currency,
-        `${plan.name} subscription`
-      )
-
-      // In a real implementation, you would integrate with Stripe Elements here
-      // For now, we'll simulate a successful payment
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      // Confirm payment
-      await apiService.confirmPayment(paymentResponse.data?.paymentId || '', planId)
-
-      // Reload subscription data
-      await loadData()
-
-      // Track analytics event
-      await apiService.trackEvent('subscription_changed', {
-        planId,
-        price: plan.price,
-        userId: state.user._id
-      }, undefined, state.user._id)
-
+      const response = await apiService.confirmPayment('admin_payment', planId)
+      if (response.success) {
+        // Refresh subscription data
+        await loadData()
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment failed')
-    } finally {
-      setProcessing(false)
+      setError('Failed to activate plan. Please try again.')
     }
   }
 
@@ -126,14 +193,21 @@ const Subscription: React.FC = () => {
         {/* Current Subscription */}
         {userSubscription && (
           <div className="mb-8">
-            <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+            <div className={`bg-white rounded-lg shadow-md p-6 border-l-4 ${
+              isSpecialAdmin ? 'border-purple-500' : 'border-blue-500'
+            }`}>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {t('subscription.currentPlan')}
+                {isSpecialAdmin && (
+                  <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                    {t('subscription.adminAccess')}
+                  </span>
+                )}
               </h3>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-blue-600 capitalize">
-                    {userSubscription.planType}
+                    {t(`subscription.planTypes.${userSubscription.planType}`)}
                   </p>
                   <p className="text-gray-600">
                     {t('subscription.status')}: 
@@ -142,7 +216,7 @@ const Subscription: React.FC = () => {
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {userSubscription.status}
+                      {t(`subscription.statusTypes.${userSubscription.status}`)}
                     </span>
                   </p>
                   {userSubscription.endDate && (
@@ -150,6 +224,18 @@ const Subscription: React.FC = () => {
                       {t('subscription.expires')}: {new Date(userSubscription.endDate).toLocaleDateString()}
                     </p>
                   )}
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      {t('subscription.daysRemaining')}: <span className="font-semibold text-blue-600">
+                        {calculateDaysRemaining(userSubscription.endDate)}
+                      </span>
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {t('subscription.totalSubscription')}: <span className="font-semibold text-gray-700">
+                        {calculateTotalDays(userSubscription.startDate, userSubscription.endDate)} {t('subscription.days')} ({t('subscription.yearly')})
+                      </span>
+                    </p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-600">
@@ -159,12 +245,38 @@ const Subscription: React.FC = () => {
                     {Object.entries(userSubscription.features).map(([key, value]) => (
                       value && (
                         <span key={key} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                          {t(`subscription.features.${key}`)}
+                          {t(`subscription.featureNames.${key}`)}
                         </span>
                       )
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-green-800">{successMessage}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => setSuccessMessage(null)}
+                  className="text-green-400 hover:text-green-600"
+                >
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
@@ -207,7 +319,7 @@ const Subscription: React.FC = () => {
                 
                 <div className="p-6">
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    {plan.name}
+                    {t(`subscription.planTypes.${plan.id}`)}
                   </h3>
                   
                   <div className="mb-4">
@@ -220,7 +332,7 @@ const Subscription: React.FC = () => {
                   </div>
 
                   <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature, index) => (
+                    {getTranslatedFeatures(plan.id).map((feature, index) => (
                       <li key={index} className="flex items-start">
                         <svg className="h-5 w-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -232,7 +344,7 @@ const Subscription: React.FC = () => {
 
                   <button
                     onClick={() => handleUpgrade(plan.id)}
-                    disabled={isCurrentPlan || processing}
+                    disabled={isCurrentPlan}
                     className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
                       isCurrentPlan
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -241,17 +353,12 @@ const Subscription: React.FC = () => {
                         : 'bg-gray-900 text-white hover:bg-gray-800'
                     }`}
                   >
-                    {processing ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        {t('subscription.processing')}
-                      </div>
-                    ) : isCurrentPlan ? (
+                    {isCurrentPlan ? (
                       t('subscription.current')
                     ) : plan.price === 0 ? (
                       t('subscription.getStarted')
                     ) : (
-                      t('subscription.upgrade')
+                      t('subscription.selectPlan')
                     )}
                   </button>
                 </div>
@@ -276,7 +383,7 @@ const Subscription: React.FC = () => {
                     </th>
                     {plans.map((plan) => (
                       <th key={plan.id} className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {plan.name}
+                        {t(`subscription.planTypes.${plan.id}`)}
                       </th>
                     ))}
                   </tr>

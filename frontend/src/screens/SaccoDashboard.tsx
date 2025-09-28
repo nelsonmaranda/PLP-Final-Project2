@@ -1,138 +1,202 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   BarChart3, 
-  Users, 
   TrendingUp, 
   Star,
   MapPin,
   DollarSign,
   Activity,
-  MessageSquare,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle,
+  Clock,
+  Award,
+  Eye
 } from 'lucide-react'
 import apiService from '../services/api'
+import { useApp } from '../contexts/AppContext'
 import { useTranslation } from '../hooks/useTranslation'
 
-interface RoutePerformance {
-  routeId: string
-  routeName: string
-  routeNumber: string
-  efficiencyScore: number
-  revenue?: number
-  revenue7d?: number
-  fare?: number
-  passengerCount: number
-  onTimePercentage: number
-  safetyScore: number
-  trend: 'up' | 'down' | 'stable'
-}
-
-interface DriverPerformance {
-  driverId: string
-  driverName: string
-  safetyScore: number
-  onTimePercentage: number
-  customerRating: number
-  incidentCount: number
-  routes: string[]
-  status: 'active' | 'suspended' | 'warning'
-}
-
-interface CustomerFeedback {
-  id: string
-  routeId: string
-  routeName: string
-  rating: number
-  comment: string
-  category: 'safety' | 'comfort' | 'punctuality' | 'service' | 'other'
-  status: 'pending' | 'in_progress' | 'resolved'
-  createdAt: string
-  responseTime?: number
-}
-
-interface FleetStatus {
-  totalVehicles: number
-  activeVehicles: number
-  maintenanceDue: number
-  averageAge: number
-  utilizationRate: number
-}
-
-export default function SaccoDashboard() {
-  const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState('overview')
-  const [loading, setLoading] = useState(true)
-  const [routePerformance, setRoutePerformance] = useState<RoutePerformance[]>([])
-  const [driverPerformance, setDriverPerformance] = useState<DriverPerformance[]>([])
-  const [customerFeedback, setCustomerFeedback] = useState<CustomerFeedback[]>([])
-  const [fleetStatus, setFleetStatus] = useState<FleetStatus | null>(null)
-  const [dateRange, setDateRange] = useState('30d')
-  const [filterStatus, setFilterStatus] = useState('all')
-
-  const formatKshCompact = (value: number | undefined | null) => {
-    const n = typeof value === 'number' ? value : 0
-    return new Intl.NumberFormat('en-KE', { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 }).format(n)
+interface SaccoAnalytics {
+  saccoName: string
+  period: string
+  routeMetrics: {
+    totalRoutes: number
+    activeRoutes: number
+    routePerformance: {
+      _id: string
+      routeName: string
+      routeNumber: string
+      avgRating: number
+      totalRatings: number
+      avgReliability: number
+      avgSafety: number
+      avgPunctuality: number
+      avgComfort: number
+    }[]
   }
+  reportMetrics: {
+    totalReports: number
+    reportsByType: { type: string; count: number }[]
+    reportsBySeverity: { severity: string; count: number }[]
+    avgReportsPerDay: string
+  }
+  performanceTrends: {
+    _id: { day: string; type: string }
+    count: number
+  }[]
+  geographicInsights: {
+    hotspots: {
+      _id: { lat: number; lng: number }
+      count: number
+      types: string[]
+    }[]
+    totalLocations: number
+  }
+  timeAnalytics: {
+    reportsByHour: { hour: number; count: number }[]
+    peakHours: { hour: number; count: number }[]
+  }
+  revenueAnalytics: {
+    dailyRevenue: {
+      _id: { day: string }
+      totalFare: number
+      avgFare: number
+      reportCount: number
+    }[]
+    totalRevenue: number
+    avgDailyRevenue: string
+  }
+  competitiveAnalysis: {
+    saccoRanking: number
+    totalSaccos: number
+    marketPosition: {
+      _id: string
+      totalReports: number
+      avgSeverity: number
+    }[]
+    performanceVsMarket: {
+      saccoReports: number
+      marketAvg: string
+    }
+  }
+}
 
-  useEffect(() => {
-    loadDashboardData()
-  }, [dateRange, filterStatus])
+const SaccoDashboard: React.FC = () => {
+  const { state } = useApp()
+  const { t } = useTranslation()
+  const [analytics, setAnalytics] = useState<SaccoAnalytics | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [period, setPeriod] = useState('7d')
+  const [activeTab, setActiveTab] = useState('overview')
 
-  const loadDashboardData = async () => {
+  // Get SACCO name from user's organization or use a default
+  const saccoName = state.user?.organization || 'Default SACCO'
+
+  const loadSaccoAnalytics = async () => {
     try {
       setLoading(true)
-
-      const response = await apiService.getSaccoDashboard()
-      if (response.success && response.data) {
-        const { routePerformance, driverPerformance, customerFeedback, fleetStatus } = response.data
-        setRoutePerformance(routePerformance || [])
-        setDriverPerformance(driverPerformance || [])
-        setCustomerFeedback(customerFeedback || [])
-        setFleetStatus(fleetStatus || null)
+      setError(null)
+      
+      console.log(`Loading SACCO analytics for: ${saccoName}, period: ${period}`)
+      const response = await apiService.getSaccoAnalytics(saccoName, period)
+      console.log('SACCO analytics response:', response)
+      
+      if (response.success) {
+        setAnalytics(response.data)
+        console.log('SACCO analytics data set:', response.data)
       } else {
-        setRoutePerformance([])
-        setDriverPerformance([])
-        setCustomerFeedback([])
-        setFleetStatus(null)
+        setError('Failed to load SACCO analytics')
+        console.error('SACCO analytics failed:', response)
       }
-
-    } catch (error) {
-      console.error('Error loading dashboard data:', error)
-      setRoutePerformance([])
-      setDriverPerformance([])
-      setCustomerFeedback([])
-      setFleetStatus(null)
+    } catch (err) {
+      console.error('SACCO analytics error:', err)
+      
+      // If the main endpoint fails, try to load with sample data
+      console.log('Attempting to load with sample data...')
+      try {
+        const sampleData = {
+          saccoName,
+          period,
+          routeMetrics: {
+            totalRoutes: 3,
+            activeRoutes: 2,
+            routePerformance: [
+              { _id: 'sample1', routeName: 'Route 1', routeNumber: '1', avgRating: 4.2, totalRatings: 15, avgReliability: 4.0, avgSafety: 4.5, avgPunctuality: 3.8, avgComfort: 4.1 },
+              { _id: 'sample2', routeName: 'Route 2', routeNumber: '2', avgRating: 3.8, totalRatings: 12, avgReliability: 3.5, avgSafety: 4.0, avgPunctuality: 3.9, avgComfort: 3.7 }
+            ]
+          },
+          reportMetrics: {
+            totalReports: 5,
+            reportsByType: [{ type: 'delay', count: 3 }, { type: 'safety', count: 2 }],
+            reportsBySeverity: [{ severity: 'medium', count: 3 }, { severity: 'high', count: 2 }],
+            avgReportsPerDay: '0.71'
+          },
+          performanceTrends: [],
+          geographicInsights: {
+            hotspots: [],
+            totalLocations: 0
+          },
+          timeAnalytics: {
+            reportsByHour: [],
+            peakHours: []
+          },
+          revenueAnalytics: {
+            dailyRevenue: [],
+            totalRevenue: 0,
+            avgDailyRevenue: '0'
+          },
+          competitiveAnalysis: {
+            saccoRanking: 1,
+            totalSaccos: 1,
+            marketPosition: [],
+            performanceVsMarket: {
+              saccoReports: 5,
+              marketAvg: '5.00'
+            }
+          }
+        }
+        
+        setAnalytics(sampleData)
+        setError('Using sample data - real data unavailable')
+        console.log('Loaded sample data successfully')
+      } catch (sampleError) {
+        setError('Failed to load SACCO analytics')
+        console.error('Sample data also failed:', sampleError)
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-600 bg-green-100'
-      case 'warning': return 'text-yellow-600 bg-yellow-100'
-      case 'suspended': return 'text-red-600 bg-red-100'
-      case 'resolved': return 'text-green-600 bg-green-100'
-      case 'in_progress': return 'text-blue-600 bg-blue-100'
-      case 'pending': return 'text-gray-600 bg-gray-100'
-      default: return 'text-gray-600 bg-gray-100'
-    }
-  }
+  useEffect(() => {
+    loadSaccoAnalytics()
+  }, [period, saccoName])
 
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'up': return <TrendingUp className="w-4 h-4 text-green-500" />
-      case 'down': return <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />
-      default: return <Activity className="w-4 h-4 text-gray-500" />
-    }
-  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">{t('sacco.loading')}</p>
+          <p className="text-gray-600">{t('saccoDashboard.loading')}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-4 text-red-600" />
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={loadSaccoAnalytics}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     )
@@ -145,25 +209,26 @@ export default function SaccoDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{t('sacco.title')}</h1>
-              <p className="text-gray-600 mt-1">{t('sacco.subtitle')}</p>
+              <h1 className="text-3xl font-bold text-gray-900">{saccoName} {t('saccoDashboard.dashboardTitle')}</h1>
+              <p className="text-gray-600 mt-1">{t('saccoDashboard.subtitle')}</p>
+              <p className="text-sm text-blue-600 mt-1">{t('saccoDashboard.dataSource')}</p>
             </div>
             <div className="flex items-center space-x-4">
               <select
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
               >
-                <option value="7d">{t('sacco.date7d')}</option>
-                <option value="30d">{t('sacco.date30d')}</option>
-                <option value="90d">{t('sacco.date90d')}</option>
+                <option value="7d">{t('saccoDashboard.last7Days')}</option>
+                <option value="30d">{t('saccoDashboard.last30Days')}</option>
+                <option value="90d">{t('saccoDashboard.last90Days')}</option>
               </select>
               <button
-                onClick={loadDashboardData}
+                onClick={loadSaccoAnalytics}
                 className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>{t('sacco.refresh')}</span>
+                <span>{t('saccoDashboard.refresh')}</span>
               </button>
             </div>
           </div>
@@ -175,11 +240,12 @@ export default function SaccoDashboard() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             {[
-              { id: 'overview', name: t('sacco.tabs.overview'), icon: BarChart3 },
-              { id: 'routes', name: t('sacco.tabs.routes'), icon: MapPin },
-              { id: 'drivers', name: t('sacco.tabs.drivers'), icon: Users },
-              { id: 'feedback', name: t('sacco.tabs.feedback'), icon: MessageSquare },
-              { id: 'fleet', name: t('sacco.tabs.fleet'), icon: Activity }
+              { id: 'overview', name: t('saccoDashboard.overview.title'), icon: BarChart3 },
+              { id: 'routes', name: t('saccoDashboard.routePerformance.title'), icon: MapPin },
+              { id: 'reports', name: t('saccoDashboard.incidentReports.title'), icon: AlertTriangle },
+              { id: 'revenue', name: t('saccoDashboard.revenueAnalytics.title'), icon: DollarSign },
+              { id: 'competitive', name: t('saccoDashboard.marketPosition.title'), icon: Award },
+              { id: 'insights', name: t('saccoDashboard.geographicInsights.title'), icon: Eye }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -200,350 +266,333 @@ export default function SaccoDashboard() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <MapPin className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">{t('sacco.metrics.activeRoutes')}</p>
-                    <p className="text-2xl font-bold text-gray-900">{routePerformance.length}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Users className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">{t('sacco.metrics.activeDrivers')}</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {driverPerformance.filter(d => d.status === 'active').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="flex items-center">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <DollarSign className="w-6 h-6 text-yellow-600" />
-                  </div>
-                  <div className="ml-4">
-                    <div className="flex items-center space-x-2">
-                      <p className="text-sm font-medium text-gray-600">{t('sacco.metrics.totalRevenue7d')}</p>
-                      <span
-                        title={t('sacco.revenueTooltip')}
-                        className="inline-flex items-center justify-center w-4 h-4 text-xs bg-gray-100 text-gray-600 rounded-full cursor-help"
-                      >i</span>
+        {analytics && (
+          <>
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                {/* Key Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <MapPin className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('saccoDashboard.totalRoutes')}</p>
+                        <p className="text-2xl font-bold text-gray-900">{analytics.routeMetrics.totalRoutes}</p>
+                        <p className="text-xs text-gray-500">{analytics.routeMetrics.activeRoutes} {t('saccoDashboard.active')}</p>
+                      </div>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      KSh {formatKshCompact(routePerformance.reduce((sum, route) => sum + (route.revenue7d || 0), 0))}
-                    </p>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <Star className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('saccoDashboard.avgRating')}</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {analytics.routeMetrics.routePerformance.length > 0 
+                            ? (analytics.routeMetrics.routePerformance.reduce((sum, route) => sum + route.avgRating, 0) / analytics.routeMetrics.routePerformance.length).toFixed(1)
+                            : 'N/A'
+                          }
+                        </p>
+                        <p className="text-xs text-gray-500">{t('saccoDashboard.outOf')} 5.0</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-yellow-100 rounded-lg">
+                        <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('saccoDashboard.totalReports')}</p>
+                        <p className="text-2xl font-bold text-gray-900">{analytics.reportMetrics.totalReports}</p>
+                        <p className="text-xs text-gray-500">{analytics.reportMetrics.avgReportsPerDay} {t('saccoDashboard.perDay')}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Award className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('saccoDashboard.marketRank')}</p>
+                        <p className="text-2xl font-bold text-gray-900">#{analytics.competitiveAnalysis.saccoRanking}</p>
+                        <p className="text-xs text-gray-500">{t('saccoDashboard.ofSaccos')} {analytics.competitiveAnalysis.totalSaccos} {t('saccoDashboard.ofSaccos')}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="flex items-center">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Star className="w-6 h-6 text-purple-600" />
+                {/* Performance Summary */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">{t('saccoDashboard.reportsByType')}</h3>
+                    <div className="space-y-3">
+                      {analytics.reportMetrics.reportsByType.map((report) => (
+                        <div key={report.type} className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                            <span className="text-sm font-medium text-gray-900 capitalize">
+                              {report.type.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-500">{report.count}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">{t('sacco.metrics.avgRating')}</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {driverPerformance.length > 0 
-                        ? (
-                          driverPerformance.reduce((sum, driver) => sum + (driver.customerRating || 0), 0) / driverPerformance.length
-                        ).toFixed(1)
-                        : '0.0'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Fleet Status */}
-            {fleetStatus && (
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('sacco.fleetStatus')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-blue-600">{fleetStatus.activeVehicles}</p>
-                    <p className="text-sm text-gray-600">{t('sacco.activeVehicles')}</p>
-                    <p className="text-xs text-gray-500">{t('sacco.ofTotal').replace('{total}', String(fleetStatus.totalVehicles))}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-yellow-600">{fleetStatus.maintenanceDue}</p>
-                    <p className="text-sm text-gray-600">{t('sacco.maintenanceDue')}</p>
-                    <p className="text-xs text-gray-500">{t('sacco.vehiclesNeedService')}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-green-600">{fleetStatus.utilizationRate}%</p>
-                    <p className="text-sm text-gray-600">{t('sacco.utilizationRate')}</p>
-                    <p className="text-xs text-gray-500">{t('sacco.averageFleetUsage')}</p>
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">{t('saccoDashboard.reportsBySeverity')}</h3>
+                    <div className="space-y-3">
+                      {analytics.reportMetrics.reportsBySeverity.map((severity) => (
+                        <div key={severity.severity} className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full mr-3 ${
+                              severity.severity === 'critical' ? 'bg-red-600' :
+                              severity.severity === 'high' ? 'bg-orange-500' :
+                              severity.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}></div>
+                            <span className="text-sm font-medium text-gray-900 capitalize">
+                              {severity.severity}
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-500">{severity.count}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             )}
-          </div>
-        )}
 
-        {activeTab === 'routes' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{t('sacco.routePerformance')}</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.route')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.efficiency')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.revenue7d')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.passengers')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.onTime')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.safety')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.table.trend')}</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {routePerformance.map((route) => (
-                    <tr key={route.routeId}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{route.routeNumber}</div>
-                          <div className="text-sm text-gray-500">{route.routeName}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${route.efficiencyScore}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-gray-900">{route.efficiencyScore}%</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="flex items-center space-x-2">
-                          <span>KSh {formatKshCompact(route.revenue7d || 0)}</span>
-                          <span
-                            title={`Estimated over last 7 days: unique devices × fare (fare: KSh ${route.fare ?? 0})`}
-                            className="inline-flex items-center justify-center w-4 h-4 text-xs bg-gray-100 text-gray-600 rounded-full cursor-help"
-                          >i</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {route.passengerCount}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {route.onTimePercentage}%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {route.safetyScore}%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getTrendIcon(route.trend)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'drivers' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{t('sacco.driverPerformance')}</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.driver')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.safetyScore')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.onTime')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.rating')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.incidents')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.status')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('sacco.driversTable.routes')}</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {driverPerformance.map((driver) => (
-                    <tr key={driver.driverId}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{driver.driverName}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                            <div 
-                              className="bg-green-600 h-2 rounded-full" 
-                              style={{ width: `${driver.safetyScore}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-gray-900">{driver.safetyScore}%</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {driver.onTimePercentage}%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                          <span className="ml-1 text-sm text-gray-900">{driver.customerRating}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {driver.incidentCount}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(driver.status)}`}>
-                          {driver.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {driver.routes.join(', ')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'feedback' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">{t('sacco.customerFeedback')}</h3>
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  >
-                    <option value="all">{t('sacco.filters.allStatus')}</option>
-                    <option value="pending">{t('sacco.filters.pending')}</option>
-                    <option value="in_progress">{t('sacco.filters.inProgress')}</option>
-                    <option value="resolved">{t('sacco.filters.resolved')}</option>
-                  </select>
+            {/* Route Performance Tab */}
+            {activeTab === 'routes' && (
+              <div className="space-y-6">
+                <div className="bg-white shadow rounded-lg">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">{t('saccoDashboard.routePerformanceAnalysis')}</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('saccoDashboard.route')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('saccoDashboard.overallRating')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('saccoDashboard.safety')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('saccoDashboard.punctuality')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('saccoDashboard.comfort')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('saccoDashboard.totalRatings')}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {analytics.routeMetrics.routePerformance.map((route) => (
+                          <tr key={route._id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {route.routeNumber} - {route.routeName}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <div className="flex items-center">
+                                <span className="text-yellow-400">★</span>
+                                <span className="ml-1">{route.avgRating.toFixed(1)}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {route.avgSafety.toFixed(1)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {route.avgPunctuality.toFixed(1)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {route.avgComfort.toFixed(1)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {route.totalRatings}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-              <div className="divide-y divide-gray-200">
-                {customerFeedback
-                  .filter(feedback => filterStatus === 'all' || feedback.status === filterStatus)
-                  .map((feedback) => (
-                    <div key={feedback.id} className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h4 className="text-sm font-medium text-gray-900">{feedback.routeName}</h4>
-                            <div className="flex items-center">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-4 h-4 ${
-                                    i < feedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">{feedback.comment}</p>
-                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                            <span className="capitalize">{feedback.category}</span>
-                            <span>•</span>
-                            <span>{new Date(feedback.createdAt).toLocaleDateString()}</span>
-                            {feedback.responseTime && (
-                              <>
-                                <span>•</span>
-                                <span>{t('sacco.resolvedInDays').replace('{days}', String(feedback.responseTime))}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(feedback.status)}`}>
-                          {feedback.status}
-                        </span>
+            )}
+
+            {/* Revenue Analytics Tab */}
+            {activeTab === 'revenue' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <DollarSign className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('saccoDashboard.totalRevenue')}</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          KES {analytics.revenueAnalytics.totalRevenue.toLocaleString()}
+                        </p>
                       </div>
                     </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        )}
+                  </div>
 
-        {activeTab === 'fleet' && fleetStatus && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('sacco.fleetOverview')}</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('sacco.totalVehicles')}</span>
-                    <span className="text-lg font-semibold">{fleetStatus.totalVehicles}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('sacco.activeVehicles')}</span>
-                    <span className="text-lg font-semibold text-green-600">{fleetStatus.activeVehicles}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('sacco.maintenanceDue')}</span>
-                    <span className="text-lg font-semibold text-yellow-600">{fleetStatus.maintenanceDue}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{t('sacco.averageAge')}</span>
-                    <span className="text-lg font-semibold">{fleetStatus.averageAge} {t('sacco.years')}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('sacco.utilizationRate')}</h3>
-                <div className="text-center">
-                  <div className="relative w-32 h-32 mx-auto mb-4">
-                    <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
-                      <path
-                        className="text-gray-200"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        className="text-blue-600"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        fill="none"
-                        strokeDasharray={`${fleetStatus.utilizationRate}, 100`}
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-2xl font-bold text-gray-900">{fleetStatus.utilizationRate}%</span>
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <TrendingUp className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('saccoDashboard.avgDailyRevenue')}</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          KES {analytics.revenueAnalytics.avgDailyRevenue}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">{t('sacco.fleetUtilization')}</p>
+
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Activity className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">{t('saccoDashboard.revenueDays')}</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {analytics.revenueAnalytics.dailyRevenue.length}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('saccoDashboard.dailyRevenueTrends')}</h3>
+                  <div className="space-y-3">
+                    {analytics.revenueAnalytics.dailyRevenue.slice(0, 10).map((day) => (
+                      <div key={day._id.day} className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">{day._id.day}</span>
+                        <div className="flex items-center space-x-4">
+                          <span className="text-sm text-gray-500">{day.reportCount} reports</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            KES {day.totalFare.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            )}
+
+            {/* Competitive Analysis Tab */}
+            {activeTab === 'competitive' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('saccoDashboard.marketPosition.title')}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-md font-medium text-gray-700 mb-3">{t('saccoDashboard.yourPerformance')}</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">{t('saccoDashboard.marketRanking')}</span>
+                          <span className="text-sm font-medium">#{analytics.competitiveAnalysis.saccoRanking}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">{t('saccoDashboard.totalReports')}:</span>
+                          <span className="text-sm font-medium">{analytics.competitiveAnalysis.performanceVsMarket.saccoReports}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">{t('saccoDashboard.marketAverage')}</span>
+                          <span className="text-sm font-medium">{analytics.competitiveAnalysis.performanceVsMarket.marketAvg}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-md font-medium text-gray-700 mb-3">{t('saccoDashboard.top5Saccos')}</h4>
+                      <div className="space-y-2">
+                        {analytics.competitiveAnalysis.marketPosition.map((sacco, index) => (
+                          <div key={sacco._id} className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">
+                              #{index + 1} {sacco._id}
+                            </span>
+                            <span className="text-sm font-medium">{sacco.totalReports} reports</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Geographic Insights Tab */}
+            {activeTab === 'insights' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('saccoDashboard.incidentHotspots')}</h3>
+                  <div className="space-y-3">
+                    {analytics.geographicInsights.hotspots.map((hotspot, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 text-red-500 mr-2" />
+                          <span className="text-sm text-gray-600">
+                            {hotspot._id.lat.toFixed(2)}, {hotspot._id.lng.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500">
+                            {hotspot.types.join(', ')}
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">{hotspot.count}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">{t('saccoDashboard.peakHoursAnalysis')}</h3>
+                  <div className="space-y-3">
+                    {analytics.timeAnalytics.peakHours.map((hour) => (
+                      <div key={hour.hour} className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Clock className="w-4 h-4 text-blue-500 mr-2" />
+                          <span className="text-sm text-gray-600">
+                            {hour.hour}:00 - {hour.hour + 1}:00
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">{hour.count} reports</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   )
 }
+
+export default SaccoDashboard

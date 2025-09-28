@@ -1007,35 +1007,29 @@ class ApiService {
   }
 
   // Get analytics dashboard
-  async getAnalyticsDashboard(period: string = '7d'): Promise<ApiResponse<{
-    eventCounts: { _id: string; count: number }[];
-    userEngagement: {
-      avgEvents: number;
-      totalUsers: number;
-    };
-    performanceMetrics: {
-      metricType: string;
-      value: number;
-      endpoint?: string;
-      timestamp: string;
-      metadata?: any;
-    }[];
-  }>> {
+  async getAnalyticsDashboard(period: string = '7d'): Promise<ApiResponse<any>> {
     try {
-      const response: AxiosResponse<ApiResponse<{
-        eventCounts: { _id: string; count: number }[];
-        userEngagement: {
-          avgEvents: number;
-          totalUsers: number;
-        };
-        performanceMetrics: {
-          metricType: string;
-          value: number;
-          endpoint?: string;
-          timestamp: string;
-          metadata?: any;
-        }[];
-      }>> = await this.api.get(`/analytics/dashboard?period=${period}`)
+      const response: AxiosResponse<ApiResponse<any>> = await this.api.get(`/analytics/dashboard?period=${period}`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Get SACCO-specific analytics
+  async getSaccoAnalytics(saccoName: string, period: string = '7d'): Promise<ApiResponse<any>> {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await this.api.get(`/analytics/sacco/${encodeURIComponent(saccoName)}?period=${period}`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Get Authority planning insights
+  async getAuthorityAnalytics(period: string = '30d'): Promise<ApiResponse<any>> {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await this.api.get(`/analytics/authority?period=${period}`)
       return response.data
     } catch (error) {
       throw this.handleError(error)
