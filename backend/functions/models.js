@@ -160,12 +160,110 @@ const RateLimit = mongoose.model('RateLimit', rateLimitSchema);
 const TrafficCache = mongoose.model('TrafficCache', trafficCacheSchema);
 // const ProfilePhoto = mongoose.model('ProfilePhoto', profilePhotoSchema);
 
+// Payment and Subscription Models
+const subscriptionSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  planType: { 
+    type: String, 
+    enum: ['free', 'premium', 'sacco', 'enterprise'], 
+    default: 'free' 
+  },
+  status: { 
+    type: String, 
+    enum: ['active', 'cancelled', 'expired', 'pending'], 
+    default: 'active' 
+  },
+  startDate: { type: Date, default: Date.now },
+  endDate: { type: Date },
+  stripeCustomerId: { type: String },
+  stripeSubscriptionId: { type: String },
+  features: {
+    advancedAnalytics: { type: Boolean, default: false },
+    prioritySupport: { type: Boolean, default: false },
+    customBranding: { type: Boolean, default: false },
+    apiAccess: { type: Boolean, default: false },
+    unlimitedReports: { type: Boolean, default: false }
+  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+})
+
+const paymentSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  subscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subscription' },
+  amount: { type: Number, required: true },
+  currency: { type: String, default: 'KES' },
+  status: { 
+    type: String, 
+    enum: ['pending', 'completed', 'failed', 'refunded'], 
+    default: 'pending' 
+  },
+  paymentMethod: { 
+    type: String, 
+    enum: ['stripe', 'mpesa', 'airtel_money', 'bank_transfer'], 
+    required: true 
+  },
+  stripePaymentIntentId: { type: String },
+  transactionId: { type: String },
+  description: { type: String },
+  metadata: { type: Object },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+})
+
+// Analytics and Monitoring Models
+const analyticsEventSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  eventType: { 
+    type: String, 
+    enum: ['page_view', 'report_submitted', 'route_searched', 'payment_made', 'subscription_changed'],
+    required: true 
+  },
+  eventData: { type: Object },
+  sessionId: { type: String },
+  userAgent: { type: String },
+  ipAddress: { type: String },
+  timestamp: { type: Date, default: Date.now }
+})
+
+const performanceMetricSchema = new mongoose.Schema({
+  metricType: { 
+    type: String, 
+    enum: ['api_response_time', 'page_load_time', 'error_rate', 'user_engagement'],
+    required: true 
+  },
+  value: { type: Number, required: true },
+  endpoint: { type: String },
+  timestamp: { type: Date, default: Date.now },
+  metadata: { type: Object }
+})
+
+// Add indexes for performance
+subscriptionSchema.index({ userId: 1 })
+subscriptionSchema.index({ status: 1 })
+paymentSchema.index({ userId: 1 })
+paymentSchema.index({ status: 1 })
+paymentSchema.index({ createdAt: -1 })
+analyticsEventSchema.index({ userId: 1, timestamp: -1 })
+analyticsEventSchema.index({ eventType: 1, timestamp: -1 })
+performanceMetricSchema.index({ metricType: 1, timestamp: -1 })
+
+// Create models
+const Subscription = mongoose.model('Subscription', subscriptionSchema)
+const Payment = mongoose.model('Payment', paymentSchema)
+const AnalyticsEvent = mongoose.model('AnalyticsEvent', analyticsEventSchema)
+const PerformanceMetric = mongoose.model('PerformanceMetric', performanceMetricSchema)
+
 module.exports = {
   User,
   Route,
   Report,
   Score,
   RateLimit,
-  TrafficCache
+  TrafficCache,
+  Subscription,
+  Payment,
+  AnalyticsEvent,
+  PerformanceMetric
   // ProfilePhoto - TEMPORARILY DISABLED
 };

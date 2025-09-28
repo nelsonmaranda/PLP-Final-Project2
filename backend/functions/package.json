@@ -19,6 +19,7 @@
     "mongoose": "^8.0.3",
     "multer": "^2.0.2",
     "node-cron": "^3.0.3",
+    "stripe": "^14.25.0",
     "zod": "^3.22.4"
   },
   "engines": {

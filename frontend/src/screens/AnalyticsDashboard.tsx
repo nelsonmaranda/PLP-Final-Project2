@@ -1,235 +1,102 @@
-import { useState, useEffect, useCallback } from 'react'
-import { 
-  TrendingUp, 
-  Clock, 
-  Target, 
-  AlertTriangle,
-  CheckCircle,
-  ArrowUp,
-  ArrowDown,
-  Minus,
-  Loader2,
-  RefreshCw,
-  Filter,
-  Calendar,
-  Zap,
-  DollarSign,
-  Star
-} from 'lucide-react'
+import React, { useState, useEffect } from 'react'
 import { useApp } from '../contexts/AppContext'
 import { useTranslation } from '../hooks/useTranslation'
 import apiService from '../services/api'
-import { 
-  RouteEfficiencyScore, 
-  TravelTimePrediction, 
-  AlternativeRoute, 
-  TrendAnalysis, 
-  DemandForecast, 
-  UserRecommendation 
-} from '../types'
 
-interface SimpleRoute {
-  _id: string
-  name: string
-  routeNumber?: string
-  stops?: { name: string; coordinates: [number, number] }[]
+interface AnalyticsData {
+  eventCounts: { _id: string; count: number }[]
+  userEngagement: {
+    avgEvents: number
+    totalUsers: number
+  }
+  performanceMetrics: {
+    metricType: string
+    value: number
+    endpoint?: string
+    timestamp: string
+    metadata?: any
+  }[]
 }
 
-export default function AnalyticsDashboard() {
-  const { state } = useApp()
+const AnalyticsDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const [isLoading, setIsLoading] = useState(true)
+  const { state } = useApp()
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [period, setPeriod] = useState('7d')
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'efficiency' | 'predictions' | 'trends' | 'recommendations'>('efficiency')
-  
-  // Data states
-  const [efficiencyScores, setEfficiencyScores] = useState<RouteEfficiencyScore[]>([])
-  const [travelPredictions, setTravelPredictions] = useState<TravelTimePrediction[]>([])
-  const [alternativeRoutes, setAlternativeRoutes] = useState<AlternativeRoute[]>([])
-  const [trendAnalysis, setTrendAnalysis] = useState<TrendAnalysis[]>([])
-  const [demandForecasts, setDemandForecasts] = useState<DemandForecast[]>([])
-  const [userRecommendations, setUserRecommendations] = useState<UserRecommendation | null>(null)
-  const [recsLimit, setRecsLimit] = useState<number>(10)
 
-  // Route and filter states
-  const [routes, setRoutes] = useState<SimpleRoute[]>([])
-  const [selectedRoute, setSelectedRoute] = useState<string>('')
-  const [availableStops, setAvailableStops] = useState<string[]>([])
-  const [fromStop, setFromStop] = useState<string>('')
-  const [toStop, setToStop] = useState<string>('')
-  const [timeSlot, setTimeSlot] = useState<string>('08:00')
-  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly')
-
-  // Load list of routes once
   useEffect(() => {
-    const loadRoutes = async () => {
+    loadAnalytics()
+  }, [period])
+
+  const loadAnalytics = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await apiService.getAnalyticsDashboard(period)
+      setAnalyticsData(response.data || null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load analytics data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const trackPageView = async () => {
+    if (state.user) {
       try {
-        const res = await apiService.getRoutes({ page: 1, limit: 200, sort: 'name', order: 'asc' })
-        if (res.success && res.data && res.data.routes) {
-          const simple: SimpleRoute[] = (res.data.routes as any[]).map(r => ({
-            _id: r._id,
-            name: r.name,
-            routeNumber: r.routeNumber,
-            stops: r.stops
-          }))
-          setRoutes(simple)
-        } else {
-          setRoutes([])
-        }
-      } catch (e) {
-        console.error('Failed to load routes for analytics', e)
-        setRoutes([])
+        await apiService.trackEvent('page_view', {
+          page: 'analytics_dashboard',
+          timestamp: new Date().toISOString()
+        }, undefined, state.user._id)
+      } catch (err) {
+        console.error('Failed to track page view:', err)
       }
     }
-    loadRoutes()
+  }
+
+  useEffect(() => {
+    trackPageView()
   }, [])
 
-  // When route changes, derive stops
-  useEffect(() => {
-    const r = routes.find(rt => rt._id === selectedRoute)
-    const stops = r?.stops?.map(s => s.name) || []
-    setAvailableStops(stops)
-    // reset selections that may be invalid
-    setFromStop(prev => (stops.includes(prev) ? prev : ''))
-    setToStop(prev => (stops.includes(prev) ? prev : ''))
-  }, [selectedRoute, routes])
-
-  const loadAnalyticsData = useCallback(async () => {
-    if (!state.user?._id) {
-      setError(t('common.error'))
-      setIsLoading(false)
-      return
-    }
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      // Fetch recommendations
-      const recommendationsResponse = await apiService.getUserRecommendations(state.user._id, { limit: recsLimit })
-      if (recommendationsResponse.success && recommendationsResponse.data) {
-        setUserRecommendations(recommendationsResponse.data)
-      } else {
-        setUserRecommendations(null)
-      }
-
-      // If a route is selected, load per-route analytics; otherwise, clear
-      if (selectedRoute) {
-        const [effResp, trendsResp, demandResp] = await Promise.all([
-          apiService.getRouteEfficiency(selectedRoute),
-          apiService.analyzeTrends(selectedRoute, period),
-          apiService.forecastDemand(selectedRoute, timeSlot)
-        ])
-
-        setEfficiencyScores(effResp.success && effResp.data ? [effResp.data] : [])
-        setTrendAnalysis(trendsResp.success && trendsResp.data ? [trendsResp.data] : [])
-        setDemandForecasts(demandResp.success && demandResp.data ? [demandResp.data] : [])
-      } else {
-        setEfficiencyScores([])
-        setTrendAnalysis([])
-        setDemandForecasts([])
-      }
-
-      // Alternative routes and travel predictions are user-triggered
-      setAlternativeRoutes([])
-      setTravelPredictions([])
-
-    } catch (error) {
-      console.error('Error loading analytics data:', error)
-      setError(t('analytics.errorTitle'))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [state.user?._id, selectedRoute, period, timeSlot, recsLimit])
-
-  useEffect(() => {
-    loadAnalyticsData()
-  }, [loadAnalyticsData])
-
-  const handlePredictTravel = async () => {
-    try {
-      if (!selectedRoute || !fromStop || !toStop) {
-      setError(t('analytics.selectRoute'))
-        return
-      }
-      setIsLoading(true)
-      setError(null)
-      const resp = await apiService.predictTravelTime(selectedRoute, fromStop, toStop, timeSlot)
-      setTravelPredictions(resp.success && resp.data ? [resp.data] : [])
-    } catch (e) {
-      console.error(e)
-      setError(t('common.error'))
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleFindAlternatives = async () => {
-    try {
-      if (!fromStop || !toStop) {
-      setError(t('common.error'))
-        return
-      }
-      setIsLoading(true)
-      setError(null)
-      const resp = await apiService.findAlternativeRoutes(fromStop, toStop)
-      setAlternativeRoutes(resp.success && resp.data ? resp.data.alternatives : [])
-    } catch (e) {
-      console.error(e)
-      setError(t('common.error'))
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const getTrendIcon = (trend: 'increasing' | 'decreasing' | 'stable' | 'improving' | 'declining' | 'safer' | 'riskier') => {
-    switch (trend) {
-      case 'increasing':
-      case 'improving':
-      case 'safer':
-        return <ArrowUp className="w-4 h-4 text-green-500" />
-      case 'decreasing':
-      case 'declining':
-      case 'riskier':
-        return <ArrowDown className="w-4 h-4 text-red-500" />
+  const formatMetricValue = (metricType: string, value: number) => {
+    switch (metricType) {
+      case 'api_response_time':
+        return `${value.toFixed(2)}ms`
+      case 'page_load_time':
+        return `${value.toFixed(2)}s`
+      case 'error_rate':
+        return `${(value * 100).toFixed(2)}%`
+      case 'user_engagement':
+        return value.toFixed(1)
       default:
-        return <Minus className="w-4 h-4 text-gray-500" />
+        return value.toString()
     }
   }
 
-  const getTrendColor = (trend: 'increasing' | 'decreasing' | 'stable' | 'improving' | 'declining' | 'safer' | 'riskier') => {
-    switch (trend) {
-      case 'increasing':
-      case 'improving':
-      case 'safer':
-        return 'text-green-600'
-      case 'decreasing':
-      case 'declining':
-      case 'riskier':
-        return 'text-red-600'
+  const getMetricColor = (metricType: string, value: number) => {
+    switch (metricType) {
+      case 'api_response_time':
+        return value < 200 ? 'text-green-600' : value < 500 ? 'text-yellow-600' : 'text-red-600'
+      case 'page_load_time':
+        return value < 2 ? 'text-green-600' : value < 5 ? 'text-yellow-600' : 'text-red-600'
+      case 'error_rate':
+        return value < 0.01 ? 'text-green-600' : value < 0.05 ? 'text-yellow-600' : 'text-red-600'
+      case 'user_engagement':
+        return value > 5 ? 'text-green-600' : value > 2 ? 'text-yellow-600' : 'text-red-600'
       default:
         return 'text-gray-600'
     }
   }
 
-  const getEfficiencyColor = (score: number) => {
-    if (score >= 80) return 'text-green-600'
-    if (score >= 60) return 'text-yellow-600'
-    return 'text-red-600'
-  }
-
-  const getEfficiencyBgColor = (score: number) => {
-    if (score >= 80) return 'bg-green-100'
-    if (score >= 60) return 'bg-yellow-100'
-    return 'bg-red-100'
-  }
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-10 w-10 text-primary-500 animate-spin" />
-          <p className="text-gray-600 mt-4">{t('analytics.loading')}</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     )
@@ -237,500 +104,243 @@ export default function AnalyticsDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-6 bg-white rounded-lg shadow-md">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">{t('analytics.errorTitle')}</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={loadAnalyticsData} 
-            className="btn btn-primary"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            {t('analytics.retry')}
-          </button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-red-50 border border-red-200 rounded-md p-6 max-w-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  {t('analyticsDashboard.error')}
+                </h3>
+                <p className="mt-1 text-sm text-red-700">{error}</p>
+                <button
+                  onClick={loadAnalytics}
+                  className="mt-3 bg-red-100 text-red-800 px-3 py-1 rounded-md text-sm hover:bg-red-200"
+                >
+                  {t('common.retry')}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="px-6 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('analytics.headerTitle')}</h1>
-          <p className="text-gray-600">{t('analytics.headerSubtitle')}</p>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              {[
-                { id: 'efficiency', name: t('analytics.tabs.efficiency'), icon: Target },
-                { id: 'predictions', name: t('analytics.tabs.predictions'), icon: Clock },
-                { id: 'trends', name: t('analytics.tabs.trends'), icon: TrendingUp },
-                { id: 'recommendations', name: t('analytics.tabs.recommendations'), icon: Star }
-              ].map((tab) => {
-                const Icon = tab.icon
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === tab.id
-                        ? 'border-primary-500 text-primary-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.name}</span>
-                  </button>
-                )
-              })}
-            </nav>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {t('analyticsDashboard.title')}
+              </h1>
+              <p className="mt-2 text-gray-600">
+                {t('analyticsDashboard.subtitle')}
+              </p>
+            </div>
+            
+            <div className="mt-4 sm:mt-0">
+              <select
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              >
+                <option value="7d">{t('analyticsDashboard.last7Days')}</option>
+                <option value="30d">{t('analyticsDashboard.last30Days')}</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="space-y-6">
-          {/* Route Efficiency Tab */}
-          {activeTab === 'efficiency' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">{t('analytics.efficiencyTitle')}</h2>
-                <div className="flex items-center space-x-4">
-                  <select
-                    value={selectedRoute}
-                    onChange={(e) => setSelectedRoute(e.target.value)}
-                    className="form-select"
-                  >
-                    <option value="">{t('analytics.selectRoute')}</option>
-                    {routes.map(r => (
-                      <option key={r._id} value={r._id}>
-                        {r.routeNumber ? `${r.routeNumber} - ${r.name}` : r.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button className="btn btn-outline" onClick={loadAnalyticsData} disabled={!selectedRoute}>
-                    <Filter className="w-4 h-4 mr-2" />
-                    {t('analytics.refresh')}
-                  </button>
+        {analyticsData && (
+          <>
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">
+                          {t('analyticsDashboard.totalEvents')}
+                        </dt>
+                        <dd className="text-lg font-medium text-gray-900">
+                          {analyticsData.eventCounts.reduce((sum, event) => sum + event.count, 0)}
+                        </dd>
+                      </dl>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {efficiencyScores.map((score) => (
-                  <div key={score.routeId} className="card p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">{score.routeName}</h3>
-                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${getEfficiencyBgColor(score.efficiencyScore)} ${getEfficiencyColor(score.efficiencyScore)}`}>
-                        {score.efficiencyScore}/100
-                      </div>
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                      </svg>
                     </div>
-
-                    <div className="space-y-4">
-                      {/* Efficiency Factors */}
-                      <div className="grid grid-cols-2 gap-4">
-                        {Object.entries(score.factors).map(([key, value]) => (
-                          <div key={key} className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600 capitalize">{key}</span>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-16 bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-primary-500 h-2 rounded-full" 
-                                  style={{ width: `${value}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-medium text-gray-900">{value}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Recommendations */}
-                      {score.recommendations.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">{t('analytics.recommendations')}</h4>
-                          <ul className="space-y-1">
-                            {score.recommendations.map((rec, index) => (
-                              <li key={index} className="flex items-start space-x-2 text-sm text-gray-600">
-                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                <span>{rec}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">
+                          {t('analyticsDashboard.activeUsers')}
+                        </dt>
+                        <dd className="text-lg font-medium text-gray-900">
+                          {analyticsData.userEngagement.totalUsers}
+                        </dd>
+                      </dl>
                     </div>
                   </div>
-                ))}
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">
+                          {t('analyticsDashboard.avgEngagement')}
+                        </dt>
+                        <dd className="text-lg font-medium text-gray-900">
+                          {analyticsData.userEngagement.avgEvents.toFixed(1)}
+                        </dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">
+                          {t('analyticsDashboard.performanceScore')}
+                        </dt>
+                        <dd className="text-lg font-medium text-gray-900">
+                          {analyticsData.performanceMetrics.length > 0 ? 'Good' : 'N/A'}
+                        </dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Travel Predictions Tab */}
-          {activeTab === 'predictions' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">{t('analytics.travelPredictionsTitle')}</h2>
-                <div className="flex items-center space-x-4">
-                  <select
-                    value={selectedRoute}
-                    onChange={(e) => setSelectedRoute(e.target.value)}
-                    className="form-select"
-                  >
-                    <option value="">{t('analytics.selectRoute')}</option>
-                    {routes.map(r => (
-                      <option key={r._id} value={r._id}>
-                        {r.routeNumber ? `${r.routeNumber} - ${r.name}` : r.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={fromStop}
-                    onChange={(e) => setFromStop(e.target.value)}
-                    className="form-select"
-                    disabled={!selectedRoute}
-                  >
-                    <option value="">{t('analytics.fromStop')}</option>
-                    {availableStops.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={toStop}
-                    onChange={(e) => setToStop(e.target.value)}
-                    className="form-select"
-                    disabled={!selectedRoute}
-                  >
-                    <option value="">{t('analytics.toStop')}</option>
-                    {availableStops.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="time"
-                    value={timeSlot}
-                    onChange={(e) => setTimeSlot(e.target.value)}
-                    className="form-input"
-                  />
-                  <button className="btn btn-primary" onClick={handlePredictTravel} disabled={!selectedRoute || !fromStop || !toStop}>
-                    <Zap className="w-4 h-4 mr-2" />
-                    {t('analytics.predict')}
-                  </button>
+            {/* Event Types Chart */}
+            <div className="bg-white shadow rounded-lg mb-8">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  {t('analyticsDashboard.eventTypes')}
+                </h3>
+                <div className="space-y-4">
+                  {analyticsData.eventCounts.map((event) => (
+                    <div key={event._id} className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+                        <span className="text-sm font-medium text-gray-900 capitalize">
+                          {event._id.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <span className="text-sm text-gray-500">{event.count}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {travelPredictions.map((prediction, index) => (
-                  <div key={index} className="card p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {prediction.fromStop} → {prediction.toStop}
-                      </h3>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-primary-600">{prediction.predictedTime} {t('analytics.minutesShort')}</div>
-                        <div className="text-sm text-gray-500">{prediction.confidence}% {t('analytics.confidence')}</div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {/* Alternative Times */}
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="text-center p-3 bg-green-50 rounded-lg">
-                          <div className="text-lg font-semibold text-green-600">{prediction.alternativeTimes.optimistic} {t('analytics.minutesShort')}</div>
-                          <div className="text-xs text-green-600">{t('analytics.optimistic')}</div>
-                        </div>
-                        <div className="text-center p-3 bg-blue-50 rounded-lg">
-                          <div className="text-lg font-semibold text-blue-600">{prediction.alternativeTimes.realistic} {t('analytics.minutesShort')}</div>
-                          <div className="text-xs text-blue-600">{t('analytics.realistic')}</div>
-                        </div>
-                        <div className="text-center p-3 bg-red-50 rounded-lg">
-                          <div className="text-lg font-semibold text-red-600">{prediction.alternativeTimes.pessimistic} {t('analytics.minutesShort')}</div>
-                          <div className="text-xs text-red-600">{t('analytics.pessimistic')}</div>
-                        </div>
-                      </div>
-
-                      {/* Factors */}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">{t('analytics.factors')}</h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          {Object.entries(prediction.factors).map(([key, value]) => (
-                            <div key={key} className="flex justify-between">
-                              <span className="text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                              <span className="font-medium">{value.toFixed(2)}x</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+            {/* Performance Metrics */}
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  {t('analyticsDashboard.performanceMetrics')}
+                </h3>
+                
+                {analyticsData.performanceMetrics.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('analyticsDashboard.metric')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('analyticsDashboard.value')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('analyticsDashboard.endpoint')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('analyticsDashboard.timestamp')}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {analyticsData.performanceMetrics.slice(0, 10).map((metric, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">
+                              {metric.metricType.replace('_', ' ')}
+                            </td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getMetricColor(metric.metricType, metric.value)}`}>
+                              {formatMetricValue(metric.metricType, metric.value)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {metric.endpoint || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(metric.timestamp).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
-              </div>
-
-              {/* Alternative Routes */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900">{t('analytics.alternativeRoutesTitle')}</h3>
-                  <div className="flex items-center space-x-3">
-                    <select
-                      value={fromStop}
-                      onChange={(e) => setFromStop(e.target.value)}
-                      className="form-select"
-                      disabled={!selectedRoute}
-                    >
-                      <option value="">{t('analytics.fromStop')}</option>
-                      {availableStops.map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={toStop}
-                      onChange={(e) => setToStop(e.target.value)}
-                      className="form-select"
-                      disabled={!selectedRoute}
-                    >
-                      <option value="">{t('analytics.toStop')}</option>
-                      {availableStops.map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                    <button className="btn btn-outline" onClick={handleFindAlternatives} disabled={!fromStop || !toStop}>
-                      <Filter className="w-4 h-4 mr-2" />
-                      {t('analytics.find')}
-                    </button>
-                  </div>
-                </div>
-                {alternativeRoutes.length > 0 && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {alternativeRoutes.map((route, index) => (
-                      <div key={index} className="card p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-gray-900">{route.routeName}</h4>
-                          <div className="text-sm text-gray-500">{route.efficiency}/100</div>
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-4 h-4" />
-                            <span>{route.totalTime} min</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <DollarSign className="w-4 h-4" />
-                            <span>Ksh {route.totalCost}</span>
-                          </div>
-                        </div>
-                        <div className="mt-2">
-                          <div className="text-xs text-gray-500">{t('analytics.reasons')}: {route.reasons.join(', ')}</div>
-                        </div>
-                      </div>
-                    ))}
+                ) : (
+                  <div className="text-center py-8">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">
+                      {t('analyticsDashboard.noMetrics')}
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {t('analyticsDashboard.noMetricsDesc')}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
-          )}
-
-          {/* Trend Analysis Tab */}
-          {activeTab === 'trends' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">{t('analytics.trendAnalysisTitle')}</h2>
-                <div className="flex items-center space-x-4">
-                  <select
-                    value={selectedRoute}
-                    onChange={(e) => setSelectedRoute(e.target.value)}
-                    className="form-select"
-                  >
-                    <option value="">{t('analytics.selectRoute')}</option>
-                    {routes.map(r => (
-                      <option key={r._id} value={r._id}>
-                        {r.routeNumber ? `${r.routeNumber} - ${r.name}` : r.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value as any)}
-                    className="form-select"
-                  >
-                    <option value="daily">{t('analytics.periodDaily')}</option>
-                    <option value="weekly">{t('analytics.periodWeekly')}</option>
-                    <option value="monthly">{t('analytics.periodMonthly')}</option>
-                  </select>
-                  <button className="btn btn-outline" onClick={loadAnalyticsData} disabled={!selectedRoute}>
-                    <Calendar className="w-4 h-4 mr-2" />
-                    {t('analytics.update')}
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {trendAnalysis.map((trend, index) => (
-                  <div key={index} className="card p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('analytics.routeTrends')} ({trend.period})</h3>
-                    
-                    <div className="space-y-4">
-                      {Object.entries(trend.trends).map(([key, data]) => (
-                        <div key={key} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-gray-900 capitalize">{key}</span>
-                            <div className="flex items-center space-x-2">
-                              {getTrendIcon(data.trend)}
-                              <span className={`text-sm font-medium ${getTrendColor(data.trend)}`}>
-                                {data.change > 0 ? '+' : ''}{data.change.toFixed(1)}%
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between text-sm text-gray-600">
-                            <span>{t('analytics.current')}: {data.current}</span>
-                            <span>{t('analytics.previous')}: {data.previous}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {trend.insights.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">{t('analytics.insights')}</h4>
-                        <ul className="space-y-1">
-                          {trend.insights.map((insight, idx) => (
-                            <li key={idx} className="flex items-start space-x-2 text-sm text-gray-600">
-                              <AlertTriangle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                              <span>{insight}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recommendations Tab */}
-          {activeTab === 'recommendations' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">{t('analytics.recommendationsTitle')}</h2>
-                <div className="flex items-center space-x-3">
-                  <label className="text-sm text-gray-600">{t('analytics.recommendedRoutes')}</label>
-                  <select
-                    value={recsLimit}
-                    onChange={(e) => setRecsLimit(Number(e.target.value))}
-                    className="form-select"
-                  >
-                    {[5,10,15,20,30,50].map(n => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
-                  <button className="btn btn-primary" onClick={loadAnalyticsData}>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    {t('analytics.refresh')}
-                  </button>
-                </div>
-              </div>
-
-              {userRecommendations && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* User Preferences */}
-                  <div className="card p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('analytics.yourPreferences')}</h3>
-                    <div className="space-y-3">
-                      {Object.entries(userRecommendations.preferences).map(([key, value]) => (
-                        <div key={key} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 capitalize">
-                            {key === 'efficiency' && t('analytics.prefEfficiency')}
-                            {key === 'safety' && t('analytics.prefSafety')}
-                            {key === 'cost' && t('analytics.prefCost')}
-                            {key === 'convenience' && t('analytics.prefConvenience')}
-                          </span>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-primary-500 h-2 rounded-full" 
-                                style={{ width: `${value * 100}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium text-gray-900">{Math.round(value * 100)}%</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Recommendations */}
-                  <div className="card p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('analytics.recommendedRoutes')}</h3>
-                    <div className="space-y-3">
-                      {userRecommendations.recommendations.map((rec, index) => (
-                        <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-gray-900">{rec.routeName}</h4>
-                            <div className="flex items-center space-x-2">
-                              <Star className="w-4 h-4 text-yellow-500" />
-                              <span className="text-sm font-medium text-gray-900">{rec.score}/100</span>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {rec.reason === 'Good performance' ? t('analytics.goodPerformance') : rec.reason}
-                          </p>
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              rec.type === 'efficiency' ? 'bg-blue-100 text-blue-800' :
-                              rec.type === 'safety' ? 'bg-green-100 text-green-800' :
-                              rec.type === 'cost' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-purple-100 text-purple-800'
-                            }`}>
-                              {rec.type === 'efficiency' && t('analytics.prefEfficiency')}
-                              {rec.type === 'safety' && t('analytics.prefSafety')}
-                              {rec.type === 'cost' && t('analytics.prefCost')}
-                              {rec.type === 'convenience' && t('analytics.prefConvenience')}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Demand Forecasts */}
-              {demandForecasts.length > 0 && (
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('analytics.demandForecastsTitle')}</h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {demandForecasts.map((forecast, index) => (
-                      <div key={index} className="card p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-gray-900">{t('analytics.timeSlot')}: {forecast.timeSlot}</h4>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-primary-600">{forecast.predictedDemand}%</div>
-                            <div className="text-sm text-gray-500">{forecast.confidence}% {t('analytics.confidence')}</div>
-                          </div>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                          <div 
-                            className="bg-primary-500 h-2 rounded-full" 
-                            style={{ width: `${forecast.predictedDemand}%` }}
-                          ></div>
-                        </div>
-                        {forecast.recommendations.length > 0 && (
-                          <div className="text-sm text-gray-600">
-                            {forecast.recommendations[0]}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   )
 }
+
+export default AnalyticsDashboard

@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
-const { User, Route, Report, Score, RateLimit, TrafficCache } = require('./models');
+const { User, Route, Report, Score, RateLimit, TrafficCache, Subscription, Payment, AnalyticsEvent, PerformanceMetric } = require('./models');
 
 // Auth middleware
 const authMiddleware = (req, res, next) => {
@@ -3319,6 +3319,273 @@ app.post('/admin/seed/routes', authMiddleware, requireRoles(['admin']), async (r
     return res.status(500).json({ success: false, message: 'Internal server error' })
   }
 })
+
+// ==================== PAYMENT & SUBSCRIPTION ENDPOINTS ====================
+
+// Initialize Stripe (if API key is available)
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+}
+
+// Get user subscription
+app.get('/subscriptions/:userId', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const subscription = await Subscription.findOne({ userId: new mongoose.Types.ObjectId(userId) });
+    
+    if (!subscription) {
+      // Create default free subscription
+      const newSubscription = await Subscription.create({
+        userId: new mongoose.Types.ObjectId(userId),
+        planType: 'free',
+        status: 'active'
+      });
+      return res.json({ success: true, data: newSubscription });
+    }
+    
+    return res.json({ success: true, data: subscription });
+  } catch (err) {
+    console.error('Get subscription error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Create payment intent
+app.post('/payments/create-intent', authMiddleware, async (req, res) => {
+  try {
+    const { amount, currency = 'KES', description } = req.body;
+    const userId = req.user.userId;
+    
+    if (!stripe) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Payment system not configured' 
+      });
+    }
+    
+    // Create payment record
+    const payment = await Payment.create({
+      userId: new mongoose.Types.ObjectId(userId),
+      amount,
+      currency,
+      description,
+      paymentMethod: 'stripe',
+      status: 'pending'
+    });
+    
+    // Create Stripe payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount * 100, // Convert to cents
+      currency: currency.toLowerCase(),
+      description,
+      metadata: {
+        paymentId: payment._id.toString(),
+        userId: userId
+      }
+    });
+    
+    // Update payment with Stripe ID
+    payment.stripePaymentIntentId = paymentIntent.id;
+    await payment.save();
+    
+    return res.json({ 
+      success: true, 
+      data: { 
+        clientSecret: paymentIntent.client_secret,
+        paymentId: payment._id 
+      } 
+    });
+  } catch (err) {
+    console.error('Create payment intent error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Handle successful payment
+app.post('/payments/success', authMiddleware, async (req, res) => {
+  try {
+    const { paymentId, subscriptionPlan } = req.body;
+    const userId = req.user.userId;
+    
+    // Update payment status
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+    
+    payment.status = 'completed';
+    await payment.save();
+    
+    // Update or create subscription
+    const subscription = await Subscription.findOne({ userId: new mongoose.Types.ObjectId(userId) });
+    if (subscription) {
+      subscription.planType = subscriptionPlan;
+      subscription.status = 'active';
+      subscription.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+      await subscription.save();
+    } else {
+      await Subscription.create({
+        userId: new mongoose.Types.ObjectId(userId),
+        planType: subscriptionPlan,
+        status: 'active',
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      });
+    }
+    
+    // Log analytics event
+    await AnalyticsEvent.create({
+      userId: new mongoose.Types.ObjectId(userId),
+      eventType: 'payment_made',
+      eventData: { amount: payment.amount, plan: subscriptionPlan }
+    });
+    
+    return res.json({ success: true, message: 'Payment processed successfully' });
+  } catch (err) {
+    console.error('Payment success error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// ==================== ANALYTICS & MONITORING ENDPOINTS ====================
+
+// Track analytics event
+app.post('/analytics/track', async (req, res) => {
+  try {
+    const { eventType, eventData, sessionId, userId } = req.body;
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    
+    await AnalyticsEvent.create({
+      userId: userId ? new mongoose.Types.ObjectId(userId) : null,
+      eventType,
+      eventData,
+      sessionId,
+      userAgent,
+      ipAddress
+    });
+    
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Analytics track error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Get analytics dashboard data
+app.get('/analytics/dashboard', authMiddleware, async (req, res) => {
+  try {
+    const { period = '7d' } = req.query;
+    const days = period === '7d' ? 7 : period === '30d' ? 30 : 7;
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    
+    // Get event counts
+    const eventCounts = await AnalyticsEvent.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      { $group: { _id: '$eventType', count: { $sum: 1 } } }
+    ]);
+    
+    // Get user engagement
+    const userEngagement = await AnalyticsEvent.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      { $group: { _id: '$userId', eventCount: { $sum: 1 } } },
+      { $group: { _id: null, avgEvents: { $avg: '$eventCount' }, totalUsers: { $sum: 1 } } }
+    ]);
+    
+    // Get performance metrics
+    const performanceMetrics = await PerformanceMetric.find({
+      timestamp: { $gte: startDate }
+    }).sort({ timestamp: -1 }).limit(100);
+    
+    return res.json({
+      success: true,
+      data: {
+        eventCounts,
+        userEngagement: userEngagement[0] || { avgEvents: 0, totalUsers: 0 },
+        performanceMetrics
+      }
+    });
+  } catch (err) {
+    console.error('Analytics dashboard error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Record performance metric
+app.post('/analytics/performance', async (req, res) => {
+  try {
+    const { metricType, value, endpoint, metadata } = req.body;
+    
+    await PerformanceMetric.create({
+      metricType,
+      value,
+      endpoint,
+      metadata
+    });
+    
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Performance metric error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Get subscription plans
+app.get('/subscription-plans', (req, res) => {
+  const plans = [
+    {
+      id: 'free',
+      name: 'Free',
+      price: 0,
+      currency: 'KES',
+      features: [
+        'Basic route information',
+        'Submit 5 reports per month',
+        'Community support'
+      ]
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      price: 500,
+      currency: 'KES',
+      features: [
+        'Unlimited reports',
+        'Advanced analytics',
+        'Priority support',
+        'Real-time notifications'
+      ]
+    },
+    {
+      id: 'sacco',
+      name: 'SACCO',
+      price: 2000,
+      currency: 'KES',
+      features: [
+        'All Premium features',
+        'Revenue analytics',
+        'Custom branding',
+        'API access',
+        'Dedicated support'
+      ]
+    },
+    {
+      id: 'enterprise',
+      name: 'Enterprise',
+      price: 5000,
+      currency: 'KES',
+      features: [
+        'All SACCO features',
+        'White-label solution',
+        'Custom integrations',
+        '24/7 support',
+        'SLA guarantee'
+      ]
+    }
+  ];
+  
+  return res.json({ success: true, data: plans });
+});
 
 // 404 handler
 app.use('*', (req, res) => {

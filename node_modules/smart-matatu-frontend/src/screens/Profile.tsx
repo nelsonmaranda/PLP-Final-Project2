@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { 
   User, 
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
 import apiService from '../services/api'
-import { Report, Route } from '../types'
+import { Route, PopulatedReport } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 
 export default function Profile() {
@@ -45,12 +45,13 @@ export default function Profile() {
   }, [state.user?.avatarUrl])
   
   // Reports state
-  const [reports, setReports] = useState<Report[]>([])
+  const [reports, setReports] = useState<PopulatedReport[]>([])
   const [reportsLoading, setReportsLoading] = useState(false)
   
   // Favorites state
   const [favoriteRoutes, setFavoriteRoutes] = useState<Route[]>([])
   const [favoritesLoading, setFavoritesLoading] = useState(false)
+  const favoritesLoadingRef = useRef(false)
   
   // Analytics state
   const [analytics, setAnalytics] = useState({
@@ -67,47 +68,72 @@ export default function Profile() {
     
     setReportsLoading(true)
     try {
+      console.log('Loading reports for user:', state.user._id)
       const response = await apiService.getUserReports(state.user._id)
+      console.log('Reports response:', response)
       if (response.success && response.data) {
-        setReports(response.data.reports || [])
+        console.log('Reports data:', response.data.reports)
+        setReports((response.data.reports || []) as PopulatedReport[])
+      } else {
+        console.log('Reports response failed:', response)
       }
     } catch (error) {
       console.error('Error loading reports:', error)
     } finally {
       setReportsLoading(false)
     }
-  }, [state.user])
+  }, [state.user?._id])
 
   // Load favorite routes
   const loadFavorites = useCallback(async () => {
     if (!state.user) return
     
+    // Prevent multiple simultaneous calls using ref
+    if (favoritesLoadingRef.current) {
+      console.log('Favorites already loading, skipping...')
+      return
+    }
+    
+    console.log('Setting favorites loading to true')
+    favoritesLoadingRef.current = true
     setFavoritesLoading(true)
     try {
+      console.log('Loading favorites for user:', state.user._id)
       const response = await apiService.getFavoriteRoutes(state.user._id)
+      console.log('Favorites response:', response)
       if (response.success && response.data) {
+        console.log('Favorites data:', response.data.routes)
         setFavoriteRoutes(response.data.routes || [])
+      } else {
+        console.log('Favorites response failed:', response)
       }
     } catch (error) {
       console.error('Error loading favorites:', error)
     } finally {
+      console.log('Setting favorites loading to false')
+      favoritesLoadingRef.current = false
       setFavoritesLoading(false)
     }
-  }, [state.user])
+  }, [state.user?._id])
 
   // Load analytics
   const loadAnalytics = useCallback(async () => {
     if (!state.user) return
     
     try {
+      console.log('Loading analytics for user:', state.user._id)
       const response = await apiService.getUserAnalytics(state.user._id)
+      console.log('Analytics response:', response)
       if (response.success && response.data) {
+        console.log('Analytics data:', response.data)
         setAnalytics(response.data)
+      } else {
+        console.log('Analytics response failed:', response)
       }
     } catch (error) {
       console.error('Error loading analytics:', error)
     }
-  }, [state.user])
+  }, [state.user?._id])
 
   // Remove favorite route
   const removeFavorite = useCallback(async (routeId: string) => {
@@ -122,16 +148,58 @@ export default function Profile() {
     } catch (error) {
       console.error('Error removing favorite:', error)
     }
-  }, [state.user, loadFavorites])
+  }, [state.user?._id]) // Remove loadFavorites from dependencies
+
+  // Load profile photo from database
+  const loadProfilePhoto = useCallback(async () => {
+    if (!state.user) {
+      console.log('No user found, skipping photo load')
+      return
+    }
+    
+    try {
+      console.log('Loading profile photo for user:', state.user._id)
+      const response = await apiService.getUserPhoto(state.user._id)
+      console.log('Photo API response:', response)
+      
+      if (response.success && response.data) {
+        console.log('Profile photo loaded successfully:', response.data.url.substring(0, 50) + '...')
+        setAvatarUrl(response.data.url)
+        // Update the user state with the photo URL
+        setUser({ ...(state.user as any), avatarUrl: response.data.url })
+      } else {
+        console.log('No profile photo found in response:', response)
+        // Don't use blob URLs from user state as they're temporary
+        if (state.user.avatarUrl && !state.user.avatarUrl.startsWith('blob:')) {
+          console.log('Using existing avatarUrl from user state:', state.user.avatarUrl.substring(0, 50) + '...')
+          setAvatarUrl(state.user.avatarUrl)
+        } else {
+          console.log('No valid avatarUrl found, using default avatar')
+          setAvatarUrl('')
+        }
+      }
+    } catch (error) {
+      console.log('Error loading profile photo:', error)
+      // Don't use blob URLs as fallback since they're temporary
+      if (state.user.avatarUrl && !state.user.avatarUrl.startsWith('blob:')) {
+        console.log('Using fallback avatarUrl from user state:', state.user.avatarUrl.substring(0, 50) + '...')
+        setAvatarUrl(state.user.avatarUrl)
+      } else {
+        console.log('No valid fallback avatarUrl, using default avatar')
+        setAvatarUrl('')
+      }
+    }
+  }, [state.user?._id, setUser]) // Only depend on user ID
 
   // Load data when component mounts or user changes
   useEffect(() => {
     if (state.user) {
+      loadProfilePhoto()
       loadReports()
       loadFavorites()
       loadAnalytics()
     }
-  }, [state.user, loadReports, loadFavorites, loadAnalytics])
+  }, [state.user?._id]) // Only depend on user ID, not the entire user object
 
   // Load data when active tab changes
   useEffect(() => {
@@ -150,7 +218,7 @@ export default function Profile() {
           break
       }
     }
-  }, [activeTab, state.user, loadReports, loadFavorites, loadAnalytics])
+  }, [activeTab, state.user?._id]) // Only depend on activeTab and user ID
 
   // Handle profile update
   const handleProfileUpdate = async (e: React.FormEvent) => {
@@ -184,32 +252,36 @@ export default function Profile() {
     const file = e.target.files[0]
     try {
       setUploading(true)
-      // For now, create a temporary URL for the uploaded image
-      const tempUrl = URL.createObjectURL(file)
-      setAvatarUrl(tempUrl)
       
-      // Try to upload to backend, but fallback to temp URL if it fails
-      try {
-        const resp = await apiService.uploadFile(file, 'profile')
-        if ((resp as any)?.success && (resp as any)?.data?.url) {
-          const url = (resp as any).data.url
-          setAvatarUrl(url)
-          // Persist avatar to user profile
-          await apiService.updateProfile(state.user!._id, { displayName: state.user!.displayName, email: state.user!.email, avatarUrl: url })
-          setUser({ ...(state.user as any), avatarUrl: url })
-        } else {
-          // Fallback: save temp URL to profile (for demo purposes)
-          await apiService.updateProfile(state.user!._id, { displayName: state.user!.displayName, email: state.user!.email, avatarUrl: tempUrl })
-          setUser({ ...(state.user as any), avatarUrl: tempUrl })
-        }
-      } catch (uploadError) {
-        console.log('Upload endpoint not available, using temporary URL')
-        // Fallback: save temp URL to profile (for demo purposes)
-        await apiService.updateProfile(state.user!._id, { displayName: state.user!.displayName, email: state.user!.email, avatarUrl: tempUrl })
-        setUser({ ...(state.user as any), avatarUrl: tempUrl })
+      // Upload the file to the backend
+      const resp = await apiService.uploadFile(file, 'profile')
+      console.log('Upload response:', resp)
+      
+      if ((resp as any)?.success && (resp as any)?.data?.url) {
+        const url = (resp as any).data.url
+        console.log('Photo uploaded successfully, URL:', url.substring(0, 50) + '...')
+        
+        // Set the uploaded photo URL
+        setAvatarUrl(url)
+        
+        // Update user profile with the uploaded photo URL
+        await apiService.updateProfile(state.user!._id, { 
+          displayName: state.user!.displayName, 
+          email: state.user!.email, 
+          avatarUrl: url 
+        })
+        
+        // Update user state with the uploaded photo URL
+        setUser({ ...(state.user as any), avatarUrl: url })
+        
+        console.log('Profile updated with uploaded photo URL')
+      } else {
+        console.error('Upload failed or invalid response:', resp)
+        alert('Failed to upload photo. Please try again.')
       }
     } catch (err) {
-      console.error('Photo change failed', err)
+      console.error('Photo upload failed:', err)
+      alert('Failed to upload photo. Please try again.')
     } finally {
       setUploading(false)
     }
@@ -292,7 +364,7 @@ export default function Profile() {
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900">{state.user.displayName}</h1>
               <p className="text-gray-600">{state.user.email}</p>
-              <p className="text-sm text-gray-500 capitalize">{t('profile.role')}: {state.user.role}</p>
+              <p className="text-sm text-gray-500 capitalize">{t('profile.role')}: {t(`roles.${state.user.role}`)}</p>
             </div>
             <button
               onClick={() => setIsEditing(!isEditing)}
@@ -309,7 +381,7 @@ export default function Profile() {
               <div className="flex items-center space-x-2">
                 <input
                   type="url"
-                  placeholder="Or enter image URL"
+                  placeholder={t('profile.personalInfo.orEnterImageUrl')}
                   className="px-2 py-1 text-xs border rounded w-48"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -332,8 +404,27 @@ export default function Profile() {
                   className="btn btn-ghost btn-xs"
                   disabled={uploading}
                 >
-                  Set
+{t('profile.personalInfo.set')}
                 </button>
+                    <button
+                      onClick={async () => {
+                        if (!state.user) return
+                        try {
+                          const response = await apiService.deleteUserPhoto(state.user._id)
+                          if (response.success) {
+                            setAvatarUrl('')
+                            setUser({ ...(state.user as any), avatarUrl: '' })
+                            alert('Profile photo deleted successfully')
+                          }
+                        } catch (error) {
+                          console.error('Error deleting photo:', error)
+                          alert('Failed to delete photo')
+                        }
+                      }}
+                      className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    >
+{t('profile.personalInfo.deletePhoto')}
+                    </button>
               </div>
             </div>
           </div>
@@ -465,7 +556,7 @@ export default function Profile() {
                         </div>
                         <div>
                           <dt className="text-sm font-medium text-gray-500">{t('profile.accountType')}</dt>
-                          <dd className="mt-1 text-sm text-gray-900 capitalize">{state.user.role}</dd>
+                          <dd className="mt-1 text-sm text-gray-900 capitalize">{t(`roles.${state.user.role}`)}</dd>
                         </div>
                         <div>
                           <dt className="text-sm font-medium text-gray-500">{t('profile.memberSince')}</dt>
@@ -512,10 +603,21 @@ export default function Profile() {
                       <div key={report._id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                report.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                                report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {report.status}
+                              </span>
+                            </div>
                             <div className="flex items-center space-x-2 mb-2">
                               <MapPin className="w-4 h-4 text-gray-400" />
                               <span className="text-sm font-medium text-gray-900">
-                                Route {report.routeId}
+                                {typeof report.routeId === 'object' && report.routeId?.name 
+                                  ? `${report.routeId.name} (${report.routeId.routeNumber})` 
+                                  : `Route ${report.routeId}`}
                               </span>
                               <span className={`px-2 py-1 text-xs rounded-full ${getSeverityColor(report.severity)}`}>
                                 {report.severity}
@@ -528,6 +630,9 @@ export default function Profile() {
                                 {formatDate(report.createdAt)}
                               </div>
                               <span className="capitalize">Type: {report.reportType}</span>
+                              {typeof report.routeId === 'object' && report.routeId?.operator && (
+                                <span className="text-blue-600">Operator: {report.routeId.operator}</span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -542,7 +647,7 @@ export default function Profile() {
             {activeTab === 'favorites' && (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">{t('profile.favoriteRoutes')}</h3>
+                  <h3 className="text-lg font-medium text-gray-900">{t('profile.ratedRoutes')}</h3>
                   <button
                     onClick={loadFavorites}
                     disabled={favoritesLoading}
@@ -559,10 +664,40 @@ export default function Profile() {
                 ) : favoriteRoutes.length === 0 ? (
                   <div className="text-center py-8">
                     <Heart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-4">{t('profile.noFavoriteRoutes')}</p>
-                    <Link to="/map" className="btn btn-primary">
-                      {t('profile.exploreRoutes')}
-                    </Link>
+                    <p className="text-gray-500 mb-4">{t('profile.noRatedRoutes')}</p>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2 justify-center">
+                        <input
+                          type="text"
+                          placeholder="Enter Route ID to rate"
+                          className="px-3 py-2 border rounded-lg w-64"
+                          id="routeIdInput"
+                        />
+                        <button
+                          onClick={async () => {
+                            const input = document.getElementById('routeIdInput') as HTMLInputElement;
+                            const routeId = input?.value?.trim();
+                            if (routeId && state.user) {
+                              try {
+                                const response = await apiService.addFavoriteRoute(state.user._id, routeId);
+                                if (response.success) {
+                                  loadFavorites();
+                                  input.value = '';
+                                }
+                              } catch (error) {
+                                console.error('Error adding favorite:', error);
+                              }
+                            }
+                          }}
+                          className="btn btn-primary btn-sm"
+                        >
+                          Rate
+                        </button>
+                      </div>
+                      <Link to="/map" className="btn btn-primary">
+                        {t('profile.exploreRoutes')}
+                      </Link>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -570,16 +705,25 @@ export default function Profile() {
                       <div key={route._id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h4 className="text-sm font-medium text-gray-900">{route.name}</h4>
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h4 className="text-sm font-medium text-gray-900">{route.name}</h4>
+                              <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+{t('profile.personalInfo.rated')}
+                              </span>
+                            </div>
                             <p className="text-sm text-gray-600">{route.operator}</p>
                             <p className="text-xs text-gray-500">Route {route.routeNumber}</p>
+                            <div className="flex items-center space-x-1 mt-2">
+                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                              <span className="text-sm text-gray-600">{t('profile.personalInfo.youRatedThisRoute')}</span>
+                            </div>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Link
                               to={`/map?route=${route._id}`}
                               className="btn btn-ghost btn-sm"
                             >
-                              View
+{t('profile.personalInfo.view')}
                             </Link>
                             <button
                               onClick={() => removeFavorite(route._id)}
@@ -601,13 +745,15 @@ export default function Profile() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">{t('profile.yourAnalytics')}</h3>
-                  <button
-                    onClick={loadAnalytics}
-                    className="flex items-center space-x-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    <span>{t('profile.refresh')}</span>
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={loadAnalytics}
+                      className="flex items-center space-x-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      <span>{t('profile.refresh')}</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   <div className="bg-blue-50 rounded-lg p-4">
@@ -650,7 +796,7 @@ export default function Profile() {
 
                 {analytics.mostReportedRoute && (
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Most Reported Route</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">{t('profile.personalInfo.mostReportedRoute')}</h4>
                     <p className="text-sm text-gray-600">{analytics.mostReportedRoute}</p>
                   </div>
                 )}

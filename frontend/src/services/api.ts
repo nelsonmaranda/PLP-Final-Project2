@@ -806,8 +806,8 @@ class ApiService {
     }
   }
 
-  // Analytics dashboard
-  async getAnalyticsDashboard(userId: string): Promise<ApiResponse<{
+  // User Analytics dashboard
+  async getUserAnalyticsDashboard(userId: string): Promise<ApiResponse<{
     recommendations: UserRecommendation;
     recentTrends: any[];
     lastUpdated: string;
@@ -881,6 +881,179 @@ class ApiService {
     try {
       const response = await this.api.get('/export/incidents', {
         responseType: 'blob'
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // ==================== PAYMENT & SUBSCRIPTION METHODS ====================
+
+  // Get subscription plans
+  async getSubscriptionPlans(): Promise<ApiResponse<{
+    id: string;
+    name: string;
+    price: number;
+    currency: string;
+    features: string[];
+  }[]>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        id: string;
+        name: string;
+        price: number;
+        currency: string;
+        features: string[];
+      }[]>> = await this.api.get('/subscription-plans')
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Get user subscription
+  async getUserSubscription(userId: string): Promise<ApiResponse<{
+    userId: string;
+    planType: string;
+    status: string;
+    startDate: string;
+    endDate?: string;
+    features: {
+      advancedAnalytics: boolean;
+      prioritySupport: boolean;
+      customBranding: boolean;
+      apiAccess: boolean;
+      unlimitedReports: boolean;
+    };
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        userId: string;
+        planType: string;
+        status: string;
+        startDate: string;
+        endDate?: string;
+        features: {
+          advancedAnalytics: boolean;
+          prioritySupport: boolean;
+          customBranding: boolean;
+          apiAccess: boolean;
+          unlimitedReports: boolean;
+        };
+      }>> = await this.api.get(`/subscriptions/${userId}`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Create payment intent
+  async createPaymentIntent(amount: number, currency: string = 'KES', description: string): Promise<ApiResponse<{
+    clientSecret: string;
+    paymentId: string;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        clientSecret: string;
+        paymentId: string;
+      }>> = await this.api.post('/payments/create-intent', {
+        amount,
+        currency,
+        description
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Confirm payment
+  async confirmPayment(paymentId: string, subscriptionPlan: string): Promise<ApiResponse<{
+    message: string;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        message: string;
+      }>> = await this.api.post('/payments/success', {
+        paymentId,
+        subscriptionPlan
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // ==================== ANALYTICS & MONITORING METHODS ====================
+
+  // Track analytics event
+  async trackEvent(eventType: string, eventData: any, sessionId?: string, userId?: string): Promise<ApiResponse<{
+    success: boolean;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        success: boolean;
+      }>> = await this.api.post('/analytics/track', {
+        eventType,
+        eventData,
+        sessionId,
+        userId
+      })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Get analytics dashboard
+  async getAnalyticsDashboard(period: string = '7d'): Promise<ApiResponse<{
+    eventCounts: { _id: string; count: number }[];
+    userEngagement: {
+      avgEvents: number;
+      totalUsers: number;
+    };
+    performanceMetrics: {
+      metricType: string;
+      value: number;
+      endpoint?: string;
+      timestamp: string;
+      metadata?: any;
+    }[];
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        eventCounts: { _id: string; count: number }[];
+        userEngagement: {
+          avgEvents: number;
+          totalUsers: number;
+        };
+        performanceMetrics: {
+          metricType: string;
+          value: number;
+          endpoint?: string;
+          timestamp: string;
+          metadata?: any;
+        }[];
+      }>> = await this.api.get(`/analytics/dashboard?period=${period}`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  // Record performance metric
+  async recordPerformanceMetric(metricType: string, value: number, endpoint?: string, metadata?: any): Promise<ApiResponse<{
+    success: boolean;
+  }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{
+        success: boolean;
+      }>> = await this.api.post('/analytics/performance', {
+        metricType,
+        value,
+        endpoint,
+        metadata
       })
       return response.data
     } catch (error) {
