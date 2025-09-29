@@ -538,6 +538,69 @@ app.post('/reports', authMiddleware, async (req, res) => {
   }
 });
 
+// Admin approve a report (set status -> 'verified')
+app.post('/admin/reports/:reportId/approve', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ success: false, message: 'Admin or moderator access required' });
+    }
+    const { reportId } = req.params;
+    const updated = await Report.findByIdAndUpdate(reportId, {
+      status: 'verified',
+      verifiedBy: new mongoose.Types.ObjectId(req.user.userId),
+      verifiedAt: new Date(),
+      updatedAt: new Date()
+    }, { new: true });
+    if (!updated) return res.status(404).json({ success: false, message: 'Report not found' });
+    return res.json({ success: true, data: { report: updated }, message: 'Report approved' });
+  } catch (error) {
+    console.error('Approve report error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to approve report' });
+  }
+});
+
+// Admin resolve a report (set status -> 'resolved')
+app.post('/admin/reports/:reportId/resolve', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ success: false, message: 'Admin or moderator access required' });
+    }
+    const { reportId } = req.params;
+    const updated = await Report.findByIdAndUpdate(reportId, {
+      status: 'resolved',
+      resolvedAt: new Date(),
+      updatedAt: new Date()
+    }, { new: true });
+    if (!updated) return res.status(404).json({ success: false, message: 'Report not found' });
+    return res.json({ success: true, data: { report: updated }, message: 'Report resolved' });
+  } catch (error) {
+    console.error('Resolve report error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to resolve report' });
+  }
+});
+
+// Admin dismiss a report (set status -> 'dismissed')
+app.post('/admin/reports/:reportId/dismiss', authMiddleware, async (req, res) => {
+  try {
+    if (!isDBConnected) return res.status(503).json({ success: false, message: 'Database unavailable' });
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator') {
+      return res.status(403).json({ success: false, message: 'Admin or moderator access required' });
+    }
+    const { reportId } = req.params;
+    const updated = await Report.findByIdAndUpdate(reportId, {
+      status: 'dismissed',
+      updatedAt: new Date()
+    }, { new: true });
+    if (!updated) return res.status(404).json({ success: false, message: 'Report not found' });
+    return res.json({ success: true, data: { report: updated }, message: 'Report dismissed' });
+  } catch (error) {
+    console.error('Dismiss report error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to dismiss report' });
+  }
+});
+
 // Analytics endpoint (database-backed)
 app.get('/analytics/summary', async (req, res) => {
   try {
@@ -1392,21 +1455,54 @@ app.get('/users/:userId/favorites', authMiddleware, async (req, res) => {
       console.log('Access denied: userId mismatch');
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
-    
-    // Get routes that the user has rated (from Score collection)
-    const userScores = await Score.find({ userId: new mongoose.Types.ObjectId(userId) })
-      .populate('routeId', 'name routeNumber operator stops')
-      .sort({ createdAt: -1 });
-    
-    console.log('Found user scores:', userScores.length);
-    
-    // Extract unique routes from scores
-    const ratedRoutes = userScores.map(score => score.routeId).filter(route => route);
-    
-    res.json({
-      success: true,
-      data: { routes: ratedRoutes }
-    });
+
+    // Preferred source: analytics events of type 'route_rated'
+    let ratedRouteIds = [];
+    try {
+      const events = await AnalyticsEvent.find({
+        userId: new mongoose.Types.ObjectId(userId),
+        eventType: 'route_rated'
+      }).sort({ createdAt: -1 }).lean();
+      ratedRouteIds = Array.from(new Set((events || [])
+        .map(e => e?.eventData?.routeId)
+        .filter(Boolean)
+        .map(id => String(id))
+      ));
+    } catch (e) {
+      console.warn('Favorites: analytics lookup failed, will fallback', e?.message || e);
+    }
+
+    let routes = [];
+    if (ratedRouteIds.length > 0) {
+      routes = await Route.find({ _id: { $in: ratedRouteIds.map(id => new mongoose.Types.ObjectId(id)) } })
+        .select('name routeNumber operator stops')
+        .lean();
+    }
+
+    // Fallback 1: user's savedRoutes
+    if (routes.length === 0) {
+      const userDoc = await User.findById(new mongoose.Types.ObjectId(userId)).select('savedRoutes').lean();
+      const saved = Array.isArray(userDoc?.savedRoutes) ? userDoc.savedRoutes : [];
+      if (saved.length > 0) {
+        routes = await Route.find({ _id: { $in: saved } }).select('name routeNumber operator stops').lean();
+      }
+    }
+
+    // Fallback 2: derive from reports the user submitted
+    if (routes.length === 0) {
+      const reports = await Report.find({ userId: new mongoose.Types.ObjectId(userId) })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean();
+      const fromReports = Array.from(new Set((reports || []).map(r => String(r.routeId)).filter(Boolean)));
+      if (fromReports.length > 0) {
+        routes = await Route.find({ _id: { $in: fromReports.map(id => new mongoose.Types.ObjectId(id)) } })
+          .select('name routeNumber operator stops')
+          .lean();
+      }
+    }
+
+    return res.json({ success: true, data: { routes } });
 
   } catch (error) {
     console.error('Get favorites error:', error);

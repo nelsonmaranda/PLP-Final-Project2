@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, Users, MapPin, AlertTriangle, Plus, Edit, Trash2, Eye, Upload, Loader2 } from 'lucide-react'
+import { BarChart3, Users, MapPin, AlertTriangle, Plus, Edit, Trash2, Eye, Upload, Loader2, CheckCircle2, XCircle, Ban } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import apiService from '../services/api'
 import { Route } from '../types'
@@ -13,6 +13,7 @@ export default function Admin() {
   const [isLoading, setIsLoading] = useState(true)
   const [routes, setRoutes] = useState<Route[]>([])
   const [reportsCount, setReportsCount] = useState<number>(0)
+  const [pendingReports, setPendingReports] = useState<any[]>([])
   const [showAddRoute, setShowAddRoute] = useState(false)
   const [newRoute, setNewRoute] = useState({
     name: '',
@@ -49,8 +50,23 @@ export default function Admin() {
         }
       } catch {}
     }
+    const loadPendingReports = async () => {
+      try {
+        const token = localStorage.getItem('authToken')
+        if (!token) return
+        const resp = await fetch('https://us-central1-smart-matwana-ke.cloudfunctions.net/api/reports?page=1&limit=20&sort=createdAt&order=desc&status=pending', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await resp.json()
+        if (data?.success) setPendingReports(data.data?.reports || [])
+      } catch (e) {
+        console.error('Failed to load pending reports', e)
+        setPendingReports([])
+      }
+    }
     loadRoutes()
     loadReportsCount()
+    loadPendingReports()
   }, [])
 
   const handleAddRoute = async () => {
@@ -98,6 +114,33 @@ export default function Admin() {
       console.error('Failed to toggle route status', e)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const approveReport = async (reportId: string) => {
+    try {
+      await apiService.approveReport(reportId)
+      setPendingReports(prev => prev.filter(r => r._id !== reportId))
+    } catch (e) {
+      console.error('Approve report failed', e)
+    }
+  }
+
+  const resolveReport = async (reportId: string) => {
+    try {
+      await apiService.resolveReport(reportId)
+      setPendingReports(prev => prev.filter(r => r._id !== reportId))
+    } catch (e) {
+      console.error('Resolve report failed', e)
+    }
+  }
+
+  const dismissReport = async (reportId: string) => {
+    try {
+      await apiService.dismissReport(reportId)
+      setPendingReports(prev => prev.filter(r => r._id !== reportId))
+    } catch (e) {
+      console.error('Dismiss report failed', e)
     }
   }
 
@@ -267,6 +310,53 @@ export default function Admin() {
             )
           })}
         </div>
+
+        {/* Report Moderation */}
+        {isAdmin && (
+          <div className="card mb-8">
+            <div className="card-header">
+              <h2 className="card-title">{t('admin.pendingReports') || 'Pending Reports'}</h2>
+            </div>
+            <div className="card-content p-0">
+              {pendingReports.length === 0 ? (
+                <div className="p-6 text-sm text-gray-600">{t('admin.noPendingReports') || 'No pending reports'}</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.report') || 'Report'}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.route') || 'Route'}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.severity') || 'Severity'}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.actions') || 'Actions'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {pendingReports.map((r: any) => (
+                        <tr key={r._id}>
+                          <td className="px-6 py-4 text-sm text-gray-900">{r.description || r.reportType}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600">{r.routeId?.name || r.routeId || '-'}</td>
+                          <td className="px-6 py-4 text-sm capitalize">{r.severity}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <button onClick={() => approveReport(r._id)} className="inline-flex items-center text-green-600 hover:text-green-800">
+                              <CheckCircle2 className="w-4 h-4 mr-1" /> {t('admin.approve') || 'Approve'}
+                            </button>
+                            <button onClick={() => resolveReport(r._id)} className="inline-flex items-center text-blue-600 hover:text-blue-800">
+                              <XCircle className="w-4 h-4 mr-1" /> {t('admin.resolve') || 'Resolve'}
+                            </button>
+                            <button onClick={() => dismissReport(r._id)} className="inline-flex items-center text-red-600 hover:text-red-800">
+                              <Ban className="w-4 h-4 mr-1" /> {t('admin.dismiss') || 'Dismiss'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Routes Management */}
         <div className="card">

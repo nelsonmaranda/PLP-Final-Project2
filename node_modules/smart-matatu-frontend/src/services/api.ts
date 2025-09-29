@@ -247,6 +247,34 @@ class ApiService {
     }
   }
 
+  // Admin report moderation
+  async approveReport(reportId: string): Promise<ApiResponse<{ report: Report }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ report: Report }>> = await this.api.post(`/admin/reports/${reportId}/approve`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async resolveReport(reportId: string): Promise<ApiResponse<{ report: Report }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ report: Report }>> = await this.api.post(`/admin/reports/${reportId}/resolve`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async dismissReport(reportId: string): Promise<ApiResponse<{ report: Report }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ report: Report }>> = await this.api.post(`/admin/reports/${reportId}/dismiss`)
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
   // Scores
   async getScores(params?: {
     page?: number
