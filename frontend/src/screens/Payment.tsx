@@ -26,36 +26,34 @@ const Payment: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState('stripe')
 
   useEffect(() => {
-    // Get plan data from URL parameters
     const planType = searchParams.get('plan')
     const amount = searchParams.get('amount')
     const planName = searchParams.get('planName')
     
     if (!planType || !amount) {
-      setError('Invalid payment data. Please select a plan again.')
+      setError(t('payment.errors.invalidData'))
       setLoading(false)
       return
     }
 
-    // Define plan features based on plan type
     const planFeatures = {
-      free: ['Basic route information', 'Submit 5 reports per month', 'Community support'],
-      premium: ['Unlimited reports', 'Advanced analytics', 'Priority support', 'Real-time notifications'],
-      sacco: ['All Premium features', 'Revenue analytics', 'Custom branding', 'API access', 'Dedicated support'],
-      enterprise: ['All SACCO features', 'White-label solution', 'Custom integrations', '24/7 support', 'SLA guarantee']
+      free: [t('subscription.plans.free.features.basicInfo'), t('subscription.plans.free.features.reports'), t('subscription.plans.free.features.support')],
+      premium: [t('subscription.plans.premium.features.unlimitedReports'), t('subscription.plans.premium.features.advancedAnalytics'), t('subscription.plans.premium.features.prioritySupport'), t('subscription.plans.premium.features.realTimeNotifications')],
+      sacco: [t('subscription.plans.sacco.features.allPremium'), t('subscription.plans.sacco.features.revenueAnalytics'), t('subscription.plans.sacco.features.customBranding'), t('subscription.plans.sacco.features.apiAccess'), t('subscription.plans.sacco.features.dedicatedSupport')],
+      enterprise: [t('subscription.plans.enterprise.features.allSacco'), t('subscription.plans.enterprise.features.whiteLabel'), t('subscription.plans.enterprise.features.customIntegrations'), t('subscription.plans.enterprise.features.support247'), t('subscription.plans.enterprise.features.slaGuarantee')]
     }
 
     setPaymentData({
       amount: parseInt(amount),
       currency: 'KES',
-      description: `${planName || planType} subscription`,
+      description: `${planName || planType} ${t('payment.subscriptionWord')}`,
       planType,
       planName: planName || planType,
-      features: planFeatures[planType as keyof typeof planFeatures] || []
+      features: (planFeatures as any)[planType] || []
     })
     
     setLoading(false)
-  }, [searchParams])
+  }, [searchParams, t])
 
   const handlePayment = async () => {
     if (!paymentData || !state.user) return
@@ -64,9 +62,7 @@ const Payment: React.FC = () => {
     setError(null)
 
     try {
-      // Check if this is the special admin user
       if (state.user.email === 'nelsonmaranda2@gmail.com') {
-        // Admin user - no payment required
         const response = await apiService.confirmPayment('admin_payment', paymentData.planType)
         if (response.success) {
           navigate('/subscription?success=true&plan=' + paymentData.planType)
@@ -74,7 +70,6 @@ const Payment: React.FC = () => {
         return
       }
 
-      // Create payment intent
       const paymentIntent = await apiService.createPaymentIntent(
         paymentData.amount,
         paymentData.currency,
@@ -82,8 +77,6 @@ const Payment: React.FC = () => {
       )
 
       if (paymentIntent.success && paymentIntent.data) {
-        // For now, simulate successful payment
-        // In a real implementation, you would integrate with Stripe Elements or other payment processors
         setTimeout(async () => {
           try {
             const confirmResponse = await apiService.confirmPayment(
@@ -94,20 +87,20 @@ const Payment: React.FC = () => {
             if (confirmResponse.success) {
               navigate('/subscription?success=true&plan=' + paymentData.planType)
             } else {
-              setError('Payment confirmation failed. Please try again.')
+              setError(t('payment.errors.confirmFailed'))
             }
           } catch (err) {
-            setError('Payment confirmation failed. Please try again.')
+            setError(t('payment.errors.confirmFailed'))
           } finally {
             setProcessing(false)
           }
-        }, 2000) // Simulate payment processing time
+        }, 2000)
       } else {
-        setError('Failed to create payment. Please try again.')
+        setError(t('payment.errors.createFailed'))
         setProcessing(false)
       }
     } catch (err) {
-      setError('Payment failed. Please try again.')
+      setError(t('payment.errors.paymentFailed'))
       setProcessing(false)
     }
   }
@@ -139,13 +132,13 @@ const Payment: React.FC = () => {
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Payment Error</h3>
+                <h3 className="text-sm font-medium text-red-800">{t('payment.errors.header')}</h3>
                 <p className="mt-1 text-sm text-red-700">{error}</p>
                 <button
                   onClick={handleBackToPlans}
                   className="mt-3 bg-red-100 text-red-800 px-3 py-1 rounded-md text-sm hover:bg-red-200"
                 >
-                  Back to Plans
+                  {t('payment.backToPlans')}
                 </button>
               </div>
             </div>
@@ -161,36 +154,36 @@ const Payment: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Complete Your Payment
+            {t('payment.title')}
           </h1>
           <p className="text-gray-600">
-            Secure payment for your {paymentData?.planName} subscription
+            {t('payment.subtitle').replace('{plan}', paymentData?.planName || '')}
           </p>
         </div>
 
         {/* Payment Summary */}
         <div className="bg-white shadow rounded-lg mb-8">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Order Summary</h2>
+            <h2 className="text-lg font-medium text-gray-900">{t('payment.orderSummary')}</h2>
           </div>
           <div className="px-6 py-4">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h3 className="text-lg font-medium text-gray-900">{paymentData?.planName} Plan</h3>
-                <p className="text-sm text-gray-500">Monthly subscription</p>
+                <h3 className="text-lg font-medium text-gray-900">{t('payment.planLabel').replace('{plan}', paymentData?.planName || '')}</h3>
+                <p className="text-sm text-gray-500">{t('payment.monthly')}</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-gray-900">
-                  {paymentData?.amount === 0 ? 'Free' : `KES ${paymentData?.amount.toLocaleString()}`}
+                  {paymentData?.amount === 0 ? t('payment.free') : `KES ${paymentData?.amount.toLocaleString()}`}
                 </p>
                 {paymentData && paymentData.amount > 0 && (
-                  <p className="text-sm text-gray-500">per month</p>
+                  <p className="text-sm text-gray-500">{t('payment.perMonth')}</p>
                 )}
               </div>
             </div>
             
             <div className="border-t border-gray-200 pt-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Plan Features:</h4>
+              <h4 className="text-sm font-medium text-gray-900 mb-2">{t('payment.planFeatures')}</h4>
               <ul className="space-y-1">
                 {paymentData?.features.map((feature, index) => (
                   <li key={index} className="flex items-center text-sm text-gray-600">
@@ -208,7 +201,7 @@ const Payment: React.FC = () => {
         {/* Payment Method Selection */}
         <div className="bg-white shadow rounded-lg mb-8">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Payment Method</h2>
+            <h2 className="text-lg font-medium text-gray-900">{t('payment.paymentMethod')}</h2>
           </div>
           <div className="px-6 py-4">
             <div className="space-y-4">
@@ -226,7 +219,7 @@ const Payment: React.FC = () => {
                   <svg className="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.274 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.573-2.354 1.573-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/>
                   </svg>
-                  <span className="text-sm font-medium text-gray-700">Credit/Debit Card</span>
+                  <span className="text-sm font-medium text-gray-700">{t('payment.card')}</span>
                 </label>
               </div>
               
@@ -244,7 +237,7 @@ const Payment: React.FC = () => {
                   <div className="h-6 w-6 mr-2 bg-green-600 rounded flex items-center justify-center">
                     <span className="text-white text-xs font-bold">M</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">M-Pesa</span>
+                  <span className="text-sm font-medium text-gray-700">{t('payment.mpesa')}</span>
                 </label>
               </div>
               
@@ -262,7 +255,7 @@ const Payment: React.FC = () => {
                   <div className="h-6 w-6 mr-2 bg-red-600 rounded flex items-center justify-center">
                     <span className="text-white text-xs font-bold">A</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">Airtel Money</span>
+                  <span className="text-sm font-medium text-gray-700">{t('payment.airtel')}</span>
                 </label>
               </div>
             </div>
@@ -291,7 +284,7 @@ const Payment: React.FC = () => {
             onClick={handleBackToPlans}
             className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-md font-medium hover:bg-gray-400 transition-colors"
           >
-            Back to Plans
+            {t('payment.backToPlans')}
           </button>
           
           <button
@@ -306,12 +299,12 @@ const Payment: React.FC = () => {
             {processing ? (
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Processing Payment...
+                {t('payment.processingPayment')}
               </div>
             ) : paymentData?.amount === 0 ? (
-              'Activate Free Plan'
+              t('payment.activateFreePlan')
             ) : (
-              `Pay KES ${paymentData?.amount.toLocaleString()}`
+              t('payment.payAmount').replace('{amount}', (paymentData?.amount || 0).toLocaleString())
             )}
           </button>
         </div>
@@ -322,7 +315,7 @@ const Payment: React.FC = () => {
             <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            Your payment information is secure and encrypted
+            {t('payment.secureNote')}
           </div>
         </div>
       </div>

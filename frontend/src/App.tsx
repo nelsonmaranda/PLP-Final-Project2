@@ -20,6 +20,8 @@ const AnalyticsDashboard = lazy(() => import('./screens/AnalyticsDashboard'))
 const UserAnalytics = lazy(() => import('./screens/UserAnalytics'))
 const Subscription = lazy(() => import('./screens/Subscription'))
 const Payment = lazy(() => import('./screens/Payment'))
+  const ForgotPassword = lazy(() => import('./screens/ForgotPassword'))
+  const ResetPassword = lazy(() => import('./screens/ResetPassword'))
 const SaccoDashboard = lazy(() => import('./screens/SaccoDashboard'))
 const AuthorityDashboard = lazy(() => import('./screens/AuthorityDashboard'))
 const UserManagement = lazy(() => import('./screens/UserManagement'))
@@ -71,6 +73,9 @@ function App() {
                     <Payment />
                   </ProtectedRoute>
                 } />
+                {/* Public auth helpers */}
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 
                 {/* Admin-only routes */}
                 <Route path="/admin" element={

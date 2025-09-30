@@ -275,6 +275,25 @@ class ApiService {
     }
   }
 
+  // Password reset
+  async requestPasswordReset(email: string): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ message: string }>> = await this.api.post('/auth/forgot-password', { email })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
+  async resetPassword(token: string, password: string): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ message: string }>> = await this.api.post('/auth/reset-password', { token, password })
+      return response.data
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+
   // Scores
   async getScores(params?: {
     page?: number

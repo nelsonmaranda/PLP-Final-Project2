@@ -311,6 +311,16 @@ export interface LanguageStrings {
     passwordTooShort: string
     emailInvalid: string
     passwordsDoNotMatch: string
+    resetPasswordTitle: string
+    resetPasswordSubtitle: string
+    forgotPasswordTitle: string
+    forgotPasswordSubtitle: string
+    sendResetLink: string
+    resetting: string
+    resetPassword: string
+    verificationSent: string
+    verificationResent: string
+    backToLogin: string
   }
   map: {
     title: string
@@ -863,6 +873,8 @@ export interface LanguageStrings {
       title: string
       noActivity: string
     }
+    pendingReports: string
+    noPendingReports: string
   }
   profile: {
     title: string
@@ -962,83 +974,53 @@ export interface LanguageStrings {
     prioritySupport: string
     apiAccess: string
     faq: string
-    faq1: {
-      question: string
-      answer: string
+    faq1: { question: string; answer: string }
+    faq2: { question: string; answer: string }
+    faq3: { question: string; answer: string }
+    featureNames: {
+      advancedAnalytics: string
+      prioritySupport: string
+      customBranding: string
+      apiAccess: string
+      unlimitedReports: string
     }
-    faq2: {
-      question: string
-      answer: string
+    adminAccess: string
+    planTypes: { free: string; premium: string; sacco: string; enterprise: string }
+    statusTypes: { active: string; inactive: string; expired: string; pending: string }
+    plans: any
+    daysRemaining?: string
+    totalSubscription?: string
+    days?: string
+    yearly?: string
+    selectPlan?: string
+  }
+  payment: {
+    title: string
+    subtitle: string
+    orderSummary: string
+    planLabel: string
+    monthly: string
+    free: string
+    perMonth: string
+    planFeatures: string
+    paymentMethod: string
+    card: string
+    mpesa: string
+    airtel: string
+    backToPlans: string
+    processingPayment: string
+    activateFreePlan: string
+    payAmount: string
+    secureNote: string
+    errors: {
+      invalidData: string
+      createFailed: string
+      paymentFailed: string
+      confirmFailed: string
+      header: string
     }
-      faq3: {
-        question: string
-        answer: string
-      }
-      featureNames: {
-        advancedAnalytics: string
-        prioritySupport: string
-        customBranding: string
-        apiAccess: string
-        unlimitedReports: string
-      }
-      adminAccess: string
-      planTypes: {
-        free: string
-        premium: string
-        sacco: string
-        enterprise: string
-      }
-      statusTypes: {
-        active: string
-        inactive: string
-        expired: string
-        pending: string
-      }
-      plans: {
-        free: {
-          name: string
-          features: {
-            basicInfo: string
-            reports: string
-            support: string
-          }
-        }
-        premium: {
-          name: string
-          features: {
-            unlimitedReports: string
-            advancedAnalytics: string
-            prioritySupport: string
-            realTimeNotifications: string
-          }
-        }
-        sacco: {
-          name: string
-          features: {
-            allPremium: string
-            revenueAnalytics: string
-            customBranding: string
-            apiAccess: string
-            dedicatedSupport: string
-          }
-        }
-        enterprise: {
-          name: string
-          features: {
-            allSacco: string
-            whiteLabel: string
-            customIntegrations: string
-            support247: string
-            slaGuarantee: string
-          }
-        }
-      }
-      daysRemaining: string
-      totalSubscription: string
-      yearly: string
-      selectPlan: string
-      days: string
-    }
+    subscriptionWord: string
+  }
   analyticsDashboard: {
     title: string
     subtitle: string
