@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const express = require('express');
+const compression = require('compression');
 const cors = require('cors');
 const helmet = require('helmet');
 const mongoose = require('mongoose');
@@ -194,8 +195,10 @@ const connectDB = async () => {
       console.log('No MongoDB URI found, using mock data');
       return false;
     }
-
-    await mongoose.connect(mongoURI);
+    if (mongoose.connection.readyState === 1) {
+      return true;
+    }
+    await mongoose.connect(mongoURI, { dbName: mongoose.connection?.name });
     console.log('MongoDB Atlas connected successfully');
     return true;
   } catch (error) {
@@ -223,6 +226,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Content-Length']
 }));
+
+// Compress JSON/text responses > 1KB
+app.use(compression({ threshold: 1024 }));
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
