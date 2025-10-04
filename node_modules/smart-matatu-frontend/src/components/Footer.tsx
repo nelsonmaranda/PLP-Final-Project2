@@ -103,8 +103,8 @@ export default function Footer() {
               © 2024 Smart Matatu. {t('footer.allRightsReserved')}
             </p>
             <nav className="flex space-x-6 mt-4 md:mt-0" aria-label="Legal links">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">{t('footer.privacyPolicy')}</a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">{t('footer.termsOfService')}</a>
+              <a href="/privacy" className="text-gray-400 hover:text-white transition-colors text-sm">{t('footer.privacyPolicy')}</a>
+              <a href="/terms" className="text-gray-400 hover:text-white transition-colors text-sm">{t('footer.termsOfService')}</a>
             </nav>
           </div>
         </div>

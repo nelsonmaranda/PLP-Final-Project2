@@ -68,7 +68,9 @@ export default function ReportForm() {
         ...formData,
         sacco: selectedSacco === 'other' ? otherSacco.trim() : (selectedSacco || undefined),
         direction,
-        fare: fareKsh ? Number(fareKsh) : undefined
+        fare: fareKsh ? Number(fareKsh) : undefined,
+        // Ensure the server can associate user unless anonymous
+        isAnonymous: Boolean(formData.isAnonymous)
       }
       const res = await apiService.createReport(payload as any)
       if (res.success) {

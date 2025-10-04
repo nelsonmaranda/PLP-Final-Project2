@@ -606,6 +606,76 @@ export interface LanguageStrings {
     termsOfService: string
     allRightsReserved: string
   }
+  legal: {
+    privacyPolicy: {
+      title: string
+      lastUpdated: string
+      introduction: {
+        title: string
+        content: string
+      }
+      dataCollection: {
+        title: string
+        items: string[]
+      }
+      dataUsage: {
+        title: string
+        items: string[]
+      }
+      sharing: {
+        title: string
+        content: string
+      }
+      retention: {
+        title: string
+        content: string
+      }
+      rights: {
+        title: string
+        items: string[]
+      }
+      contact: {
+        title: string
+        content: string
+      }
+    }
+    termsOfService: {
+      title: string
+      lastUpdated: string
+      acceptance: {
+        title: string
+        content: string
+      }
+      useOfService: {
+        title: string
+        items: string[]
+      }
+      subscriptions: {
+        title: string
+        content: string
+      }
+      content: {
+        title: string
+        content: string
+      }
+      disclaimers: {
+        title: string
+        content: string
+      }
+      liability: {
+        title: string
+        content: string
+      }
+      termination: {
+        title: string
+        content: string
+      }
+      contact: {
+        title: string
+        content: string
+      }
+    }
+  }
   authority: {
     title: string
     subtitle: string
@@ -1118,6 +1188,7 @@ export interface LanguageStrings {
     // Report Types
     reportTypes: {
       crowding: string
+      overcrowding?: string
       delay: string
       safety: string
       breakdown: string

@@ -40,7 +40,7 @@ class ApiService {
   constructor() {
     this.api = axios.create({
       baseURL: 'https://us-central1-smart-matwana-ke.cloudfunctions.net/api',
-      timeout: 10000,
+      timeout: 8000, // Reduced from 10s to 8s for faster UX
       headers: {
         'Content-Type': 'application/json',
       },

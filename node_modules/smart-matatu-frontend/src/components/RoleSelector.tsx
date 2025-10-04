@@ -1,4 +1,4 @@
-import { Building2, Gavel, User, Shield, Crown } from 'lucide-react'
+import { Building2, Gavel, User } from 'lucide-react'
 
 interface RoleSelectorProps {
   selectedRole: string
@@ -37,26 +37,6 @@ export default function RoleSelector({ selectedRole, onRoleChange, language }: R
       icon: Gavel,
       color: 'bg-red-100 text-red-800 border-red-300',
       selectedColor: 'bg-red-200 text-red-900 border-red-400'
-    },
-    {
-      id: 'moderator',
-      name: language === 'sw' ? 'Msimamizi' : 'Moderator',
-      description: language === 'sw' 
-        ? 'Simamia mfumo na uwasilie ripoti' 
-        : 'Moderate system and generate reports',
-      icon: Shield,
-      color: 'bg-green-100 text-green-800 border-green-300',
-      selectedColor: 'bg-green-200 text-green-900 border-green-400'
-    },
-    {
-      id: 'admin',
-      name: language === 'sw' ? 'Msimamizi Mkuu' : 'Administrator',
-      description: language === 'sw' 
-        ? 'Dhibiti mfumo wote na ufikie dashboards zote' 
-        : 'Control entire system and access all dashboards',
-      icon: Crown,
-      color: 'bg-purple-100 text-purple-800 border-purple-300',
-      selectedColor: 'bg-purple-200 text-purple-900 border-purple-400'
     }
   ]
 

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
 import { useTranslation } from '../hooks/useTranslation'
+import apiService from '../services/api'
 
 interface UserAnalytics {
   userId: string
@@ -74,17 +75,38 @@ const UserAnalytics: React.FC = () => {
   const [analytics, setAnalytics] = useState<UserAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [period, setPeriod] = useState('30d')
+  const [period, setPeriod] = useState('7d')
+  const [planType, setPlanType] = useState<'free' | 'premium' | 'sacco' | 'enterprise'>('free')
+
+  const handlePeriodChange = (next: string) => {
+    if (planType === 'free' && next !== '7d') {
+      setPeriod('7d')
+      return
+    }
+    setPeriod(next)
+  }
 
   const loadUserAnalytics = async () => {
     try {
       setLoading(true)
       setError(null)
       
+      // Ensure plan is loaded
+      if (state.user?._id) {
+        try {
+          const sub = await apiService.getUserSubscription(state.user._id)
+          const pt = (sub.data?.planType as any) || 'free'
+          setPlanType(pt)
+          // If free and currently not 7d, clamp
+          if (pt === 'free' && period !== '7d') setPeriod('7d')
+        } catch {
+          setPlanType('free')
+        }
+      }
+      
       console.log(`Loading user analytics for: ${state.user?._id}, period: ${period}`)
       
       // For now, we'll generate user-focused analytics from existing data
-      // This would ideally come from a dedicated user analytics endpoint
       const mockUserAnalytics: UserAnalytics = {
         userId: state.user?._id || '',
         period,
@@ -197,19 +219,19 @@ const UserAnalytics: React.FC = () => {
             <div className="flex items-center space-x-4">
               <select
                 value={period}
-                onChange={(e) => setPeriod(e.target.value)}
+                onChange={(e) => handlePeriodChange(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
               >
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-                <option value="90d">Last 90 Days</option>
+                <option value="7d">{t('userAnalytics.last7Days')}</option>
+                <option value="30d" disabled={planType === 'free'}>{t('userAnalytics.last30Days')}{planType === 'free' ? ' (Pro)' : ''}</option>
+                <option value="90d" disabled={planType === 'free'}>{t('userAnalytics.last90Days')}{planType === 'free' ? ' (Pro)' : ''}</option>
               </select>
               <button
                 onClick={loadUserAnalytics}
                 className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>Refresh</span>
+                <span>{t('userAnalytics.refresh')}</span>
               </button>
             </div>
           </div>
@@ -228,9 +250,9 @@ const UserAnalytics: React.FC = () => {
                     <BarChart3 className="w-6 h-6 text-blue-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Reports</p>
+                    <p className="text-sm font-medium text-gray-600">{t('userAnalytics.personalStats.totalReports')}</p>
                     <p className="text-2xl font-bold text-gray-900">{analytics.personalStats.totalReports}</p>
-                    <p className="text-xs text-gray-500">{analytics.personalStats.reportsThisMonth} this month</p>
+                    <p className="text-xs text-gray-500">{analytics.personalStats.reportsThisMonth} {t('userAnalytics.personalStats.reportsThisMonth')}</p>
                   </div>
                 </div>
               </div>
@@ -241,9 +263,9 @@ const UserAnalytics: React.FC = () => {
                     <Star className="w-6 h-6 text-yellow-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Ratings</p>
+                    <p className="text-sm font-medium text-gray-600">{t('userAnalytics.personalStats.totalRatings')}</p>
                     <p className="text-2xl font-bold text-gray-900">{analytics.personalStats.totalRatings}</p>
-                    <p className="text-xs text-gray-500">Avg: {analytics.personalStats.avgRatingGiven}/5</p>
+                    <p className="text-xs text-gray-500">{t('userAnalytics.personalStats.avgRating')}: {analytics.personalStats.avgRatingGiven}/5</p>
                   </div>
                 </div>
               </div>
@@ -254,9 +276,9 @@ const UserAnalytics: React.FC = () => {
                     <Route className="w-6 h-6 text-green-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Favorite Routes</p>
+                    <p className="text-sm font-medium text-gray-600">{t('userAnalytics.personalStats.favoriteRoutes')}</p>
                     <p className="text-2xl font-bold text-gray-900">{analytics.personalStats.favoriteRoutes}</p>
-                    <p className="text-xs text-gray-500">Saved routes</p>
+                    <p className="text-xs text-gray-500">{t('userAnalytics.personalStats.savedRoutes')}</p>
                   </div>
                 </div>
               </div>
@@ -267,9 +289,9 @@ const UserAnalytics: React.FC = () => {
                     <Activity className="w-6 h-6 text-purple-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Activity Score</p>
+                    <p className="text-sm font-medium text-gray-600">{t('userAnalytics.personalStats.activityScore')}</p>
                     <p className="text-2xl font-bold text-gray-900">85%</p>
-                    <p className="text-xs text-gray-500">Very active user</p>
+                    <p className="text-xs text-gray-500">{t('userAnalytics.personalStats.veryActiveUser')}</p>
                   </div>
                 </div>
               </div>
@@ -284,21 +306,21 @@ const UserAnalytics: React.FC = () => {
                 </h3>
                 <div className="space-y-4">
                   <div className="p-4 bg-red-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900">Most Reported Route</h4>
+                    <h4 className="font-medium text-gray-900">{t('userAnalytics.routeInsights.mostReportedRoute')}</h4>
                     <p className="text-sm text-gray-600">
                       {analytics.routeInsights.mostReportedRoute.routeNumber} - {analytics.routeInsights.mostReportedRoute.routeName}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {analytics.routeInsights.mostReportedRoute.reportCount} reports, last: {analytics.routeInsights.mostReportedRoute.lastReport}
+                      {analytics.routeInsights.mostReportedRoute.reportCount} {t('userAnalytics.routeInsights.reports')}, {t('userAnalytics.routeInsights.last')}: {analytics.routeInsights.mostReportedRoute.lastReport}
                     </p>
                   </div>
                   <div className="p-4 bg-green-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900">Best Rated Route</h4>
+                    <h4 className="font-medium text-gray-900">{t('userAnalytics.routeInsights.bestRatedRoute')}</h4>
                     <p className="text-sm text-gray-600">
                       {analytics.routeInsights.bestRatedRoute.routeNumber} - {analytics.routeInsights.bestRatedRoute.routeName}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {analytics.routeInsights.bestRatedRoute.avgRating}/5 stars ({analytics.routeInsights.bestRatedRoute.totalRatings} ratings)
+                      {analytics.routeInsights.bestRatedRoute.avgRating}/5 {t('userAnalytics.routeInsights.stars')} ({analytics.routeInsights.bestRatedRoute.totalRatings} {t('userAnalytics.routeInsights.ratings')})
                     </p>
                   </div>
                 </div>
@@ -316,7 +338,11 @@ const UserAnalytics: React.FC = () => {
                         <p className="text-sm font-medium text-gray-900">
                           {activity.routeNumber} - {activity.routeName}
                         </p>
-                        <p className="text-xs text-gray-500">{activity.action}</p>
+                        <p className="text-xs text-gray-500">{
+                          activity.action === 'Reported delay' ? t('userAnalytics.recentActivity.reportedDelay') :
+                          activity.action === 'Rated 5 stars' ? t('userAnalytics.recentActivity.ratedStars') :
+                          activity.action === 'Reported safety issue' ? t('userAnalytics.recentActivity.reportedSafetyIssue') : activity.action
+                        }</p>
                       </div>
                       <span className="text-xs text-gray-400">{activity.date}</span>
                     </div>
@@ -331,23 +357,23 @@ const UserAnalytics: React.FC = () => {
                 <AlertTriangle className="w-5 h-5 mr-2 text-orange-500" />
                 {t('userAnalytics.safetyInsights.title')}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-red-600">{analytics.safetyInsights.safetyReports}</p>
-                  <p className="text-sm text-gray-500">Safety Reports</p>
+                    <p className="text-sm text-gray-500">{t('userAnalytics.safetyInsights.safetyReports')}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-yellow-600">{analytics.safetyInsights.delayReports}</p>
-                  <p className="text-sm text-gray-500">Delay Reports</p>
+                    <p className="text-sm text-gray-500">{t('userAnalytics.safetyInsights.delayReports')}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-600">{analytics.safetyInsights.resolvedReports}</p>
-                  <p className="text-sm text-gray-500">Resolved Reports</p>
+                    <p className="text-sm text-gray-500">{t('userAnalytics.safetyInsights.resolvedReports')}</p>
                 </div>
               </div>
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-600">
-                  <strong>Average Response Time:</strong> {analytics.safetyInsights.avgResponseTime}
+                  <strong>{t('userAnalytics.safetyInsights.averageResponseTime')}:</strong> {analytics.safetyInsights.avgResponseTime}
                 </p>
               </div>
             </div>
@@ -367,11 +393,14 @@ const UserAnalytics: React.FC = () => {
                           <p className="font-medium text-gray-900">
                             {route.routeNumber} - {route.routeName}
                           </p>
-                          <p className="text-sm text-gray-600">{route.reason}</p>
+                          <p className="text-sm text-gray-600">{
+                            route.reason === 'Highly rated by users' ? t('userAnalytics.recommendations.highlyRatedByUsers') :
+                            route.reason === 'Reliable and punctual' ? t('userAnalytics.recommendations.reliableAndPunctual') : route.reason
+                          }</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-green-600">{route.avgRating}/5</p>
-                          <p className="text-xs text-gray-500">stars</p>
+                          <p className="text-xs text-gray-500">{t('userAnalytics.routeInsights.stars')}</p>
                         </div>
                       </div>
                     </div>
@@ -382,10 +411,10 @@ const UserAnalytics: React.FC = () => {
               <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                   <Users className="w-5 h-5 mr-2 text-blue-500" />
-                  Safety Tips
+                  {t('userAnalytics.recommendations.safetyTips')}
                 </h3>
                 <div className="space-y-3">
-                  {analytics.recommendations.safetyTips.map((tip, index) => (
+                  {[t('userAnalytics.recommendations.avoidPeakHours'), t('userAnalytics.recommendations.bestSafetyRecord'), t('userAnalytics.recommendations.reportImmediately')].map((tip, index) => (
                     <div key={index} className="flex items-start">
                       <CheckCircle className="w-4 h-4 mr-2 text-green-500 mt-0.5" />
                       <p className="text-sm text-gray-600">{tip}</p>
@@ -405,7 +434,10 @@ const UserAnalytics: React.FC = () => {
                 {analytics.recommendations.peakHours.map((peak, index) => (
                   <div key={index} className="p-4 bg-purple-50 rounded-lg">
                     <p className="font-medium text-gray-900">{peak.hour}</p>
-                    <p className="text-sm text-gray-600">{peak.recommendation}</p>
+                    <p className="text-sm text-gray-600">{
+                      peak.recommendation === 'High traffic, allow extra time' ? t('userAnalytics.peakHours.highTraffic') :
+                      peak.recommendation === 'Peak hours, consider alternative routes' ? t('userAnalytics.peakHours.peakHours') : peak.recommendation
+                    }</p>
                   </div>
                 ))}
               </div>

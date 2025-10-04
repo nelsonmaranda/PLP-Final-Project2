@@ -94,8 +94,8 @@ export default function Header() {
           </nav>
 
           {/* User Info & Controls */}
-          <div className="flex items-center space-x-4">
-            {/* User Welcome Message */}
+          <div className="flex items-center space-x-2 md:space-x-4">
+            {/* User Welcome Message - Desktop only */}
             {state.isAuthenticated && state.user && (
               <div className="hidden md:block text-sm text-gray-600">
                 Welcome, {state.user.displayName}
@@ -110,6 +110,18 @@ export default function Header() {
             >
               {language === 'en' ? 'EN' : 'SW'}
             </button>
+
+            {/* Mobile Logout Button - Always visible on mobile when authenticated */}
+            {state.isAuthenticated && (
+              <button
+                onClick={logout}
+                className="md:hidden btn btn-ghost btn-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+                aria-label={t('navigation.logout')}
+                title={t('navigation.logout')}
+              >
+                <LogOut className="w-5 h-5" aria-hidden="true" />
+              </button>
+            )}
 
             {/* Mobile Menu Button */}
             <button
@@ -132,7 +144,7 @@ export default function Header() {
         {isMenuOpen && (
           <div 
             id="mobile-menu"
-            className="md:hidden border-t border-gray-200"
+            className="md:hidden border-t border-gray-200 bg-white"
             role="navigation"
             aria-label="Mobile navigation"
           >
@@ -143,14 +155,14 @@ export default function Header() {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`nav-link flex items-center space-x-2 w-full ${
+                    className={`nav-link flex items-center space-x-2 w-full py-3 px-3 rounded-lg ${
                       isActive(item.href) ? 'nav-link-active' : ''
                     }`}
                     onClick={() => setIsMenuOpen(false)}
                     aria-current={isActive(item.href) ? 'page' : undefined}
                   >
-                    <Icon className="w-4 h-4" aria-hidden="true" />
-                    <span>{item.name}</span>
+                    <Icon className="w-5 h-5" aria-hidden="true" />
+                    <span className="text-base">{item.name}</span>
                   </Link>
                 )
               })}
@@ -164,10 +176,10 @@ export default function Header() {
                         item.action?.()
                         setIsMenuOpen(false)
                       }}
-                      className="nav-link flex items-center space-x-2 w-full"
+                      className="nav-link flex items-center space-x-2 w-full py-3 px-3 rounded-lg text-red-600 hover:bg-red-50"
                     >
-                      <Icon className="w-4 h-4" aria-hidden="true" />
-                      <span>{item.name}</span>
+                      <Icon className="w-5 h-5" aria-hidden="true" />
+                      <span className="text-base font-medium">{item.name}</span>
                     </button>
                   )
                 }
@@ -175,14 +187,14 @@ export default function Header() {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`nav-link flex items-center space-x-2 w-full ${
+                    className={`nav-link flex items-center space-x-2 w-full py-3 px-3 rounded-lg ${
                       isActive(item.href) ? 'nav-link-active' : ''
                     }`}
                     onClick={() => setIsMenuOpen(false)}
                     aria-current={isActive(item.href) ? 'page' : undefined}
                   >
-                    <Icon className="w-4 h-4" aria-hidden="true" />
-                    <span>{item.name}</span>
+                    <Icon className="w-5 h-5" aria-hidden="true" />
+                    <span className="text-base">{item.name}</span>
                   </Link>
                 )
               })}

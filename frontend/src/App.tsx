@@ -26,6 +26,8 @@ const SaccoDashboard = lazy(() => import('./screens/SaccoDashboard'))
 const AuthorityDashboard = lazy(() => import('./screens/AuthorityDashboard'))
 const UserManagement = lazy(() => import('./screens/UserManagement'))
 const RouteEditor = lazy(() => import('./screens/RouteEditor'))
+const PrivacyPolicy = lazy(() => import('./screens/PrivacyPolicy'))
+const TermsOfService = lazy(() => import('./screens/TermsOfService'))
 
 function App() {
   // Setup global error handling
@@ -46,6 +48,8 @@ function App() {
                 <Route path="/report" element={<ReportForm />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
                 
                 {/* Protected routes - require authentication */}
                 <Route path="/profile" element={

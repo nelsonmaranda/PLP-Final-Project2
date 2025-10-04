@@ -27,11 +27,15 @@ type AppAction =
   | { type: 'LOGOUT' }
   | { type: 'RESET' }
 
-// Load initial language from localStorage
+// Load initial language from localStorage; default to English
 const getInitialLanguage = (): 'en' | 'sw' => {
   try {
     const saved = localStorage.getItem('language')
-    return saved === 'sw' ? 'sw' : 'en'
+    if (saved === 'en' || saved === 'sw') return saved as 'en' | 'sw'
+    // If nothing saved, default to English
+    const initial: 'en' | 'sw' = 'en'
+    localStorage.setItem('language', initial)
+    return initial
   } catch {
     return 'en'
   }
@@ -165,37 +169,50 @@ export function AppProvider({ children }: AppProviderProps) {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        dispatch({ type: 'SET_LOADING', payload: true })
-        
         // First check localStorage for existing token
         const token = localStorage.getItem('authToken')
         const storedUser = localStorage.getItem('user')
         
         if (token && storedUser) {
           try {
-            // Try to get fresh user data from API
-            const user = await apiService.getCurrentUser()
-            if (user) {
-              dispatch({ type: 'SET_USER', payload: user })
-            } else {
-              // If API call fails, clear stored data and log out
-              console.warn('API call failed, clearing stored data')
-              localStorage.removeItem('authToken')
-              localStorage.removeItem('user')
-              dispatch({ type: 'SET_USER', payload: null })
-            }
+            // Parse and immediately set stored user for instant load
+            const parsedUser = JSON.parse(storedUser)
+            dispatch({ type: 'SET_USER', payload: parsedUser })
+            dispatch({ type: 'SET_LOADING', payload: false })
+            
+            // Then refresh user data in background (no await)
+            apiService.getCurrentUser()
+              .then(user => {
+                if (user) {
+                  dispatch({ type: 'SET_USER', payload: user })
+                  localStorage.setItem('user', JSON.stringify(user))
+                } else {
+                  // If API call fails, clear stored data and log out
+                  console.warn('API call failed, clearing stored data')
+                  localStorage.removeItem('authToken')
+                  localStorage.removeItem('user')
+                  dispatch({ type: 'SET_USER', payload: null })
+                }
+              })
+              .catch(error => {
+                // If API fails but token exists, keep using stored data
+                // Only clear on 401 (handled by interceptor)
+                console.warn('Failed to refresh user data:', error)
+              })
           } catch (error) {
-            // If API fails, clear stored data and log out
-            console.warn('Failed to refresh user data, clearing stored data:', error)
+            // If parsing fails, clear stored data
+            console.warn('Failed to parse stored user:', error)
             localStorage.removeItem('authToken')
             localStorage.removeItem('user')
             dispatch({ type: 'SET_USER', payload: null })
+            dispatch({ type: 'SET_LOADING', payload: false })
           }
+        } else {
+          // No token/user, stop loading immediately
+          dispatch({ type: 'SET_LOADING', payload: false })
         }
-        // If no token/user, user remains null (not authenticated)
       } catch (error) {
         console.error('Error loading user:', error)
-      } finally {
         dispatch({ type: 'SET_LOADING', payload: false })
       }
     }
@@ -647,6 +664,95 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
       privacyPolicy: 'Privacy Policy',
       termsOfService: 'Terms of Service',
       allRightsReserved: 'All rights reserved.',
+    },
+    // Legal Pages
+    legal: {
+      privacyPolicy: {
+        title: 'Privacy Policy',
+        lastUpdated: 'Last updated',
+        introduction: {
+          title: 'Introduction',
+          content: 'Smart Matatu collects and processes data to provide reliable public transport insights and services. This policy explains what data we collect, how we use it, and your rights.'
+        },
+        dataCollection: {
+          title: 'Data We Collect',
+          items: [
+            'Account information (name, email, role, organization)',
+            'Usage data (page views, actions, device information)',
+            'Report submissions (type, description, location if provided)',
+            'Payment and subscription metadata (status, amount, method)'
+          ]
+        },
+        dataUsage: {
+          title: 'How We Use Data',
+          items: [
+            'Provide and improve analytics and platform features',
+            'Prevent abuse through rate limiting and security monitoring',
+            'Process subscriptions and payments',
+            'Communicate service updates and support'
+          ]
+        },
+        sharing: {
+          title: 'Sharing & Disclosure',
+          content: 'We do not sell personal data. We may share data with trusted processors (e.g., hosting, email, and payment providers) under strict contracts, or when required by law.'
+        },
+        retention: {
+          title: 'Data Retention',
+          content: 'We retain data only as long as necessary to provide the service and meet legal obligations. You may request deletion of your account data.'
+        },
+        rights: {
+          title: 'Your Rights',
+          items: [
+            'Access, update, or delete your personal data',
+            'Opt-out of non-essential communications',
+            'Request data export'
+          ]
+        },
+        contact: {
+          title: 'Contact',
+          content: 'For privacy requests, contact: nelsonmaranda2@gmail.com'
+        }
+      },
+      termsOfService: {
+        title: 'Terms of Service',
+        lastUpdated: 'Last updated',
+        acceptance: {
+          title: 'Acceptance of Terms',
+          content: 'By accessing or using Smart Matatu, you agree to these Terms and our Privacy Policy.'
+        },
+        useOfService: {
+          title: 'Use of Service',
+          items: [
+            'Provide accurate information when creating an account',
+            'Do not abuse reporting or rating mechanisms',
+            'Comply with applicable laws when using the platform'
+          ]
+        },
+        subscriptions: {
+          title: 'Subscriptions & Payments',
+          content: 'Paid plans provide additional features. Fees are billed in KES and are non-refundable once the billing period begins, except where required by law.'
+        },
+        content: {
+          title: 'Content',
+          content: 'You retain rights to content you submit. By submitting reports or ratings, you grant us a license to use the data to provide and improve the service.'
+        },
+        disclaimers: {
+          title: 'Disclaimers',
+          content: 'The service is provided "as is" without warranties. We do not guarantee accuracy of third‑party data or uninterrupted availability.'
+        },
+        liability: {
+          title: 'Limitation of Liability',
+          content: 'To the maximum extent permitted by law, Smart Matatu will not be liable for indirect or consequential damages.'
+        },
+        termination: {
+          title: 'Termination',
+          content: 'We may suspend or terminate access for violations of these Terms or harmful activity.'
+        },
+        contact: {
+          title: 'Contact',
+          content: 'Questions about these Terms: nelsonmaranda2@gmail.com'
+        }
+      }
     },
     sacco: {
       loading: 'Loading SACCO Dashboard...',
@@ -1280,6 +1386,7 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
       // Report Types
       reportTypes: {
         crowding: 'Crowding',
+        overcrowding: 'Overcrowding',
         delay: 'Delay',
         safety: 'Safety',
         breakdown: 'Breakdown',
@@ -1955,6 +2062,95 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
       termsOfService: 'Masharti ya Huduma',
       allRightsReserved: 'Haki zote zimehifadhiwa.',
     },
+    // Legal Pages
+    legal: {
+      privacyPolicy: {
+        title: 'Sera ya Faragha',
+        lastUpdated: 'Imesasishwa mwisho',
+        introduction: {
+          title: 'Utangulizi',
+          content: 'Smart Matatu inakusanya na kuchakata data ili kutoa ufahamu wa usafiri wa umma wa kuegemea na huduma. Sera hii inaeleza data gani tunayokusanya, jinsi tunavyotumia, na haki zako.'
+        },
+        dataCollection: {
+          title: 'Data Tunayokusanya',
+          items: [
+            'Taarifa za akaunti (jina, barua pepe, jukumu, shirika)',
+            'Data ya matumizi (machapisho ya ukurasa, vitendo, taarifa za kifaa)',
+            'Uwasilishaji wa ripoti (aina, maelezo, eneo ikiwa limepewa)',
+            'Metadata ya malipo na usajili (hali, kiasi, njia)'
+          ]
+        },
+        dataUsage: {
+          title: 'Jinsi Tunavyotumia Data',
+          items: [
+            'Kutoa na kuboresha uchambuzi na vipengele vya jukwaa',
+            'Kuzuia matumizi mabaya kupitia kikomo cha kiwango na ufuatiliaji wa usalama',
+            'Kuchakata usajili na malipo',
+            'Kuwasiliana masasisho ya huduma na msaada'
+          ]
+        },
+        sharing: {
+          title: 'Kushiriki na Kufichua',
+          content: 'Hatuzui data ya kibinafsi. Tunaweza kushiriki data na wachakataji wa kuaminika (k.m., uwekaji wa jukwaa, barua pepe, na watoaji wa malipo) chini ya mikataba kali, au wakati inahitajika kisheria.'
+        },
+        retention: {
+          title: 'Kuhifadhi Data',
+          content: 'Tunahifadhi data kwa muda tu wa kutosha kutoa huduma na kukidhi majukumu ya kisheria. Unaweza kuomba kufutwa kwa data ya akaunti yako.'
+        },
+        rights: {
+          title: 'Haki Zako',
+          items: [
+            'Kupata, kusasisha, au kufuta data yako ya kibinafsi',
+            'Kujiondoa kutoka mawasiliano yasiyo ya lazima',
+            'Kuomba kuhamishwa kwa data'
+          ]
+        },
+        contact: {
+          title: 'Mawasiliano',
+          content: 'Kwa maombi ya faragha, wasiliana: nelsonmaranda2@gmail.com'
+        }
+      },
+      termsOfService: {
+        title: 'Masharti ya Huduma',
+        lastUpdated: 'Imesasishwa mwisho',
+        acceptance: {
+          title: 'Kukubali Masharti',
+          content: 'Kwa kufikia au kutumia Smart Matatu, unakubali Masharti haya na Sera yetu ya Faragha.'
+        },
+        useOfService: {
+          title: 'Matumizi ya Huduma',
+          items: [
+            'Toa taarifa sahihi wakati wa kuunda akaunti',
+            'Usitumie vibaya mifumo ya kuripoti au kukadiria',
+            'Kufuata sheria zinazotumika wakati wa kutumia jukwaa'
+          ]
+        },
+        subscriptions: {
+          title: 'Usajili na Malipo',
+          content: 'Mipango ya kulipia inatoa vipengele vya ziada. Ada zinalipwa kwa KES na hazirudishwi mara kipindi cha malipo kianza, isipokuwa pale inapohitajika kisheria.'
+        },
+        content: {
+          title: 'Maudhui',
+          content: 'Unahifadhi haki za maudhui unayowasilisha. Kwa kuwasilisha ripoti au makadirio, unatupa leseni ya kutumia data ili kutoa na kuboresha huduma.'
+        },
+        disclaimers: {
+          title: 'Makanusho',
+          content: 'Huduma inatolewa "kama ilivyo" bila dhamana. Hatuhakikishi usahihi wa data ya watu wa tatu au upatikanaji usio na kikomo.'
+        },
+        liability: {
+          title: 'Kikomo cha Jukumu',
+          content: 'Kwa kiwango cha juu kinachoruhusiwa kisheria, Smart Matatu haitakuwa na jukumu kwa uharibifu wa moja kwa moja au wa matokeo.'
+        },
+        termination: {
+          title: 'Kusitisha',
+          content: 'Tunaweza kusimamisha au kusitisha ufikiaji kwa ukiukaji wa Masharti haya au shughuli za kudhuru.'
+        },
+        contact: {
+          title: 'Mawasiliano',
+          content: 'Maswali kuhusu Masharti haya: nelsonmaranda2@gmail.com'
+        }
+      }
+    },
     sacco: {
       loading: 'Inapakia Dashibodi ya SACCO...',
       title: 'Dashibodi ya SACCO',
@@ -2587,6 +2783,7 @@ export const languageStrings: Record<'en' | 'sw', LanguageStrings> = {
       // Report Types
       reportTypes: {
         crowding: 'Msongamano',
+        overcrowding: 'Msongamano Mkubwa',
         delay: 'Ucheleweshaji',
         safety: 'Usalama',
         breakdown: 'Kuvunjika',

@@ -108,6 +108,13 @@ export default function Signup() {
         setTimeout(() => {
           navigate('/')
         }, 1500) // Wait 1.5 seconds to show success message
+      } else if (response.success && response.data && response.data.user && !response.data.token) {
+        // Email verification flow
+        setSuccess(true)
+        setError(null)
+        setFormData({ displayName: '', email: '', password: '' })
+        setSelectedRole('user')
+        setTimeout(() => navigate('/login'), 1500)
       } else {
         setError('Registration failed. Please check your information and try again.')
       }
@@ -169,7 +176,7 @@ export default function Signup() {
                   </div>
                   <div className="ml-3">
                     <p className="text-sm font-medium text-green-800">
-                      Account created successfully! You can now sign in with your credentials.
+                      Account created! We sent a verification link to your email. Please open your inbox and click the link to activate your account, then return here to sign in.
                     </p>
                   </div>
                 </div>
@@ -297,7 +304,7 @@ export default function Signup() {
               </div>
 
               {/* Organization Field - Show for roles that require approval */}
-              {['sacco', 'authority', 'moderator', 'admin'].includes(selectedRole) && (
+              {['sacco', 'authority'].includes(selectedRole) && (
                 <div className="form-group">
                   <label htmlFor="organization" className="form-label">
                     Organization Name

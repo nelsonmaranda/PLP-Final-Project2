@@ -66,7 +66,16 @@ export default function Login() {
         setUser(response.data.user)
         setSuccess(true)
         setFormData({ email: '', password: '' })
-        setTimeout(() => navigate('/'), 1500)
+        
+        // Prefetch common data in background for smoother experience
+        // This doesn't block navigation
+        if (response.data.user.role === 'admin' || response.data.user.role === 'moderator') {
+          // Prefetch admin/moderator data
+          apiService.getReports(1, 5).catch(() => {})
+        }
+        
+        // Immediate navigation for faster UX
+        navigate('/')
       } else {
         setError('Invalid email or password. Please check your credentials.')
       }

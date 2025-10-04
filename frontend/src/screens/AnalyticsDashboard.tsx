@@ -90,7 +90,94 @@ const AnalyticsDashboard: React.FC = () => {
       setError(null)
       
       const response = await apiService.getAnalyticsDashboard(period)
-      setAnalyticsData(response.data || null)
+      const payload: any = (response as any)?.data ?? response
+
+      if (!payload) {
+        setAnalyticsData(null)
+        return
+      }
+
+      // Map backend shape → UI shape defensively
+      const mapped: AnalyticsData = {
+        userMetrics: {
+          totalUsers: Number(payload.users?.totalUsers ?? 0),
+          activeUsers: Number(payload.users?.activeUsers ?? 0),
+          newUsers: Number(payload.users?.newUsers ?? 0),
+          userRoles: (payload.users?.userRoles ?? []).map((r: any) => ({
+            role: r.role ?? r._id ?? 'unknown',
+            count: Number(r.count ?? 0)
+          }))
+        },
+        routeMetrics: {
+          totalRoutes: Number(payload.routes?.totalRoutes ?? 0),
+          activeRoutes: Number(payload.routes?.activeRoutes ?? 0),
+          topOperators: (payload.routes?.routesByOperator ?? []).map((o: any) => ({
+            _id: o._id ?? 'unknown',
+            count: Number(o.count ?? 0)
+          }))
+        },
+        reportMetrics: {
+          totalReports: Number(payload.reports?.totalReports ?? 0),
+          recentReports: Number(payload.reports?.recentReports ?? 0),
+          reportsByType: (payload.reports?.reportsByType ?? []).map((x: any) => ({
+            type: x.type ?? x._id ?? 'other',
+            count: Number(x.count ?? 0)
+          })),
+          reportsBySeverity: (payload.reports?.reportsBySeverity ?? []).map((x: any) => ({
+            severity: x.severity ?? x._id ?? 'low',
+            count: Number(x.count ?? 0)
+          })),
+          reportsByStatus: (payload.reports?.reportsByStatus ?? []).map((x: any) => ({
+            status: x.status ?? x._id ?? 'pending',
+            count: Number(x.count ?? 0)
+          }))
+        },
+        ratingMetrics: {
+          totalRatings: Number(payload.ratings?.totalScores ?? 0),
+          averageRating: Number(payload.ratings?.avgOverallRating ?? 0),
+          topRatedRoutes: (payload.ratings?.topRatedRoutes ?? []).map((r: any) => ({
+            _id: r._id,
+            routeName: r.routeName,
+            routeNumber: r.routeNumber,
+            operator: r.operator,
+            avgRating: Number(r.avgRating ?? 0),
+            totalRatings: Number(r.totalRatings ?? 0)
+          }))
+        },
+        subscriptionMetrics: {
+          totalSubscriptions: Number(payload.subscriptions?.totalSubscriptions ?? 0),
+          activeSubscriptions: Number(payload.subscriptions?.activeSubscriptions ?? 0),
+          subscriptionsByPlan: (payload.subscriptions?.subscriptionsByPlan ?? []).map((p: any) => ({
+            plan: p.plan ?? p._id ?? 'free',
+            count: Number(p.count ?? 0)
+          }))
+        },
+        paymentMetrics: {
+          totalPayments: Number(payload.payments?.totalPayments ?? 0),
+          successfulPayments: Number(payload.payments?.successfulPayments ?? 0),
+          successRate: payload.payments?.successRate ?? '0%',
+          totalRevenue: Number(payload.payments?.totalRevenue ?? 0),
+          paymentsByMethod: (payload.payments?.paymentsByMethod ?? []).map((m: any) => ({
+            method: m.method ?? 'unknown',
+            count: Number(m.count ?? 0),
+            total: Number(m.total ?? 0)
+          }))
+        },
+        trafficMetrics: {
+          totalRoutesWithTraffic: Number(payload.traffic?.totalRoutesWithTraffic ?? 0),
+          averageCongestion: Number(payload.traffic?.averageCongestion ?? 0),
+          trafficData: payload.traffic?.trafficData ?? []
+        },
+        geographicAnalytics: {
+          reportHotspots: payload.geographicAnalytics?.reportHotspots ?? []
+        },
+        timeAnalytics: {
+          reportsByHour: payload.timeAnalytics?.reportsByHour ?? []
+        },
+        performanceMetrics: payload.performanceMetrics ?? []
+      }
+
+      setAnalyticsData(mapped)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load analytics data')
     } finally {
@@ -201,6 +288,13 @@ const AnalyticsDashboard: React.FC = () => {
     )
   }
 
+  // Defensive defaults to avoid runtime crashes on partial/missing data
+  const userMetrics = analyticsData?.userMetrics || { totalUsers: 0, activeUsers: 0, newUsers: 0, userRoles: [] as { role: string; count: number }[] }
+  const reportMetrics = analyticsData?.reportMetrics || { totalReports: 0, recentReports: 0, reportsByType: [] as any[], reportsBySeverity: [] as any[], reportsByStatus: [] as any[] }
+  const ratingMetrics = analyticsData?.ratingMetrics || { totalRatings: 0, averageRating: 0, topRatedRoutes: [] as any[] }
+  const subscriptionMetrics = analyticsData?.subscriptionMetrics || { totalSubscriptions: 0, activeSubscriptions: 0, subscriptionsByPlan: [] as any[] }
+  const performanceMetrics = (analyticsData?.performanceMetrics || []) as { metricType: string; value: number; endpoint?: string; timestamp: string }[]
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -229,7 +323,7 @@ const AnalyticsDashboard: React.FC = () => {
           </div>
         </div>
 
-        {analyticsData && (
+        {(analyticsData || true) && (
           <>
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -246,9 +340,7 @@ const AnalyticsDashboard: React.FC = () => {
                         <dt className="text-sm font-medium text-gray-500 truncate">
                           {t('analyticsDashboard.userMetrics.totalUsers')}
                         </dt>
-                        <dd className="text-lg font-medium text-gray-900">
-                          {analyticsData.userMetrics.totalUsers}
-                        </dd>
+                        <dd className="text-lg font-medium text-gray-900">{userMetrics.totalUsers}</dd>
                       </dl>
                     </div>
                   </div>
@@ -268,9 +360,7 @@ const AnalyticsDashboard: React.FC = () => {
                         <dt className="text-sm font-medium text-gray-500 truncate">
                           {t('analyticsDashboard.reportMetrics.totalReports')}
                         </dt>
-                        <dd className="text-lg font-medium text-gray-900">
-                          {analyticsData.reportMetrics.totalReports}
-                        </dd>
+                        <dd className="text-lg font-medium text-gray-900">{reportMetrics.totalReports}</dd>
                       </dl>
                     </div>
                   </div>
@@ -290,9 +380,7 @@ const AnalyticsDashboard: React.FC = () => {
                         <dt className="text-sm font-medium text-gray-500 truncate">
                           {t('analyticsDashboard.ratingMetrics.averageRating')}
                         </dt>
-                        <dd className="text-lg font-medium text-gray-900">
-                          {analyticsData.ratingMetrics.averageRating.toFixed(1)}/5
-                        </dd>
+                        <dd className="text-lg font-medium text-gray-900">{(ratingMetrics.averageRating || 0).toFixed(1)}/5</dd>
                       </dl>
                     </div>
                   </div>
@@ -312,9 +400,7 @@ const AnalyticsDashboard: React.FC = () => {
                         <dt className="text-sm font-medium text-gray-500 truncate">
                           {t('analyticsDashboard.paymentMetrics.totalRevenue')} (KES)
                         </dt>
-                        <dd className="text-lg font-medium text-gray-900">
-                          {analyticsData.paymentMetrics.totalRevenue.toLocaleString()}
-                        </dd>
+                        <dd className="text-lg font-medium text-gray-900">{analyticsData?.paymentMetrics?.totalRevenue?.toLocaleString?.() || '0'}</dd>
                       </dl>
                     </div>
                   </div>
@@ -330,7 +416,7 @@ const AnalyticsDashboard: React.FC = () => {
                     {t('analyticsDashboard.reportMetrics.reportsByType')}
                   </h3>
                   <div className="space-y-3">
-                    {analyticsData.reportMetrics.reportsByType.map((report) => (
+                    {reportMetrics.reportsByType.map((report) => (
                       <div key={report.type} className="flex items-center justify-between">
                         <div className="flex items-center">
                           <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
@@ -351,7 +437,7 @@ const AnalyticsDashboard: React.FC = () => {
                     {t('analyticsDashboard.reportMetrics.reportsBySeverity')}
                   </h3>
                   <div className="space-y-3">
-                    {analyticsData.reportMetrics.reportsBySeverity.map((severity) => (
+                    {reportMetrics.reportsBySeverity.map((severity) => (
                       <div key={severity.severity} className="flex items-center justify-between">
                         <div className="flex items-center">
                           <div className={`w-3 h-3 rounded-full mr-3 ${
@@ -396,7 +482,7 @@ const AnalyticsDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {analyticsData.ratingMetrics.topRatedRoutes.slice(0, 10).map((route) => (
+                    {ratingMetrics.topRatedRoutes.slice(0, 10).map((route) => (
                         <tr key={route._id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {route.routeNumber} - {route.routeName}
@@ -429,7 +515,7 @@ const AnalyticsDashboard: React.FC = () => {
                     {t('analyticsDashboard.userMetrics.userRoles')}
                   </h3>
                   <div className="space-y-3">
-                    {analyticsData.userMetrics.userRoles.map((role) => (
+                    {userMetrics.userRoles.map((role) => (
                       <div key={role.role} className="flex items-center justify-between">
                         <div className="flex items-center">
                           <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
@@ -450,7 +536,7 @@ const AnalyticsDashboard: React.FC = () => {
                     {t('analyticsDashboard.subscriptionMetrics.subscriptionsByPlan')}
                   </h3>
                   <div className="space-y-3">
-                    {analyticsData.subscriptionMetrics.subscriptionsByPlan.map((plan) => (
+                    {subscriptionMetrics.subscriptionsByPlan.map((plan) => (
                       <div key={plan.plan} className="flex items-center justify-between">
                         <div className="flex items-center">
                           <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
@@ -473,7 +559,7 @@ const AnalyticsDashboard: React.FC = () => {
                   {t('analyticsDashboard.performanceMetrics')}
                 </h3>
                 
-                {analyticsData.performanceMetrics.length > 0 ? (
+                {performanceMetrics.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
@@ -493,7 +579,7 @@ const AnalyticsDashboard: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {analyticsData.performanceMetrics.slice(0, 10).map((metric, index) => (
+                        {performanceMetrics.slice(0, 10).map((metric, index) => (
                           <tr key={index}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">
                               {getMetricTypeTranslation(metric.metricType)}
