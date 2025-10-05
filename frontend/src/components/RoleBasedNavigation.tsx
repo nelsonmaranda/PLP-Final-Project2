@@ -171,14 +171,49 @@ export default function RoleBasedNavigation() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <button
-        onClick={toggleSidebar}
-        className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-        aria-label="Open sidebar"
-      >
-        <Menu className="h-6 w-6" />
-      </button>
+      {/* Mobile Top Bar - Fixed at top on mobile devices */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white shadow-md border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-4">
+          {/* Left: Menu button and logo */}
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              aria-label="Open sidebar"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+            <div className="flex items-center">
+              <Cloud className="h-6 w-6 text-blue-600" />
+              <span className="ml-2 text-lg font-bold text-gray-900">
+                Smart Matatu
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Language toggle and Logout button */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setLanguage(language === 'en' ? 'sw' : 'en')}
+              className="px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-800 hover:bg-blue-200"
+              aria-label={`Switch to ${language === 'en' ? 'Swahili' : 'English'}`}
+            >
+              {language === 'en' ? 'EN' : 'SW'}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-md text-red-600 hover:text-red-700 hover:bg-red-50"
+              aria-label={language === 'sw' ? 'Ondoka' : 'Logout'}
+              title={language === 'sw' ? 'Ondoka' : 'Logout'}
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Add top padding to content on mobile to account for fixed top bar */}
+      <div className="lg:hidden h-16" />
 
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
